@@ -29,5 +29,13 @@ try {
   fire(C['scene'], 'pointerdown', { clientX: 100, clientY: 100 });
   fire(C['scene'], 'pointerup', { clientX: 100, clientY: 100 });
   C['seqPlay'].onclick(); frames(120);
+  // new: chord-name labels, key focus, cymatics
+  C['namesBtn'].onclick(); C['namesBtn'].onclick();
+  C['keyFocusBtn'].onclick(); frames(5); C['keyFocusBtn'].onclick(); frames(5);
+  C['cymBtn'].onclick();
+  fire(C['cymNotes'], 'click', { target: { closest: () => ({ dataset: { n: '3' } }) } });
+  fire(C['cym'], 'click', { target: { closest: () => ({ dataset: { cs: 'circular' } }) } });
+  C['cymH'].value = '6'; C['cymH'].oninput();
+  C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }

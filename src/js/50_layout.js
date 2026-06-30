@@ -18,7 +18,8 @@ function computeAxes(){return N.map((n,i)=>new THREE.Vector3((F[xf][i]-.5)*220,(
 function curLayout(name){if(name==='expl')return posExpl;if(name==='axes')return computeAxes();return posDisc;}
 function updatePositions(){const e=ease(Math.min(mt,1));
   for(let i=0;i<N.length;i++){pos[i].copy(posFrom[i]).lerp(posTo[i],e);
-    dots[i].position.copy(pos[i]);halos[i].position.copy(pos[i]);picks[i].position.copy(pos[i]);}}
+    dots[i].position.copy(pos[i]);halos[i].position.copy(pos[i]);picks[i].position.copy(pos[i]);}
+  positionLabels();}
 function ringOpacity(){ringLine.material.opacity=.5*ringO;for(const s of ringGroup)s.material.opacity=ringO;}
 function updateCaption(){if(keyRoot==null)axiscap.textContent=(layoutName==='expl')?CAP_EXPL:(layoutName==='axes'?axesCaption():CAP_DISC);}
 function setLayout(name){if(locked)return;posFrom=pos.map(p=>p.clone());posTo=curLayout(name).map(p=>p.clone());mt=0;layoutName=name;
@@ -28,6 +29,8 @@ function setPill(id,k){[...document.getElementById(id).children].forEach(b=>b.cl
 document.getElementById('layoutPills').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)setLayout(b.dataset.k);});
 document.getElementById('colorPills').addEventListener('click',e=>{const b=e.target.closest('button');
   if(b){colorMode=b.dataset.k;if(keyRoot==null&&renderMode==='stars'){applyColors(colorMode);setLegend(colorMode);}setPill('colorPills',colorMode);}});
+const namesBtn=document.getElementById('namesBtn');
+namesBtn.onclick=()=>{showNames=!showNames;namesBtn.classList.toggle('on',showNames);positionLabels();};
 (function(){const opt=Object.keys(FLABEL).map(k=>'<option value="'+k+'">'+FLABEL[k]+'</option>').join('');
   ['axX','axY','axZ'].forEach((id,ix)=>{const s=document.getElementById(id);s.innerHTML=opt;s.value=[xf,yf,zf][ix];
     s.onchange=()=>{xf=document.getElementById('axX').value;yf=document.getElementById('axY').value;zf=document.getElementById('axZ').value;

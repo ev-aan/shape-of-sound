@@ -28,12 +28,12 @@ function el(){return{children:[],style:{},__h:{},dataset:{},innerHTML:'',value:'
  addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);},appendChild(c){this.children.push(c);},closest(){return this;},
  textContent:'',remove(){},getBoundingClientRect(){return{left:0,top:0,width:800,height:600};},
  getContext(){return{font:'',fillStyle:'',strokeStyle:'',lineWidth:1,globalAlpha:1,textAlign:'',textBaseline:'',
-   fillText(){},fillRect(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},setTransform(){},scale(){},setLineDash(){},createRadialGradient(){return{addColorStop(){}};}};},
+   fillText(){},fillRect(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},setTransform(){},scale(){},setLineDash(){},createRadialGradient(){return{addColorStop(){}};},createImageData(w,h){return{data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};},
  width:64,height:64,play(){return{catch(){}};},src:'',loop:false};}
 const cache={};
 global.document={getElementById:id=>cache[id]||(cache[id]=el()),createElement:()=>el(),__h:{},addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);}};
 global.window={};global.devicePixelRatio=2;global.innerWidth=800;global.innerHeight=600;global.addEventListener=()=>{};global.performance={now:()=>0};
-let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};global.setTimeout=()=>{};
+let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};global.setTimeout=()=>{};global.setInterval=()=>0;global.clearInterval=()=>{};
 const P={value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};
 global.window.AudioContext=class{constructor(){this.currentTime=0;this.state='running';this.destination={};}
  createGain(){return{gain:{...P,value:0},connect(){}};}createOscillator(){return{type:'',frequency:{value:0},detune:{value:0},connect(){},start(){},stop(){}};}

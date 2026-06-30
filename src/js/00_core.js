@@ -60,6 +60,17 @@ N.forEach((n,i)=>{const r=1.5+n.cons*2.4;
   scene.add(halo);halos.push(halo);
   const pk=new THREE.Mesh(pickGeo,new THREE.MeshBasicMaterial({visible:false}));pk.scale.setScalar(Math.max(6,r*2.6));
   pk.userData.index=i;scene.add(pk);picks.push(pk);});
+// chord-name labels (one per dot)
+function makeLabel(txt){const w=Math.max(64,txt.length*20+18);const c=document.createElement('canvas');c.width=w;c.height=38;
+  const x=c.getContext('2d');x.font='600 24px ui-monospace,Menlo,monospace';x.fillStyle='#e8eefb';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(txt,w/2,20);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthWrite:false,depthTest:false}));
+  sp.scale.set(w/38*8.5,8.5,1);sp.userData.w=w;return sp;}
+const nodeLabels=[];let showNames=true;
+N.forEach((n,i)=>{const lab=makeLabel(n.name);scene.add(lab);nodeLabels.push(lab);});
+function positionLabels(){for(let i=0;i<nodeLabels.length;i++){const lab=nodeLabels[i],P=pos[i];
+  lab.position.set(P.x,P.y+dots[i].userData.r+5,P.z);
+  const dia=(keyRoot==null)||!!diatonic(N[i]);
+  lab.material.opacity=(showNames && !wfMode && dia && (keyRoot==null||!keyFocus||dia))?0.95:0;}}
 function baseColor(i){const n=N[i];return colorMode==='fifths'?null:FAM[n.family];}
 function applyColors(mode){N.forEach((n,i)=>{const c=dots[i].material.color,h=halos[i].material.color;
   dots[i].material.opacity=1;halos[i].material.opacity=.55;

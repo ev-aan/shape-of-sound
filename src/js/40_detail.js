@@ -17,7 +17,7 @@ function renderDetail(i){detailIdx=i;const n=N[i];const invs=inversions(n);
   const invRows=invs.map((v,k)=>'<div class="inv" data-act="inv" data-inv="'+k+'"><span class="play">▶</span>'+
     '<span class="nm">'+v.notes.join(' – ')+'</span><span class="sub">'+['root pos','1st inv','2nd inv','3rd inv'][k]+'</span></div>').join('');
   detailEl.innerHTML='<div class="dhead"><span class="nm serif">'+n.name+'</span><span class="fn">'+fnline+'</span>'+
-    '<span class="addseq" data-act="add">＋ seq</span><span class="addseq" data-act="wave">〜 wave</span><span class="x" data-act="close">✕</span></div>'+
+    '<span class="addseq" data-act="add">＋ seq</span><span class="addseq" data-act="wave">〜 wave</span><span class="addseq" data-act="cym">◉ cym</span><span class="x" data-act="close">✕</span></div>'+
     '<div class="dsec"><div class="lbl">notes &amp; ratios to root</div><div class="kv">'+ratios+'</div></div>'+
     '<div class="dsec"><div class="lbl">consonance</div><div class="kv">'+(n.cons*100).toFixed(0)+' / 100 &nbsp;<span class="r">(higher = smoother)</span></div></div>'+
     '<div class="dsec"><div class="lbl">inversions — tap to hear</div>'+invRows+'</div>'+
@@ -29,4 +29,5 @@ detailEl.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   if(act==='rel'){selectNode(+t.dataset.idx);}
   if(act==='cmp'){openScope(detailIdx,+t.dataset.idx);}
   if(act==='add'){addToSeq(detailIdx);}
-  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});
+  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}
+  if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});

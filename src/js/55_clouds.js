@@ -15,7 +15,7 @@ function updateCloud(){if(!cloudPoints)return;const arr=cloudPoints.geometry.att
   for(let p=0;p<cloudLocal.length;p++){const o=cloudLocal[p],P=pos[o.i];arr[p*3]=P.x+o.ox;arr[p*3+1]=P.y+o.oy;arr[p*3+2]=P.z+o.oz;}
   cloudPoints.geometry.attributes.position.needsUpdate=true;}
 function setRender(m){renderMode=m;const cloud=(m==='clouds');
-  for(let i=0;i<N.length;i++){dots[i].visible=!cloud;halos[i].visible=!cloud;}
+  for(let i=0;i<N.length;i++){const vis=diaVisible(i);dots[i].visible=!cloud&&vis;halos[i].visible=!cloud&&vis;picks[i].visible=vis;}
   if(cloudPoints){cloudPoints.visible=cloud;if(cloud)updateCloud();}
   if(edgeLines)edgeLines.visible=(!cloud&&keyRoot==null);setPill('renderPills',m);
   if(!cloud&&keyRoot==null)applyColors(colorMode);}

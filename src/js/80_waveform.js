@@ -24,10 +24,11 @@ function drawWave2D(){const cv=document.getElementById('waveCanvas'),dpr=Math.mi
   x.strokeStyle='#9ad1f0';x.lineWidth=1.8;x.beginPath();
   for(let i=0;i<S.re.length;i++){const px=i/(S.re.length-1)*Wc,py=mid-S.re[i]*(mid-12);i?x.lineTo(px,py):x.moveTo(px,py);}
   x.stroke();}
-function setManifoldVisible(v){for(let i=0;i<N.length;i++){dots[i].visible=v&&renderMode==='stars';halos[i].visible=v&&renderMode==='stars';}
+function setManifoldVisible(v){for(let i=0;i<N.length;i++){const vis=v&&diaVisible(i);dots[i].visible=vis&&renderMode==='stars';halos[i].visible=vis&&renderMode==='stars';picks[i].visible=v&&diaVisible(i);}
   if(cloudPoints)cloudPoints.visible=v&&renderMode==='clouds';
   if(edgeLines)edgeLines.visible=v&&renderMode!=='clouds'&&keyRoot==null;
-  ringLine.visible=v;ringGroup.forEach(s=>s.visible=v);keyLabels.forEach(s=>s.visible=v);keyArrows.forEach(o=>o.visible=v);}
+  ringLine.visible=v;ringGroup.forEach(s=>s.visible=v);keyLabels.forEach(s=>s.visible=v);keyArrows.forEach(o=>o.visible=v);
+  positionLabels();}
 function refreshWave(){if(!wfMode)return;buildWave3D();drawWave2D();}
 function renderWaveNotes(){document.getElementById('waveNotes').innerHTML=NOTE.map((nm,pc)=>'<button data-n="'+pc+'" class="'+(wfNotes.has(pc)?'on':'')+'">'+nm+'</button>').join('');}
 function openWave(seed){if(seed&&seed.length)wfNotes=new Set(seed);wfMode=true;setManifoldVisible(false);

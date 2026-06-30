@@ -33,17 +33,32 @@
    <span style="font-size:10px;color:var(--dim);flex:1">the 3D spiral behind is the same wave — orbit it; its shadow is the 2D curve</span>
    <span class="x" id="waveClose">✕</span></div>
 </div>
+<div id="cym">
+ <div class="lbl2">a chord's cymatic glyph — standing-wave modes weighted by its overtones</div>
+ <div class="cymwrap">
+   <canvas id="cymCanvas"></canvas>
+   <div class="cymctl">
+     <div class="lbl2">notes</div><div id="cymNotes" class="pills"></div>
+     <div class="ctrls" style="margin-top:8px;"><button id="cymSquareBtn" data-cs="square" class="on">square</button><button id="cymCircleBtn" data-cs="circular">circular</button></div>
+     <div class="ctrls" style="margin-top:6px;"><span style="font-size:10px;color:var(--dim)">harmonics</span><input id="cymH" type="range" min="1" max="8" value="4"><span id="cymHval" style="font-size:11px;">4</span><button id="cymAnimBtn" class="on">vibrate</button><button id="cymPlay">▶</button></div>
+   </div>
+ </div>
+ <div class="ctrls" style="margin-top:8px;"><span style="font-size:10px;color:var(--dim);flex:1">add/remove notes — watch the pattern reorganize by chord structure</span><span class="x" id="cymClose">✕</span></div>
+</div>
 <div id="panel">
  <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
  <div class="grp"><button id="composeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
+ <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
-   <select id="keySel"></select></div>
+   <select id="keySel"></select>
+   <div class="pills" style="margin-top:7px;"><button id="keyFocusBtn">focus: isolate this key</button></div></div>
  <div class="grp"><div class="lbl">layout</div><div class="pills" id="layoutPills">
    <button data-k="disc" class="on">Discovered</button><button data-k="expl">Explained</button><button data-k="axes">Musical axes</button></div>
    <div id="axisSel" style="display:none;margin-top:7px;"><select id="axX"></select><select id="axY"></select><select id="axZ"></select></div></div>
  <div class="grp"><div class="lbl">render</div><div class="pills" id="renderPills">
    <button data-k="stars" class="on">Stars</button><button data-k="clouds">Clouds of sound</button></div></div>
+ <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="namesBtn" class="on">chord names</button></div></div>
  <div class="grp"><div class="lbl">colour</div><div class="pills" id="colorPills">
    <button data-k="family" class="on">Family</button><button data-k="fifths">Circle of 5ths</button></div></div>
  <div class="grp"><div class="lbl">harmonic threads</div>
