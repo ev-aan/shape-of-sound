@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>The Shape of Music</title>
+<style>
+%%CSS%%
+</style></head><body>
+<canvas id="scene"></canvas>
+<div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
+<div id="sound">tap for sound</div>
+<div id="toast">No sound on iPhone? Flip the side <b>Silent</b> switch off, volume up, or open in <b>Safari</b>.</div>
+<div id="detail"></div>
+<div id="info"></div>
+<div id="scope"><div id="scopeTitle"></div><canvas id="scopeCanvas"></canvas>
+ <div class="scopebtns"><button data-s="a">▶ A</button><button data-s="b">▶ B</button><button data-s="both">▶ both</button><span class="x" id="scopeClose">✕</span></div></div>
+<div id="compose">
+ <div class="lbl2">tap stars on the map to add chords · tap a bar to edit it</div>
+ <div id="seqSlots"></div>
+ <div class="lbl2" style="margin-top:11px;">suggested next chords</div>
+ <div id="sugg"></div>
+ <div class="ctrls"><button id="seqPlay">▶ play</button><button id="seqStop">■</button>
+   <button id="seqLoop">loop</button><button id="seqDel">⌫ last</button><button id="seqClear">clear</button>
+   <span style="font-size:10px;color:var(--dim)">tempo</span><input id="seqTempo" type="range" min="0" max="100" value="45">
+   <span class="x" id="composeClose">✕</span></div>
+</div>
+<div id="wave">
+ <div class="lbl2">tap notes to add/remove · watch the wave change shape</div>
+ <div id="waveNotes"></div>
+ <canvas id="waveCanvas"></canvas>
+ <div class="ctrls"><span style="font-size:10px;color:var(--dim)">harmonics</span><input id="waveH" type="range" min="1" max="16" value="6">
+   <span id="waveHval" style="font-size:11px;">6</span><button id="wavePlay">▶</button>
+   <span style="font-size:10px;color:var(--dim);flex:1">the 3D spiral behind is the same wave — orbit it; its shadow is the 2D curve</span>
+   <span class="x" id="waveClose">✕</span></div>
+</div>
+<div id="panel">
+ <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
+ <div class="grp"><button id="composeBtn" class="infobtn">✎ compose — build a progression</button></div>
+ <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
+ <div class="grp"><div class="lbl">key (light up a key's chords)</div>
+   <select id="keySel"></select></div>
+ <div class="grp"><div class="lbl">layout</div><div class="pills" id="layoutPills">
+   <button data-k="disc" class="on">Discovered</button><button data-k="expl">Explained</button><button data-k="axes">Musical axes</button></div>
+   <div id="axisSel" style="display:none;margin-top:7px;"><select id="axX"></select><select id="axY"></select><select id="axZ"></select></div></div>
+ <div class="grp"><div class="lbl">render</div><div class="pills" id="renderPills">
+   <button data-k="stars" class="on">Stars</button><button data-k="clouds">Clouds of sound</button></div></div>
+ <div class="grp"><div class="lbl">colour</div><div class="pills" id="colorPills">
+   <button data-k="family" class="on">Family</button><button data-k="fifths">Circle of 5ths</button></div></div>
+ <div class="grp"><div class="lbl">harmonic threads</div>
+   <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
+ <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
+ <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
+</div>
+<div id="legend"></div>
+<script>%%THREEJS%%</script>
+<script>const DATA=%%DATA%%;const SILENT="%%SILENT%%";</script>
+<script>
+%%APP%%</script></body></html>
