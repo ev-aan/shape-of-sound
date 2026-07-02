@@ -19,7 +19,7 @@ function drawCym(){const cv=document.getElementById('cymCanvas');const dim=140;c
   for(let p=0;p<fld.length;p++){const node=Math.max(0,1-Math.abs(fld[p])/thr),b=Math.pow(node,1.4);
     d[p4++]=pl[0]+(sd[0]-pl[0])*b;d[p4++]=pl[1]+(sd[1]-pl[1])*b;d[p4++]=pl[2]+(sd[2]-pl[2])*b;d[p4++]=255;}
   ctx.putImageData(img,0,0);}
-function renderCymNotes(){document.getElementById('cymNotes').innerHTML=NOTE.map((nm,pc)=>'<button data-n="'+pc+'" class="'+(cymNotes.has(pc)?'on':'')+'">'+nm+'</button>').join('');}
+function renderCymNotes(){document.getElementById('cymNotes').innerHTML=NOTE.map((nm,pc)=>{const on=cymNotes.has(pc);const st='style="--pc:'+Palette.noteCss(pc,.72,.58)+'"';return '<button data-n="'+pc+'" '+st+' class="notebtn '+(on?'on':'')+'">'+nm+'</button>';}).join('');}
 function cymStop(){if(cymTimer){clearInterval(cymTimer);cymTimer=null;}}
 function cymStart(){cymStop();if(cymAnim)cymTimer=setInterval(()=>{cymT+=0.12;drawCym();},66);}
 function openCym(seed){if(seed&&seed.length)cymNotes=new Set(seed);if(typeof wfMode!=='undefined'&&wfMode)closeWave();

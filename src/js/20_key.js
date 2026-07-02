@@ -1,6 +1,13 @@
 // ---- KEY OVERLAY ----
 let keyRoot=null,keyLabels=[],keyArrows=[],keyFocus=false;
-function diaVisible(i){return keyRoot==null||!keyFocus||!!diatonic(N[i]);}
+function diaVisible(i){
+  const v=View.get();
+  if(v.mode==='musical'){
+    if(v.key==null) return true;
+    return chordInScale(N[i], v.scale, v.key);
+  }
+  return keyRoot==null||!keyFocus||!!diatonic(N[i]);
+}
 function clearKeyVisuals(){keyLabels.forEach(s=>scene.remove(s));keyLabels=[];
   keyArrows.forEach(o=>{scene.remove(o);if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});keyArrows=[];}
 function diatonic(n){const deg=(n.root-keyRoot+12)%12;if(DEG[deg]&&DEGQ[deg].indexOf(n.q)>=0)return{deg,num:DEG[deg].num,fn:DEG[deg].fn};return null;}

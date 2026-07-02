@@ -14,6 +14,20 @@ const C = global.__cache, fire = global.__fire, raf = () => global.__raf();
 const frames = n => { for (let i = 0; i < n && raf(); i++) raf()(); };
 const clk = (el, k) => fire(el, 'click', { target: { closest: () => ({ dataset: k, disabled: false }) } });
 try {
+  // Simple mode: default front door with no shared URL
+  if (C['simpleFront'].style.display === 'none') throw new Error('Simple front door should show by default (no hash)');
+  if (C['advancedApp'].style.display !== 'none') throw new Error('Advanced app should stay hidden until entered');
+  if (!__api.Surfaces || !__api.Surfaces.get('cof')) throw new Error('circle-of-fifths surface not registered');
+  if (!/cofNote/.test(C['simpleCof'].innerHTML)) throw new Error('circle-of-fifths surface did not render into simpleFront');
+  // enter Advanced from Simple (as a user clicking "open the full tool")
+  C['simpleAdvanced'].onclick();
+  if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
+  if (__api.View.get().mode !== 'science') throw new Error('entering Advanced should default to Science mode');
+  // the back button returns to Simple, then re-enter for the rest of this test
+  C['backToSimpleBtn'].onclick();
+  if (C['simpleFront'].style.display === 'none') throw new Error('back-to-Simple button should restore the front door');
+  C['simpleAdvanced'].onclick();
+
   fire(document, 'pointerdown', {}); global.__hit = true;
   clk(C['layoutPills'], { k: 'axes' }); frames(40);
   C['axX'].value = 'pitch'; C['axX'].onchange(); frames(40);
@@ -37,5 +51,40 @@ try {
   fire(C['cym'], 'click', { target: { closest: () => ({ dataset: { cs: 'circular' } }) } });
   C['cymH'].value = '6'; C['cymH'].oninput();
   C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
+  // pass-1 architecture: mode toggle + Musical mode + bridge
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  if (typeof __api === 'undefined' || __api.View.get().mode !== 'musical') throw new Error('mode toggle failed');
+  C['mKeySel'].value = '0'; C['mKeySel'].onchange(); frames(5);
+  C['mScaleSel'].value = 'dorian'; C['mScaleSel'].onchange(); frames(5);
+  fire(C['mColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'root' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  C['mScaleSel'].value = 'pentmaj'; C['mScaleSel'].onchange(); frames(5);
+  // bridge: from Musical back to Science should work with observer callback
+  fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
+  // palette sanity
+  const h = __api.Palette.noteHue(9); // A
+  if (Math.abs(h - 0.25) > 0.01) throw new Error('A should be hue 0.25 (green), got ' + h);
+  // scale sanity: Cmaj chord (root=0, ivs=[0,4,7]) should be in C major
+  const cmaj = { root: 0, ivs: [0,4,7] };
+  if (!__api.chordInScale(cmaj, 'major', 0)) throw new Error('Cmaj should be in C major');
+  if (__api.chordInScale({root:1, ivs:[0,4,7]}, 'major', 0)) throw new Error('C#maj should NOT be in C major');
+  if (__api.chordFn(cmaj, 'major', 0) !== 'T') throw new Error('Cmaj should be tonic in C major');
+  // tuning: swapping to JI should change played frequencies and node positions
+  const N0 = __api.N || (typeof N !== 'undefined' ? N : null);
+  fire(C['tuneToggle'], 'click', { target: { closest: () => ({ dataset: { tune: 'JI' } }) } });
+  frames(30);
+  if (__api.View.get().tuning !== 'JI') throw new Error('tuning did not switch to JI');
+  fire(C['tuneToggle'], 'click', { target: { closest: () => ({ dataset: { tune: 'ET' } }) } });
+  frames(30);
+  if (__api.View.get().tuning !== 'ET') throw new Error('tuning did not switch back to ET');
+  // deep link: serialize should reflect current state; restore from a hash should apply
+  const ser = __api.Link.serialize();
+  if (!/mode=/.test(ser)) throw new Error('serialize missing mode');
+  global.location.hash = '#mode=musical&dim=3d&tune=ET&key=9&scale=lydian';
+  __api.Link.applyFromHash(); frames(5);
+  if (__api.View.get().scale !== 'lydian' || __api.View.get().key !== 9) throw new Error('deep-link restore failed');
+  // tonnetz layout should compute without error and place chords
+  fire(C['mLayoutPills'], 'click', { target: { closest: () => ({ dataset: { k: 'tonnetz' }, classList:{add(){},remove(){},toggle(){}}, disabled:false }) } });
+  frames(30);
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }

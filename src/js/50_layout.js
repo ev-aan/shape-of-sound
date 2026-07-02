@@ -15,7 +15,7 @@ const FLABEL={pitch:'pitch height',bright:'brightness',cons:'consonance',fifths:
 let xf='fifths',yf='cons',zf='bright';
 function axesCaption(){return 'x: '+FLABEL[xf]+'  ·  y: '+FLABEL[yf]+'  ·  z: '+FLABEL[zf];}
 function computeAxes(){return N.map((n,i)=>new THREE.Vector3((F[xf][i]-.5)*220,(F[yf][i]-.5)*220,(F[zf][i]-.5)*220));}
-function curLayout(name){if(name==='expl')return posExpl;if(name==='axes')return computeAxes();return posDisc;}
+function curLayout(name){if(name==='expl')return posExpl;if(name==='axes')return computeAxes();if(name==='tonnetz')return computeTonnetz();return posDisc;}
 function updatePositions(){const e=ease(Math.min(mt,1));
   for(let i=0;i<N.length;i++){pos[i].copy(posFrom[i]).lerp(posTo[i],e);
     dots[i].position.copy(pos[i]);halos[i].position.copy(pos[i]);picks[i].position.copy(pos[i]);}

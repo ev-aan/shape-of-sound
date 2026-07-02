@@ -16,30 +16,52 @@ import harmonic_manifold as h
 TUNING = 'ET'
 TOP_K = 6          # keep each chord's K strongest links -> a clean skeleton
 
-chords, D, coords, var3, eig = h.build_everything(TUNING)
+def build_tuning(tuning):
+    chords, D, coords, var3, eig = h.build_everything(tuning)
+    W = np.clip(1.0 - D ** 2, 0.0, 1.0)
+    np.fill_diagonal(W, 0.0)
+    P = coords - coords.mean(0)
+    return chords, D, P, var3, eig, W
+
+# --- ET is the reference frame ---
+chords, D, P_et, var3, eig, W = build_tuning('ET')
 n = len(chords)
 names = [c['name'] for c in chords]
 
-# cosine overlap weight w in [0,1]: high = many coinciding overtones
-W = np.clip(1.0 - D ** 2, 0.0, 1.0)
-np.fill_diagonal(W, 0.0)
+# --- JI computed independently, then aligned onto ET so the morph is meaningful ---
+chords_ji, D_ji, P_ji_raw, var3_ji, eig_ji, W_ji = build_tuning('JI')
 
-# normalise positions to a tidy cube
-P = coords - coords.mean(0)
-P = P / np.abs(P).max() * 100.0
+# shared scale factor so both worlds are the same size
+_scale = np.abs(P_et).max()
+P_et = P_et / _scale * 100.0
+P_ji_raw = P_ji_raw / np.abs(P_ji_raw).max() * 100.0
 
-# consonance for sizing/glow: smoother (less rough) -> larger
-rough = np.array([c['roughness'] for c in chords])
-cons = 1.0 - (rough - rough.min()) / (rough.max() - rough.min())
+# Procrustes: find orthogonal R (rotation+reflection) that best maps JI onto ET.
+# Chords whose physics is tuning-invariant then stay put; the rest visibly shift.
+_M = P_ji_raw.T @ P_et
+_U, _s, _Vt = np.linalg.svd(_M)
+_R = _U @ _Vt
+P_ji = P_ji_raw @ _R
+
+# consonance per tuning
+def cons_of(chords):
+    rough = np.array([c['roughness'] for c in chords])
+    return 1.0 - (rough - rough.min()) / (rough.max() - rough.min())
+cons = cons_of(chords)
+cons_ji = cons_of(chords_ji)
+P = P_et  # keep the old variable name for the ET write-out below
 
 # edges: union of each node's top-K strongest links (dedupe i<j)
-edge_set = {}
-for i in range(n):
-    for j in np.argsort(W[i])[::-1][:TOP_K]:
-        a, b = sorted((i, int(j)))
-        if a != b:
-            edge_set[(a, b)] = float(W[a, b])
-edges = [{'i': a, 'j': b, 'w': round(w, 4)} for (a, b), w in edge_set.items()]
+def build_edges(Wm):
+    es = {}
+    for i in range(n):
+        for j in np.argsort(Wm[i])[::-1][:TOP_K]:
+            a, b = sorted((i, int(j)))
+            if a != b:
+                es[(a, b)] = float(Wm[a, b])
+    return [{'i': a, 'j': b, 'w': round(w, 4)} for (a, b), w in es.items()]
+edges = build_edges(W)
+edges_ji = build_edges(W_ji)
 
 def chord_features(c):
     f = np.array(c['freqs'])
@@ -65,8 +87,13 @@ for i, c in enumerate(chords):
         'x': round(float(P[i, 0]), 2),
         'y': round(float(P[i, 1]), 2),
         'z': round(float(P[i, 2]), 2),
+        'jx': round(float(P_ji[i, 0]), 2),
+        'jy': round(float(P_ji[i, 1]), 2),
+        'jz': round(float(P_ji[i, 2]), 2),
         'freqs': [round(float(f), 2) for f in c['freqs']],
+        'freqsJI': [round(float(f), 2) for f in chords_ji[i]['freqs']],
         'cons': round(float(cons[i]), 3),
+        'consJI': round(float(cons_ji[i]), 3),
         'root': root, 'cof': cof, 'q': q, 'n': nnotes, 'ivs': ivs,
         'pcs': sorted(set((root + iv) % 12 for iv in ivs)),
     })
@@ -86,10 +113,14 @@ prog_idx = {label: [idx(nm) for nm in seq] for label, seq in progressions.items(
 data = {
     'nodes': nodes,
     'edges': edges,
+    'edgesJI': edges_ji,
     'progressions': prog_idx,
     'W': [[round(float(x), 3) for x in row] for row in W],
+    'WJI': [[round(float(x), 3) for x in row] for row in W_ji],
     'axisVar': [round(float(v), 4) for v in (np.clip(eig, 0, None)[:3] / np.clip(eig, 0, None).sum())],
+    'axisVarJI': [round(float(v), 4) for v in (np.clip(eig_ji, 0, None)[:3] / np.clip(eig_ji, 0, None).sum())],
     'var3': round(float(var3), 3),
+    'var3JI': round(float(var3_ji), 3),
     'w_min': round(float(min(e['w'] for e in edges)), 4),
     'w_max': round(float(max(e['w'] for e in edges)), 4),
 }

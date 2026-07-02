@@ -30,7 +30,7 @@ function setManifoldVisible(v){for(let i=0;i<N.length;i++){const vis=v&&diaVisib
   ringLine.visible=v;ringGroup.forEach(s=>s.visible=v);keyLabels.forEach(s=>s.visible=v);keyArrows.forEach(o=>o.visible=v);
   positionLabels();}
 function refreshWave(){if(!wfMode)return;buildWave3D();drawWave2D();}
-function renderWaveNotes(){document.getElementById('waveNotes').innerHTML=NOTE.map((nm,pc)=>'<button data-n="'+pc+'" class="'+(wfNotes.has(pc)?'on':'')+'">'+nm+'</button>').join('');}
+function renderWaveNotes(){document.getElementById('waveNotes').innerHTML=NOTE.map((nm,pc)=>{const on=wfNotes.has(pc);const st='style="--pc:'+Palette.noteCss(pc,.72,.58)+'"';return '<button data-n="'+pc+'" '+st+' class="notebtn '+(on?'on':'')+'">'+nm+'</button>';}).join('');}
 function openWave(seed){if(seed&&seed.length)wfNotes=new Set(seed);wfMode=true;setManifoldVisible(false);
   document.getElementById('wave').classList.add('show');renderWaveNotes();refreshWave();}
 function closeWave(){wfMode=false;if(wfLine){scene.remove(wfLine);wfLine.geometry.dispose();wfLine.material.dispose();wfLine=null;}

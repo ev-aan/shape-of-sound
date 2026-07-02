@@ -106,3 +106,55 @@
  #cymNotes button{font:inherit;font-size:11px;color:var(--ink);background:#ffffff10;border:1px solid var(--line);border-radius:7px;padding:5px 8px;cursor:pointer;}
  #cymNotes button.on{background:#cdd9f5;color:#0b1026;}
  @media(max-width:560px){#cymCanvas{width:150px;height:150px;}}
+ #topbar{position:fixed;top:11px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;}
+ #topbar #modeToggle, #topbar #dimToggle, #topbar #tuneToggle{pointer-events:auto;display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;backdrop-filter:blur(8px);}
+ #topbar #dimToggle, #topbar #tuneToggle{transform:scale(.86);margin-top:-2px;}
+ #topbar #modeToggle button, #topbar #dimToggle button, #topbar #tuneToggle button{background:transparent;border:none;color:var(--ink);font:600 12px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 14px;border-radius:6px;cursor:pointer;letter-spacing:.02em;}
+ #topbar #dimToggle button, #topbar #tuneToggle button{padding:4px 11px;font-size:11px;}
+ #topbar #modeToggle button.on, #topbar #dimToggle button.on, #topbar #tuneToggle button.on{background:#cdd9f5;color:#0b1026;}
+ #topbar .rowwrap{display:flex;gap:6px;}
+ #topbarLabel{font-size:10.5px;color:var(--dim);letter-spacing:.03em;text-align:center;background:rgba(11,16,38,.45);padding:2px 9px;border-radius:6px;}
+ #panel{padding-top:56px;}
+ .notebtn{position:relative;padding-left:20px !important;}
+ .notebtn::before{content:'';position:absolute;left:6px;top:50%;width:9px;height:9px;border-radius:50%;background:var(--pc,#888);transform:translateY(-50%);box-shadow:0 0 6px var(--pc,transparent);}
+ .notebtn.on{outline:1.5px solid var(--pc,#cdd9f5);}
+ @media(max-width:640px){ #topbarLabel{display:none;} #title{padding-top:56px;} }
+ #scalesPanel{position:fixed;left:12px;right:12px;top:80px;bottom:70px;background:var(--panel);border:1px solid var(--line);
+   border-radius:12px;padding:12px 14px;backdrop-filter:blur(10px);transform:translateY(120%);transition:transform .28s;z-index:6;
+   max-width:920px;margin:0 auto;overflow:auto;}
+ #scalesPanel.show{transform:none;}
+ #scalesPanel .lbl2{margin-bottom:9px;font-size:11px;color:var(--dim);}
+ #scalesChart{display:flex;flex-direction:column;gap:4px;}
+ .sc-hdr,.sc-row{display:grid;grid-template-columns:130px repeat(12,1fr);gap:3px;align-items:center;}
+ .sc-hdr{margin-bottom:6px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+ .sc-name{font-size:11px;color:var(--ink);padding:6px 8px;}
+ .sc-col{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--dim);padding:2px 4px;}
+ .sc-dot{width:8px;height:8px;border-radius:50%;background:var(--pc,#666);box-shadow:0 0 5px var(--pc,transparent);flex:0 0 auto;}
+ .sc-cell{height:24px;border-radius:5px;background:#0d1330;font-size:10.5px;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+ .sc-cell.on{background:var(--pc,#22304a);color:#0b1026;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);}
+ .sc-row.active .sc-name{color:#cdd9f5;font-weight:700;}
+ .sc-row{cursor:pointer;border-radius:5px;transition:background .12s;}
+ .sc-row:hover{background:rgba(205,217,245,.06);}
+ .sc-row.active{background:rgba(205,217,245,.11);}
+ @media(max-width:640px){.sc-hdr,.sc-row{grid-template-columns:80px repeat(12,1fr);}.sc-name{font-size:10px;padding:5px 4px;}.sc-cell{font-size:9px;}}
+ #topbar .sharebtn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:600 10.5px ui-sans-serif,-apple-system,sans-serif;padding:5px 10px;border-radius:7px;cursor:pointer;backdrop-filter:blur(8px);letter-spacing:.02em;}
+ #topbar .sharebtn:hover{background:rgba(205,217,245,.14);}
+ #simpleFront{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;
+   background:radial-gradient(ellipse at 50% 20%,#131a3a,var(--field) 70%);}
+ .simpleWrap{max-width:420px;text-align:center;}
+ .simpleWrap h1{margin:0 0 12px;font-weight:600;font-size:28px;}
+ .simpleLede{margin:0 0 22px;font-size:13px;line-height:1.55;color:var(--dim);}
+ .cofSvg{width:min(78vw,300px);height:auto;display:block;margin:0 auto;}
+ .cofNote circle{stroke:#00000030;stroke-width:1;cursor:pointer;transition:transform .15s;transform-origin:center;transform-box:fill-box;}
+ .cofNote:hover circle,.cofNote.sel circle{transform:scale(1.12);}
+ .cofNote.near circle{stroke:#fff;stroke-width:2;}
+ .cofLabel{fill:#0b1026;font:700 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+ .cofCaption{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.5;min-height:2.6em;}
+ .simpleBtns{display:flex;flex-direction:column;gap:9px;margin-top:22px;}
+ .simpleBtnPrimary{font:600 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0b1026;background:#cdd9f5;
+   border:0;border-radius:10px;padding:12px 18px;cursor:pointer;}
+ .simpleBtnPrimary:hover{background:#e3ebff;}
+ .simpleBtnGhost{font:600 12px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:transparent;
+   border:1px solid var(--line);border-radius:10px;padding:10px 18px;cursor:pointer;}
+ .simpleBtnGhost:hover{background:#ffffff10;}
+ @media(max-width:480px){.simpleWrap h1{font-size:22px;}}

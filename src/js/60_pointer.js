@@ -2,7 +2,9 @@
 const ray=new THREE.Raycaster();let down=false,moved=0,sx=0,sy=0,dT=0,pinch=false,pinchD=0;
 canvas.addEventListener('pointerdown',e=>{down=true;moved=0;sx=e.clientX;sy=e.clientY;dT=performance.now();});
 canvas.addEventListener('pointermove',e=>{if(!down||pinch)return;const dx=e.clientX-sx,dy=e.clientY-sy;moved+=Math.abs(dx)+Math.abs(dy);
-  theta-=dx*0.005;phi=Math.max(0.15,Math.min(Math.PI-0.15,phi-dy*0.005));sx=e.clientX;sy=e.clientY;});
+  if(View.get().dim!=='2d'){theta-=dx*0.005;phi=Math.max(0.15,Math.min(Math.PI-0.15,phi-dy*0.005));}
+  else{tgt.x-=dx*0.6;tgt.z-=dy*0.6;}
+  sx=e.clientX;sy=e.clientY;});
 canvas.addEventListener('pointerup',e=>{down=false;if(moved<6&&performance.now()-dT<400)tap(e.clientX,e.clientY);});
 function tap(cx,cy){if(wfMode)return;const r=canvas.getBoundingClientRect();
   ray.setFromCamera({x:((cx-r.left)/r.width)*2-1,y:-((cy-r.top)/r.height)*2+1},camera);

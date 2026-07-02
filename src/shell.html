@@ -6,8 +6,34 @@
 <style>
 %%CSS%%
 </style></head><body>
+<div id="simpleFront">
+ <div class="simpleWrap">
+  <h1 class="serif">The Shape of Music</h1>
+  <p class="simpleLede">Every note has its own colour. Notes beside each other blend well — they share the most overtones. This is the circle of fifths, the map musicians have used for centuries.</p>
+  <div id="simpleCof"></div>
+  <div class="simpleBtns">
+   <button id="simpleExplore3d" class="simpleBtnPrimary">◉ See it in 3D</button>
+   <button id="simpleAdvanced" class="simpleBtnGhost">Open the full tool →</button>
+  </div>
+ </div>
+</div>
+<div id="advancedApp" style="display:none;">
 <canvas id="scene"></canvas>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
+<div id="topbar">
+ <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
+ <div id="modeToggle" class="pills">
+   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button>
+ </div>
+ <div id="dimToggle" class="pills">
+   <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>
+ </div>
+ <div id="tuneToggle" class="pills">
+   <button data-tune="ET" class="on">Equal</button><button data-tune="JI">Just</button>
+ </div>
+ <div id="topbarLabel">Science — physics from overtone overlap</div>
+ <button id="shareBtn" class="sharebtn">⤴ share view</button>
+</div>
 <div id="sound">tap for sound</div>
 <div id="toast">No sound on iPhone? Flip the side <b>Silent</b> switch off, volume up, or open in <b>Safari</b>.</div>
 <div id="detail"></div>
@@ -33,6 +59,11 @@
    <span style="font-size:10px;color:var(--dim);flex:1">the 3D spiral behind is the same wave — orbit it; its shadow is the 2D curve</span>
    <span class="x" id="waveClose">✕</span></div>
 </div>
+<div id="scalesPanel">
+ <div class="lbl2">scales reference — click a row to switch scale</div>
+ <div id="scalesChart"></div>
+ <div class="ctrls" style="margin-top:8px;"><span style="font-size:10px;color:var(--dim);flex:1">cells show every note that belongs to that scale in the current key, tinted with each note's palette colour</span><span class="x" id="scalesClose">✕</span></div>
+</div>
 <div id="cym">
  <div class="lbl2">a chord's cymatic glyph — standing-wave modes weighted by its overtones</div>
  <div class="cymwrap">
@@ -46,6 +77,7 @@
  <div class="ctrls" style="margin-top:8px;"><span style="font-size:10px;color:var(--dim);flex:1">add/remove notes — watch the pattern reorganize by chord structure</span><span class="x" id="cymClose">✕</span></div>
 </div>
 <div id="panel">
+ <div id="scienceControls">
  <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
  <div class="grp"><button id="composeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
@@ -65,8 +97,24 @@
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
  <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
+ </div>
+ <div id="musicalControls" style="display:none;">
+ <div class="grp"><div class="lbl">key</div><select id="mKeySel"></select></div>
+ <div class="grp"><div class="lbl">scale</div><select id="mScaleSel"></select></div>
+ <div class="grp"><div class="lbl">what you're seeing</div><div class="hint" id="mLegend">— pick a key + scale to filter the map to that scale's chords, coloured by function.</div></div>
+ <div class="grp"><div class="lbl">colour by</div><div class="pills" id="mColorPills">
+   <button data-k="function" class="on">Function (T/S/D)</button><button data-k="root">Root note</button></div></div>
+ <div class="grp"><div class="lbl">layout</div><div class="pills" id="mLayoutPills">
+   <button data-k="disc" class="on">Discovered (physics)</button><button data-k="expl">Explained (fifths cylinder)</button><button data-k="tonnetz">Tonnetz-style lattice</button></div></div>
+ <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
+ <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
+ <div class="grp"><button id="mComposeBtn" class="infobtn">✎ compose — build a progression</button></div>
+ <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
+ <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
+ </div>
 </div>
 <div id="legend"></div>
+</div>
 <script>%%THREEJS%%</script>
 <script>const DATA=%%DATA%%;const SILENT="%%SILENT%%";</script>
 <script>

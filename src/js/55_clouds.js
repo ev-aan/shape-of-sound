@@ -7,7 +7,7 @@ function buildCloud(){const H=10,col=[],siz=[],tmp=new THREE.Color();cloudLocal=
   N.forEach((n,i)=>{const f0=Math.min.apply(null,n.freqs);
     n.freqs.forEach(f=>{for(let k=1;k<=H;k++){const pf=k*f,amp=1/k,pitch=Math.log2(pf),seed=(i*131+k*17+Math.round(f))%360,rad=2.2+amp*2;
       cloudLocal.push({i,ox:Math.cos(seed)*rad,oy:(pitch-Math.log2(f0))*8-14,oz:Math.sin(seed)*rad});
-      siz.push(2+amp*16);const pc=((Math.round(12*Math.log2(pf/CREF))%12)+12)%12;tmp.setHSL(pc/12,.7,.6);col.push(tmp.r,tmp.g,tmp.b);}});});
+      siz.push(2+amp*16);const pc=((Math.round(12*Math.log2(pf/CREF))%12)+12)%12;Palette.applyToTHREE(tmp,pc,.7,.6);col.push(tmp.r,tmp.g,tmp.b);}});});
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(cloudLocal.length*3),3));
   g.setAttribute('vcolor',new THREE.Float32BufferAttribute(col,3));g.setAttribute('psize',new THREE.Float32BufferAttribute(siz,1));
   cloudPoints=new THREE.Points(g,cloudMat);cloudPoints.visible=false;scene.add(cloudPoints);}

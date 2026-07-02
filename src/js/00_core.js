@@ -5,7 +5,10 @@ const RATIO={0:'1:1',1:'16:15',2:'9:8',3:'6:5',4:'5:4',5:'4:3',6:'7:5',7:'3:2',8
 const DEG={0:{num:'I',fn:'T'},2:{num:'ii',fn:'S'},4:{num:'iii',fn:'T'},5:{num:'IV',fn:'S'},7:{num:'V',fn:'D'},9:{num:'vi',fn:'T'},11:{num:'vii°',fn:'D'}};
 const DEGQ={0:['maj','maj7','6','add9'],2:['min','min7'],4:['min','min7'],5:['maj','maj7','6','add9'],7:['maj','7'],9:['min','min7'],11:['dim','m7b5']};
 const FN={T:'#6ad29a',S:'#f2c14e',D:'#ef6f6f'},FNNAME={T:'tonic',S:'subdominant',D:'dominant'};
-const N=DATA.nodes,EDGES=DATA.edges,W=DATA.W,wmin=DATA.w_min,wmax=DATA.w_max;
+const N=DATA.nodes;let EDGES=DATA.edges,W=DATA.W;const wmin=DATA.w_min,wmax=DATA.w_max;
+// stash both tunings on each node so setTuning can swap the active fields in place
+N.forEach(n=>{n._et={x:n.x,y:n.y,z:n.z,freqs:n.freqs,cons:n.cons};
+  n._ji={x:n.jx,y:n.jy,z:n.jz,freqs:n.freqsJI||n.freqs,cons:n.consJI!=null?n.consJI:n.cons};});
 const pcsOf=n=>n.ivs.map(iv=>(n.root+iv)%12);
 document.getElementById('subtitle').textContent=
   N.length+' chords · placed by shared overtones · 3D holds '+Math.round(DATA.var3*100)+'%';
@@ -21,11 +24,18 @@ function setLegend(mode){leg.innerHTML='';
 const canvas=document.getElementById('scene');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x060812,0.0015);
-const camera=new THREE.PerspectiveCamera(55,1,1,6000);
+const camera3D=new THREE.PerspectiveCamera(55,1,1,6000);
+const camera2D=new THREE.OrthographicCamera(-100,100,100,-100,-3000,6000);
+let camera=camera3D;
 let theta=0.7,phi=1.12,radius=300;const tgt=new THREE.Vector3();
-function updateCamera(){camera.position.set(tgt.x+radius*Math.sin(phi)*Math.cos(theta),tgt.y+radius*Math.cos(phi),
-  tgt.z+radius*Math.sin(phi)*Math.sin(theta));camera.lookAt(tgt);}
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+function updateCamera(){
+  camera3D.position.set(tgt.x+radius*Math.sin(phi)*Math.cos(theta),tgt.y+radius*Math.cos(phi),
+    tgt.z+radius*Math.sin(phi)*Math.sin(theta));camera3D.lookAt(tgt);
+  camera2D.position.set(tgt.x,tgt.y+radius*2,tgt.z);camera2D.up.set(0,0,-1);camera2D.lookAt(tgt);
+}
+function resize(){renderer.setSize(innerWidth,innerHeight);const a=innerWidth/innerHeight;
+  camera3D.aspect=a;camera3D.updateProjectionMatrix();
+  const h=radius*0.9,w=h*a;camera2D.left=-w;camera2D.right=w;camera2D.top=h;camera2D.bottom=-h;camera2D.updateProjectionMatrix();
   if(document.getElementById('scope').classList.contains('show'))drawScope();
   if(document.getElementById('wave').classList.contains('show'))drawWave2D();}
 addEventListener('resize',resize);resize();
@@ -64,11 +74,11 @@ N.forEach((n,i)=>{const r=1.5+n.cons*2.4;
 function makeLabel(txt){const w=Math.max(64,txt.length*20+18);const c=document.createElement('canvas');c.width=w;c.height=38;
   const x=c.getContext('2d');x.font='600 24px ui-monospace,Menlo,monospace';x.fillStyle='#e8eefb';x.textAlign='center';x.textBaseline='middle';
   x.fillText(txt,w/2,20);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthWrite:false,depthTest:false}));
-  sp.scale.set(w/38*8.5,8.5,1);sp.userData.w=w;return sp;}
+  sp.scale.set(w/38*5.4,5.4,1);sp.userData.w=w;return sp;}
 const nodeLabels=[];let showNames=true;
 N.forEach((n,i)=>{const lab=makeLabel(n.name);scene.add(lab);nodeLabels.push(lab);});
 function positionLabels(){for(let i=0;i<nodeLabels.length;i++){const lab=nodeLabels[i],P=pos[i];
-  lab.position.set(P.x,P.y+dots[i].userData.r+5,P.z);
+  lab.position.set(P.x,P.y+dots[i].userData.r+3.4,P.z);
   const dia=(keyRoot==null)||!!diatonic(N[i]);
   lab.material.opacity=(showNames && !wfMode && dia && (keyRoot==null||!keyFocus||dia))?0.95:0;}}
 function baseColor(i){const n=N[i];return colorMode==='fifths'?null:FAM[n.family];}
