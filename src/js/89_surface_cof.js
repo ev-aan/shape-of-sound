@@ -16,7 +16,7 @@ Surfaces.register('cof', {
         '<text x="'+x+'" y="'+y+'" class="cofLabel">'+NOTE[pc]+'</text></g>';
     });
     svg += '</svg>';
-    container.innerHTML = svg + '<div class="cofCaption" id="cofCaption">Notes beside each other blend well — they share the most overtones. Tap one to see its closest neighbours.</div>';
+    container.innerHTML = svg + '<div class="cofCaption" id="cofCaption">Tap a note to see how it relates.</div>';
   },
   refresh(container){ this.render(container); }
 });

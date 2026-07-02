@@ -4,6 +4,7 @@ applyColors('family');setLegend('family');updatePositions();updateCloud();applyT
 setTimeout(()=>{const t=document.getElementById('toast');if(t){t.style.opacity=0;setTimeout(()=>t.remove&&t.remove(),500);}},6500);
 
 let appVisible=true; // paused while the Simple front door is showing — nothing to see, no need to render
+let sciPreview=null; // lazily-built mini 3D preview shown on the Simple front door's Science card
 const clock=new THREE.Clock();
 function frame(){const dt=Math.min(clock.getDelta(),0.05);
   if(appVisible){
@@ -16,6 +17,7 @@ function frame(){const dt=Math.min(clock.getDelta(),0.05);
     halos[i].scale.setScalar(halos[i].userData.base*(1+pulses[i]));}}
   if(hl){hlT-=dt;hl.material.opacity=Math.max(0,hlT/2.4)*0.9;if(hlT<=0){scene.remove(hl);hl.geometry.dispose();hl.material.dispose();hl=null;}}
   if(prog)advanceProg(dt);
-  updateCamera();renderer.render(scene,camera);}
+  updateCamera();renderer.render(scene,camera);
+  } else if(sciPreview){ sciPreview.frameOnce(dt); }
   requestAnimationFrame(frame);}
 frame();

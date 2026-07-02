@@ -20,14 +20,24 @@ try {
   if (!__api.Surfaces || !__api.Surfaces.get('cof')) throw new Error('circle-of-fifths surface not registered');
   if (!__api.Surfaces.get('keyboard')) throw new Error('keyboard surface not registered');
   if (!/cofNote/.test(C['simpleCof'].innerHTML)) throw new Error('circle-of-fifths surface did not render into simpleFront');
-  // enter Advanced from Simple (as a user clicking "open the full tool")
-  C['simpleAdvanced'].onclick();
-  if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
-  if (__api.View.get().mode !== 'science') throw new Error('entering Advanced should default to Science mode');
-  // the back button returns to Simple, then re-enter for the rest of this test
+  // tapping a circle-of-fifths note on the Musical card should explore locally, not navigate away
+  fire(C['simpleMusicalCard'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
+  if (C['advancedApp'].style.display === '') throw new Error('tapping a circle-of-fifths note should not leave the Simple front door');
+  // clicking elsewhere on the Musical card enters Musical mode
+  fire(C['simpleMusicalCard'], 'click', { target: { closest: () => null } });
+  if (C['advancedApp'].style.display === 'none') throw new Error('Musical card should open Advanced');
+  if (__api.View.get().mode !== 'musical') throw new Error('Musical card should enter Musical mode');
+  C['backToSimpleBtn'].onclick();
+  // the Science card enters Science mode and builds the mini 3D preview from the real scene
+  fire(C['simpleScienceCard'], 'click', {});
+  if (__api.View.get().mode !== 'science') throw new Error('Science card should enter Science mode');
+  if (__api.View.get().dim !== '3d') throw new Error('Science card should switch to 3D');
   C['backToSimpleBtn'].onclick();
   if (C['simpleFront'].style.display === 'none') throw new Error('back-to-Simple button should restore the front door');
+  // fallback "open the full tool" link, used to enter Advanced for the rest of this test
   C['simpleAdvanced'].onclick();
+  if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
+  if (__api.View.get().mode !== 'science') throw new Error('the fallback link should default to Science mode');
 
   fire(document, 'pointerdown', {}); global.__hit = true;
   clk(C['layoutPills'], { k: 'axes' }); frames(40);
