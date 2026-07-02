@@ -31,13 +31,11 @@ function renderSugg(){const prev=(active>0&&seq[active-1]!=null)?seq[active-1]:l
   const list=(prev==null)?seedList():suggestNext(prev);
   document.getElementById('sugg').innerHTML=list.map(o=>'<button class="chip" data-add="'+o.b+'">'+N[o.b].name+
     '<span class="tag">'+(o.tag||'')+'</span></button>').join('');}
-function addToSeq(i){if(!composeOpen)openCompose();seq[active]=i;active=Math.min(active+1,15);
+function addToSeq(i){if(View.get().mode!=='play')switchMode('play');seq[active]=i;active=Math.min(active+1,15);
   renderSeq();renderSugg();playFreqs(N[i].freqs);}
 const composeEl=document.getElementById('compose');
 function openCompose(){composeOpen=true;composeEl.classList.add('show');renderSeq();renderSugg();}
 function closeCompose(){composeOpen=false;composeEl.classList.remove('show');}
-document.getElementById('composeBtn').onclick=()=>{composeOpen?closeCompose():openCompose();};
-document.getElementById('composeClose').onclick=closeCompose;
 document.getElementById('seqSlots').addEventListener('click',e=>{const s=e.target.closest('[data-slot]');if(!s)return;
   active=+s.dataset.slot;renderSeq();renderSugg();});
 document.getElementById('sugg').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)addToSeq(+b.dataset.add);});

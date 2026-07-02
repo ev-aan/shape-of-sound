@@ -113,7 +113,7 @@
  #cymNotes button.on{background:#cdd9f5;color:#0b1026;}
  @media(max-width:560px){#cymCanvas{width:150px;height:150px;}}
  #topbar{position:fixed;top:11px;left:50%;transform:translateX(-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;}
- #topbar #modeToggle, #topbar #dimToggle, #topbar #tuneToggle{pointer-events:auto;display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;backdrop-filter:blur(8px);}
+ #topbar #modeToggle, #topbar #dimToggle, #topbar #tuneToggle{pointer-events:auto;display:inline-flex;flex-wrap:nowrap;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;backdrop-filter:blur(8px);}
  #topbar #dimToggle, #topbar #tuneToggle{transform:scale(.86);margin-top:-2px;}
  #topbar #modeToggle button, #topbar #dimToggle button, #topbar #tuneToggle button{background:transparent;border:none;color:var(--ink);font:600 12px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:6px 14px;border-radius:6px;cursor:pointer;letter-spacing:.02em;}
  #topbar #dimToggle button, #topbar #tuneToggle button{padding:4px 11px;font-size:11px;}
@@ -125,6 +125,7 @@
  .notebtn::before{content:'';position:absolute;left:6px;top:50%;width:9px;height:9px;border-radius:50%;background:var(--pc,#888);transform:translateY(-50%);box-shadow:0 0 6px var(--pc,transparent);}
  .notebtn.on{outline:1.5px solid var(--pc,#cdd9f5);}
  @media(max-width:640px){ #topbarLabel{display:none;} #title{padding-top:56px;} }
+ @media(max-width:480px){ #topbar #modeToggle button{padding:6px 9px;font-size:11px;} }
  #scalesPanel{position:fixed;left:12px;right:12px;top:80px;bottom:70px;background:var(--panel);border:1px solid var(--line);
    border-radius:12px;padding:12px 14px;backdrop-filter:blur(10px);transform:translateY(120%);transition:transform .28s;z-index:6;
    max-width:920px;margin:0 auto;overflow:auto;}
@@ -164,6 +165,11 @@
    border:1px solid var(--line);border-radius:10px;padding:10px 18px;cursor:pointer;}
  .simpleBtnGhost:hover{background:#ffffff10;}
  @media(max-width:480px){.simpleWrap h1{font-size:22px;}}
+ #playKeyboard{margin-top:6px;}
+ .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
+ .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
+ .pianoKey.held{stroke:#fff;stroke-width:2;}
+ .pianoLabel{fill:#0b1026cc;font:600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;pointer-events:none;}
 
 </style></head><body>
 <div id="simpleFront">
@@ -183,7 +189,7 @@
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
  <div id="modeToggle" class="pills">
-   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button>
+   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button>
  </div>
  <div id="dimToggle" class="pills">
    <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>
@@ -201,14 +207,21 @@
 <div id="scope"><div id="scopeTitle"></div><canvas id="scopeCanvas"></canvas>
  <div class="scopebtns"><button data-s="a">▶ A</button><button data-s="b">▶ B</button><button data-s="both">▶ both</button><span class="x" id="scopeClose">✕</span></div></div>
 <div id="compose">
- <div class="lbl2">tap stars on the map to add chords · tap a bar to edit it</div>
+ <div class="lbl2">Tap keys to build a chord, or tap a star on the map. Tap a bar below to edit your progression.</div>
+ <div id="playKeyboard"></div>
+ <div class="row" style="margin-top:9px;">
+   <div class="lbl2" id="playReadout" style="flex:1;margin:0;">Tap keys to build a chord.</div>
+   <button id="playAddBtn" class="infobtn" style="width:auto;" disabled>+ add to progression</button>
+   <button id="playClearKeys" class="infobtn" style="width:auto;">clear</button>
+ </div>
+ <div class="lbl2" style="margin-top:11px;">your progression</div>
  <div id="seqSlots"></div>
  <div class="lbl2" style="margin-top:11px;">suggested next chords</div>
  <div id="sugg"></div>
  <div class="ctrls"><button id="seqPlay">▶ play</button><button id="seqStop">■</button>
    <button id="seqLoop">loop</button><button id="seqDel">⌫ last</button><button id="seqClear">clear</button>
    <span style="font-size:10px;color:var(--dim)">tempo</span><input id="seqTempo" type="range" min="0" max="100" value="45">
-   <span class="x" id="composeClose">✕</span></div>
+ </div>
 </div>
 <div id="wave">
  <div class="lbl2">tap notes to add/remove · watch the wave change shape</div>
@@ -239,7 +252,6 @@
 <div id="panel">
  <div id="scienceControls">
  <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
- <div class="grp"><button id="composeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
  <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
@@ -268,9 +280,11 @@
    <button data-k="disc" class="on">Discovered (physics)</button><button data-k="expl">Explained (fifths cylinder)</button><button data-k="tonnetz">Tonnetz-style lattice</button></div></div>
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
  <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
- <div class="grp"><button id="mComposeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
  <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
+ </div>
+ <div id="playControls" style="display:none;">
+ <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
  </div>
 </div>
 <div id="legend"></div>
@@ -835,13 +849,11 @@ function renderSugg(){const prev=(active>0&&seq[active-1]!=null)?seq[active-1]:l
   const list=(prev==null)?seedList():suggestNext(prev);
   document.getElementById('sugg').innerHTML=list.map(o=>'<button class="chip" data-add="'+o.b+'">'+N[o.b].name+
     '<span class="tag">'+(o.tag||'')+'</span></button>').join('');}
-function addToSeq(i){if(!composeOpen)openCompose();seq[active]=i;active=Math.min(active+1,15);
+function addToSeq(i){if(View.get().mode!=='play')switchMode('play');seq[active]=i;active=Math.min(active+1,15);
   renderSeq();renderSugg();playFreqs(N[i].freqs);}
 const composeEl=document.getElementById('compose');
 function openCompose(){composeOpen=true;composeEl.classList.add('show');renderSeq();renderSugg();}
 function closeCompose(){composeOpen=false;composeEl.classList.remove('show');}
-document.getElementById('composeBtn').onclick=()=>{composeOpen?closeCompose():openCompose();};
-document.getElementById('composeClose').onclick=closeCompose;
 document.getElementById('seqSlots').addEventListener('click',e=>{const s=e.target.closest('[data-slot]');if(!s)return;
   active=+s.dataset.slot;renderSeq();renderSugg();});
 document.getElementById('sugg').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)addToSeq(+b.dataset.add);});
@@ -1107,6 +1119,42 @@ document.addEventListener('click', e => {
   if(cap) cap.textContent = NOTE[pc]+' blends best with '+NOTE[up]+' and '+NOTE[down]+' — a perfect fifth away in either direction.';
 });
 
+// ---- SURFACE: piano keyboard (SVG) ----
+// One octave, real key shapes, Palette-tinted. Tapping a key plays it and toggles it "held" —
+// Play mode reads the held set via opts.onChange to figure out what chord you're building.
+// Mirror this file's shape for the staff / fretboard surfaces later.
+Surfaces.register('keyboard', {
+  label: 'Keyboard',
+  render(container, opts){
+    opts = opts || {};
+    if(!container) return;
+    const held = new Set();
+    const whitePc = [0,2,4,5,7,9,11];
+    const blackPc = {0:1, 1:3, 3:6, 4:8, 5:10}; // white-key index -> the black key just after it
+    const w=42, H=150, bw=26, bh=94;
+    let svg = '<svg viewBox="0 0 '+(w*whitePc.length)+' '+H+'" class="keyboardSvg">';
+    whitePc.forEach((pc,i)=>{
+      svg += '<rect class="pianoKey white" data-pc="'+pc+'" x="'+(i*w)+'" y="0" width="'+(w-1)+'" height="'+H+'" rx="4" fill="'+Palette.noteCss(pc,.5,.92)+'"></rect>'+
+        '<text class="pianoLabel" x="'+(i*w+w/2)+'" y="'+(H-12)+'">'+NOTE[pc]+'</text>';
+    });
+    Object.keys(blackPc).forEach(k=>{
+      const i=+k, pc=blackPc[k], x=(i+1)*w-bw/2;
+      svg += '<rect class="pianoKey black" data-pc="'+pc+'" x="'+x+'" y="0" width="'+bw+'" height="'+bh+'" rx="3" fill="'+Palette.noteCss(pc,.55,.3)+'"></rect>';
+    });
+    svg += '</svg>';
+    container.innerHTML = svg;
+    container.addEventListener('click', e => {
+      const k = e.target.closest && e.target.closest('.pianoKey'); if(!k) return;
+      const pc = +k.dataset.pc;
+      if(held.has(pc)){ held.delete(pc); k.classList.remove('held'); }
+      else { held.add(pc); k.classList.add('held'); }
+      playFreqs([m2f(60+pc)], .5);
+      if(opts.onChange) opts.onChange(new Set(held));
+    });
+    return { clear(){ held.clear(); container.querySelectorAll('.pianoKey').forEach(k=>k.classList.remove('held')); } };
+  }
+});
+
 // init
 posFrom=posDisc.map(p=>p.clone());posTo=posDisc.map(p=>p.clone());mt=1;
 applyColors('family');setLegend('family');updatePositions();updateCloud();applyThr();axiscap.textContent=CAP_DISC;
@@ -1179,7 +1227,6 @@ function wireMusicalControls(){
     b.classList.add('on'); setLayout(b.dataset.k); });
   const nb = document.getElementById('mNamesBtn');
   nb.onclick = ()=>{ showNames = !showNames; nb.classList.toggle('on', showNames); positionLabels(); };
-  const cb = document.getElementById('mComposeBtn'); if(cb) cb.onclick = ()=>openCompose();
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
@@ -1228,15 +1275,64 @@ function applyMusicalColors(){
   });
 }
 
+// ---- MODE: PLAY (keyboard + sequencer, one workspace for building a progression) ----
+let playKeyboard = null;
+
+Modes.register('play', {
+  label: 'Play',
+  panelId: 'playControls',
+  onEnter(){
+    document.getElementById('scienceControls').style.display = 'none';
+    document.getElementById('musicalControls').style.display = 'none';
+    document.getElementById('playControls').style.display = '';
+    document.getElementById('topbarLabel').textContent = 'Play — build chords on the keyboard, or tap stars on the map';
+    applyColors(colorMode);
+    setRender(renderMode);
+    positionLabels();
+    if(!playKeyboard) playKeyboard = Surfaces.get('keyboard').render(document.getElementById('playKeyboard'), { onChange: onPlayNotesChange });
+    openCompose();
+  },
+  onExit(){ closeCompose(); }
+});
+
+function matchChord(pcs){
+  const want = [...pcs].sort((a,b)=>a-b).join(',');
+  for(let i=0;i<N.length;i++){ if(N[i].pcs.slice().sort((a,b)=>a-b).join(',')===want) return i; }
+  return null;
+}
+function onPlayNotesChange(pcs){
+  const readout = document.getElementById('playReadout'), addBtn = document.getElementById('playAddBtn');
+  if(!pcs.size){ readout.textContent = 'Tap keys to build a chord.'; addBtn.disabled = true; addBtn.dataset.match = ''; return; }
+  const names = [...pcs].sort((a,b)=>a-b).map(pc=>NOTE[pc]).join(' + ');
+  const match = matchChord(pcs);
+  if(match != null){ readout.textContent = names+' — that\'s '+N[match].name+'.'; addBtn.disabled = false; addBtn.dataset.match = match; }
+  else { readout.textContent = names+' — keep going, that\'s not a chord we know yet.'; addBtn.disabled = true; addBtn.dataset.match = ''; }
+}
+function wirePlayControls(){
+  document.getElementById('playAddBtn').onclick = () => {
+    const m = document.getElementById('playAddBtn').dataset.match;
+    if(m !== '') addToSeq(+m);
+  };
+  document.getElementById('playClearKeys').onclick = () => {
+    if(playKeyboard) playKeyboard.clear();
+    onPlayNotesChange(new Set());
+  };
+}
+
 // ---- TOP BAR + Why <-> How BRIDGE ----
 // One primary control (mode). Bridge button in the detail card that swaps mode while keeping the selection.
+// switchMode keeps the topbar pills and the Modes registry in sync — the one place that does both,
+// used by the topbar click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
+function switchMode(id){
+  const bar = document.getElementById('modeToggle');
+  if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
+  Modes.enter(id);
+}
 function wireTopbar(){
   const bar = document.getElementById('modeToggle');
   bar.addEventListener('click', e=>{
     const b = e.target.closest('button[data-mode]'); if(!b) return;
-    [...bar.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    Modes.enter(b.dataset.mode);
+    switchMode(b.dataset.mode);
   });
 }
 
@@ -1263,10 +1359,7 @@ function installBridgeButton(){
     const t = e.target.closest('[data-act="bridge"]'); if(!t) return;
     const v = View.get();
     const target = v.mode === 'science' ? 'musical' : 'science';
-    // reflect the toggle in the bar
-    const bar = document.getElementById('modeToggle');
-    if(bar){ [...bar.querySelectorAll('button')].forEach(x=>x.classList.toggle('on', x.dataset.mode===target)); }
-    Modes.enter(target);
+    switchMode(target);
     // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
     if(target === 'musical'){
       const idx = detailIdx;
@@ -1316,11 +1409,7 @@ const Link = (function(){
       const key = p.get('key'); const scale = p.get('scale'); const sel = p.get('sel');
       if(tune && (tune==='ET'||tune==='JI') && typeof setTuning==='function') setTuning(tune);
       if(dim && (dim==='2d'||dim==='3d') && typeof setDim==='function') setDim(dim);
-      if(mode && Modes.get(mode)){
-        const bar = document.getElementById('modeToggle');
-        if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
-        Modes.enter(mode);
-      }
+      if(mode && Modes.get(mode)) switchMode(mode);
       if(mode==='musical'){
         if(scale && SCALES[scale]){ const ss=document.getElementById('mScaleSel'); if(ss) ss.value=scale; View.set({scale}); }
         if(key!=null && key!==''){ const ks=document.getElementById('mKeySel'); if(ks) ks.value=key; View.set({key:+key}); }
@@ -1368,6 +1457,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalControls();
+wirePlayControls();
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view

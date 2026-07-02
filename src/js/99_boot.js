@@ -3,6 +3,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalControls();
+wirePlayControls();
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view

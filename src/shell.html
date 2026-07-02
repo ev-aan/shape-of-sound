@@ -23,7 +23,7 @@
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
  <div id="modeToggle" class="pills">
-   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button>
+   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button>
  </div>
  <div id="dimToggle" class="pills">
    <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>
@@ -41,14 +41,21 @@
 <div id="scope"><div id="scopeTitle"></div><canvas id="scopeCanvas"></canvas>
  <div class="scopebtns"><button data-s="a">▶ A</button><button data-s="b">▶ B</button><button data-s="both">▶ both</button><span class="x" id="scopeClose">✕</span></div></div>
 <div id="compose">
- <div class="lbl2">tap stars on the map to add chords · tap a bar to edit it</div>
+ <div class="lbl2">Tap keys to build a chord, or tap a star on the map. Tap a bar below to edit your progression.</div>
+ <div id="playKeyboard"></div>
+ <div class="row" style="margin-top:9px;">
+   <div class="lbl2" id="playReadout" style="flex:1;margin:0;">Tap keys to build a chord.</div>
+   <button id="playAddBtn" class="infobtn" style="width:auto;" disabled>+ add to progression</button>
+   <button id="playClearKeys" class="infobtn" style="width:auto;">clear</button>
+ </div>
+ <div class="lbl2" style="margin-top:11px;">your progression</div>
  <div id="seqSlots"></div>
  <div class="lbl2" style="margin-top:11px;">suggested next chords</div>
  <div id="sugg"></div>
  <div class="ctrls"><button id="seqPlay">▶ play</button><button id="seqStop">■</button>
    <button id="seqLoop">loop</button><button id="seqDel">⌫ last</button><button id="seqClear">clear</button>
    <span style="font-size:10px;color:var(--dim)">tempo</span><input id="seqTempo" type="range" min="0" max="100" value="45">
-   <span class="x" id="composeClose">✕</span></div>
+ </div>
 </div>
 <div id="wave">
  <div class="lbl2">tap notes to add/remove · watch the wave change shape</div>
@@ -79,7 +86,6 @@
 <div id="panel">
  <div id="scienceControls">
  <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
- <div class="grp"><button id="composeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
  <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
@@ -108,9 +114,11 @@
    <button data-k="disc" class="on">Discovered (physics)</button><button data-k="expl">Explained (fifths cylinder)</button><button data-k="tonnetz">Tonnetz-style lattice</button></div></div>
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
  <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
- <div class="grp"><button id="mComposeBtn" class="infobtn">✎ compose — build a progression</button></div>
  <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
  <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
+ </div>
+ <div id="playControls" style="display:none;">
+ <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
  </div>
 </div>
 <div id="legend"></div>

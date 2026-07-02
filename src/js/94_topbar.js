@@ -1,12 +1,17 @@
 // ---- TOP BAR + Why <-> How BRIDGE ----
 // One primary control (mode). Bridge button in the detail card that swaps mode while keeping the selection.
+// switchMode keeps the topbar pills and the Modes registry in sync — the one place that does both,
+// used by the topbar click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
+function switchMode(id){
+  const bar = document.getElementById('modeToggle');
+  if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
+  Modes.enter(id);
+}
 function wireTopbar(){
   const bar = document.getElementById('modeToggle');
   bar.addEventListener('click', e=>{
     const b = e.target.closest('button[data-mode]'); if(!b) return;
-    [...bar.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    Modes.enter(b.dataset.mode);
+    switchMode(b.dataset.mode);
   });
 }
 
@@ -33,10 +38,7 @@ function installBridgeButton(){
     const t = e.target.closest('[data-act="bridge"]'); if(!t) return;
     const v = View.get();
     const target = v.mode === 'science' ? 'musical' : 'science';
-    // reflect the toggle in the bar
-    const bar = document.getElementById('modeToggle');
-    if(bar){ [...bar.querySelectorAll('button')].forEach(x=>x.classList.toggle('on', x.dataset.mode===target)); }
-    Modes.enter(target);
+    switchMode(target);
     // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
     if(target === 'musical'){
       const idx = detailIdx;

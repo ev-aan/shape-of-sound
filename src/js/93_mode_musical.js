@@ -32,7 +32,6 @@ function wireMusicalControls(){
     b.classList.add('on'); setLayout(b.dataset.k); });
   const nb = document.getElementById('mNamesBtn');
   nb.onclick = ()=>{ showNames = !showNames; nb.classList.toggle('on', showNames); positionLabels(); };
-  const cb = document.getElementById('mComposeBtn'); if(cb) cb.onclick = ()=>openCompose();
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(

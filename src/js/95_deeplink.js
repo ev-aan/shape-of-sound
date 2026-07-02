@@ -27,11 +27,7 @@ const Link = (function(){
       const key = p.get('key'); const scale = p.get('scale'); const sel = p.get('sel');
       if(tune && (tune==='ET'||tune==='JI') && typeof setTuning==='function') setTuning(tune);
       if(dim && (dim==='2d'||dim==='3d') && typeof setDim==='function') setDim(dim);
-      if(mode && Modes.get(mode)){
-        const bar = document.getElementById('modeToggle');
-        if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
-        Modes.enter(mode);
-      }
+      if(mode && Modes.get(mode)) switchMode(mode);
       if(mode==='musical'){
         if(scale && SCALES[scale]){ const ss=document.getElementById('mScaleSel'); if(ss) ss.value=scale; View.set({scale}); }
         if(key!=null && key!==''){ const ks=document.getElementById('mKeySel'); if(ks) ks.value=key; View.set({key:+key}); }

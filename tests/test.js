@@ -18,6 +18,7 @@ try {
   if (C['simpleFront'].style.display === 'none') throw new Error('Simple front door should show by default (no hash)');
   if (C['advancedApp'].style.display !== 'none') throw new Error('Advanced app should stay hidden until entered');
   if (!__api.Surfaces || !__api.Surfaces.get('cof')) throw new Error('circle-of-fifths surface not registered');
+  if (!__api.Surfaces.get('keyboard')) throw new Error('keyboard surface not registered');
   if (!/cofNote/.test(C['simpleCof'].innerHTML)) throw new Error('circle-of-fifths surface did not render into simpleFront');
   // enter Advanced from Simple (as a user clicking "open the full tool")
   C['simpleAdvanced'].onclick();
@@ -39,7 +40,18 @@ try {
   fire(C['waveNotes'], 'click', { target: { closest: () => ({ dataset: { n: '10' } }) } });
   C['waveH'].value = '12'; C['waveH'].oninput(); C['wavePlay'].onclick(); C['waveClose'].onclick();
   C['keySel'].value = '0'; fire(C['keySel'], 'change', {}); frames(5);
-  C['composeBtn'].onclick();
+  // Play tab: keyboard + sequencer live together; the old per-panel compose buttons are gone
+  if (C['composeBtn']) throw new Error('composeBtn should have been removed from the Science panel');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'play' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  if (__api.View.get().mode !== 'play') throw new Error('Play tab did not activate');
+  if (!C['compose'].classList.contains('show')) throw new Error('entering Play should open the sequencer drawer');
+  const pressKey = pc => fire(C['playKeyboard'], 'click', { target: { closest: () => ({ dataset: { pc: String(pc) }, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } } }) } });
+  pressKey(0); pressKey(4); pressKey(7); // C E G
+  if (C['playAddBtn'].disabled) throw new Error('C+E+G should be recognised as a chord ready to add');
+  if (!/Cmaj/.test(C['playReadout'].textContent)) throw new Error('C+E+G should be named Cmaj on the keyboard readout');
+  C['playAddBtn'].onclick();
+  if (!/Cmaj/.test(C['seqSlots'].innerHTML)) throw new Error('adding a recognised chord should land in the sequence');
   fire(C['scene'], 'pointerdown', { clientX: 100, clientY: 100 });
   fire(C['scene'], 'pointerup', { clientX: 100, clientY: 100 });
   C['seqPlay'].onclick(); frames(120);
