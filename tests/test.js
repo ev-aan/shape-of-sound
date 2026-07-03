@@ -126,6 +126,23 @@ try {
   fire(C['musSuggest'], 'click', { target: { closest: () => ({ dataset: { idx: suggIdx }, classList: { add(){}, remove(){} } }) } });
   if (!C['musChordLabel'].textContent.startsWith(suggName)) throw new Error('selecting a suggestion should make it the active chord');
   if (!C['musSuggest'].innerHTML.includes(suggName)) throw new Error('suggestions should now be relative to the newly-selected chord');
+  // staff engine: a lone treble-only measure should draw a single staff, not a grand staff it doesn't need
+  const soloContainer = document.createElement('div');
+  __api.Surfaces.get('staff').render(soloContainer, [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:'q' }, { rest:true, dur:'q' }, { midi:64, dur:'h' }] } }]);
+  if (!/staffClef">treble/.test(soloContainer.innerHTML)) throw new Error('solo staff should render a treble clef');
+  if (/staffClef">bass/.test(soloContainer.innerHTML)) throw new Error('a treble-only measure should not draw a grand staff');
+  if (!/staffRest/.test(soloContainer.innerHTML)) throw new Error('a rest should render in a solo measure');
+  // the standalone example measure (wired at boot, alongside the Bach piece) exercises the engine's
+  // range end to end: mixed durations, a rest, a chord event, and a full grand staff
+  if (!/staffRest/.test(C['musExampleStaff'].innerHTML)) throw new Error('example measure did not render its rest');
+  const exampleNoteCount = (C['musExampleStaff'].innerHTML.match(/class="staffNote"/g) || []).length;
+  if (exampleNoteCount !== 8) throw new Error('example measure should render 8 noteheads (3 treble notes + 3-note chord + 2 bass notes), got ' + exampleNoteCount);
+  // colour toggle: black & white by default, one click recolours every staff surface on the page
+  if (document.body.classList.contains('staffColor')) throw new Error('colour mode should default off');
+  fire(C['staffColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'color' } }) } });
+  if (!document.body.classList.contains('staffColor')) throw new Error('toggling the colour pill should switch to colour mode');
+  fire(C['staffColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'bw' } }) } });
+  if (document.body.classList.contains('staffColor')) throw new Error('toggling back should restore black & white');
   // Bach prelude: starting playback resets to C major, builds the staff, and plays/highlights the first note
   C['musBachPlay'].onclick();
   if (__api.View.get().key !== 0 || __api.View.get().scale !== 'major') throw new Error('starting the Bach demo should reset to C major');

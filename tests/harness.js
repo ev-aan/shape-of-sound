@@ -33,7 +33,7 @@ function el(){return{children:[],style:{},__h:{},dataset:{},innerHTML:'',value:'
    fillText(){},fillRect(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},setTransform(){},scale(){},setLineDash(){},createRadialGradient(){return{addColorStop(){}};},createImageData(w,h){return{data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};},
  width:64,height:64,play(){return{catch(){}};},src:'',loop:false};}
 const cache={};
-global.document={getElementById:id=>cache[id]||(cache[id]=el()),createElement:()=>el(),createElementNS:()=>el(),querySelectorAll:()=>[],querySelector:()=>el(),__h:{},addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);}};
+global.document={getElementById:id=>cache[id]||(cache[id]=el()),createElement:()=>el(),createElementNS:()=>el(),querySelectorAll:()=>[],querySelector:()=>el(),body:el(),__h:{},addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);}};
 global.window={};global.devicePixelRatio=2;global.innerWidth=800;global.innerHeight=600;global.addEventListener=()=>{};global.performance={now:()=>0};
 let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};let timerSeq=1;global.setTimeout=()=>timerSeq++;global.setInterval=()=>0;global.clearInterval=()=>{};global.MutationObserver=class{constructor(cb){this.cb=cb;}observe(){}disconnect(){}};
 global.location={hash:'',origin:'https://x',pathname:'/'};global.history={replaceState(){}};global.navigator={clipboard:{writeText(){}}};

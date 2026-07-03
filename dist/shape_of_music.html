@@ -207,6 +207,8 @@
  .musBachBtn{font:600 12.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0b1026;
    background:#cdd9f5;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;}
  .musBachBtn:hover{background:#e3ebff;}
+ .musStaffSection{margin-top:20px;}
+ .musStaffLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
  .musStaff{margin-top:14px;overflow-x:auto;}
  .staffSvg{display:block;margin:0 auto;height:130px;min-width:100%;}
  .staffLine{stroke:#8a97bf88;stroke-width:1;}
@@ -216,7 +218,11 @@
  .staffAcc{fill:var(--ink);font-size:11px;}
  .staffLedger{stroke:#8a97bfaa;stroke-width:1;}
  .staffChordName{fill:var(--dim);font:600 8.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;}
- .staffNote{stroke:#00000040;stroke-width:.6;}
+ /* default: standard black & white notation. .staffColor (toggled on <body>) is the one switch
+    that recolours every staff surface on the page at once, in sync with the Palette-driven
+    colour-coding used elsewhere (circle of fifths, keyboard) — instant, no re-render. */
+ .staffNote{fill:var(--ink);stroke:#00000040;stroke-width:.6;}
+ body.staffColor .staffNote{fill:var(--pc);}
  .staffNote.on{stroke:#fff;stroke-width:1.6;}
  @media(max-width:560px){.staffSvg{height:110px;}}
  #playKeyboard{margin-top:6px;}
@@ -260,6 +266,12 @@
    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
+  <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
+    <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
+   <div id="musExampleStaff" class="musStaff"></div>
+  </div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
    <div class="musChordRow">
@@ -1266,11 +1278,30 @@ Surfaces.register('keyboard', {
   }
 });
 
-// ---- SURFACE: simplified staff notation ----
-// Not full engraving (no beam/stem rules, no spacing algorithm) — just noteheads placed correctly
-// on a grand staff, enough to follow a short passage alongside audio playback. One bar = one bass
-// note (held) plus up to 8 treble notes (sixteenths), matching how 97_bach_prelude.js is shaped.
+// ---- SURFACE: staff notation (measure/score engine) ----
+// Not full engraving (no beam/stem rules, no key signatures, no tuplets) — but genuinely
+// general: any mix of note durations and rests, one measure or many, one voice (a single
+// staff) or two (a grand staff), reusable by any future teaching content, not just one piece.
+//
+// A "measure" is: { timeSig:[4,4] (optional), label:'Cmaj' (optional), voices:{ treble:[...],
+// bass:[...] } }. A voice is a list of events in time order: { midi, dur } for a note (midi
+// may be an array for a chord), or { rest:true, dur }. dur is one of w/h/q/e/s, optionally
+// dotted ('q.'). Which staff(s) get drawn is decided once for the whole render() call, from
+// whichever voices actually appear across the measures — a single treble-only measure draws
+// one staff, not a grand staff it doesn't need.
+//
+// Colour is a pure CSS toggle, not a render option: every notehead always carries its pitch
+// class as a --pc custom property: consumers add/remove a class on the container to switch
+// between the default (var(--ink), standard black & white) and var(--pc) (colour mode) —
+// instant, no re-render, even at full-score width.
 const LETTER_STEP = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+const DUR_BEATS = { w:4, h:2, q:1, e:.5, s:.25 };
+function durBeats(dur){
+  const dotted = dur[dur.length-1]==='.';
+  const base = DUR_BEATS[dotted ? dur.slice(0,-1) : dur] || 1;
+  return dotted ? base*1.5 : base;
+}
+function measureBeats(timeSig){ const ts = timeSig || [4,4]; return ts[0] * (4/ts[1]); }
 function midiToDiatonic(midi){
   const pc = ((midi%12)+12)%12, octave = Math.floor(midi/12)-1;
   const name = NOTE[pc], letter = name[0], acc = name.length>1 ? '#' : '';
@@ -1278,61 +1309,67 @@ function midiToDiatonic(midi){
 }
 Surfaces.register('staff', {
   label: 'Staff',
-  render(container, bars){
+  render(container, measures){
     if(!container) return null;
     const lg = 8, barW = 80, startX = 56;
-    const trebleTop = 20, trebleMidY = trebleTop + 2*lg, trebleMidD = 34; // B4
-    const bassTop = 90, bassMidY = bassTop + 2*lg, bassMidD = 22; // D3
-    const staffW = startX + Math.max(1, bars.length)*barW + 20, staffH = 150;
-    function yFor(midi, clef){
-      const { diatonic } = midiToDiatonic(midi);
-      const midY = clef==='treble' ? trebleMidY : bassMidY, midD = clef==='treble' ? trebleMidD : bassMidD;
-      return midY - (diatonic - midD) * (lg/2);
-    }
+    const hasTreble = measures.some(m => m.voices && m.voices.treble && m.voices.treble.length);
+    const hasBass = measures.some(m => m.voices && m.voices.bass && m.voices.bass.length);
+    const clefs = []; if(hasTreble || !hasBass) clefs.push('treble'); if(hasBass) clefs.push('bass');
+    const geom = {}; let gy = 20;
+    clefs.forEach(clef => { geom[clef] = { top:gy, midY:gy+2*lg, midD:clef==='treble'?34:22 }; gy += 70; });
+    const bottomY = gy-70+4*lg, staffH = bottomY+25;
+    const staffW = startX + Math.max(1, measures.length)*barW + 20;
+    function yFor(midi, clef){ const { diatonic } = midiToDiatonic(midi), g = geom[clef]; return g.midY - (diatonic-g.midD)*(lg/2); }
     function ledgers(midi, clef, x){
-      const { diatonic } = midiToDiatonic(midi);
-      const midY = clef==='treble' ? trebleMidY : bassMidY, midD = clef==='treble' ? trebleMidD : bassMidD;
-      const above = Math.floor((diatonic - (midD+4))/2), below = Math.floor(((midD-4) - diatonic)/2);
+      const { diatonic } = midiToDiatonic(midi), g = geom[clef];
+      const above = Math.floor((diatonic-(g.midD+4))/2), below = Math.floor(((g.midD-4)-diatonic)/2);
       let svg = '';
-      for(let k=1;k<=above;k++){ const d=midD+4+2*k, y=midY-(d-midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
-      for(let k=1;k<=below;k++){ const d=midD-4-2*k, y=midY-(d-midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
+      for(let k=1;k<=above;k++){ const d=g.midD+4+2*k, y=g.midY-(d-g.midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
+      for(let k=1;k<=below;k++){ const d=g.midD-4-2*k, y=g.midY-(d-g.midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
       return svg;
     }
-    function notehead(midi, clef, x, bi, ni){
+    function notehead(midi, clef, x, mi, vi, ei){
       const y = yFor(midi, clef), acc = midiToDiatonic(midi).acc;
       const pc = ((midi%12)+12)%12, col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
       return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">♯</text>' : '') +
-        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" fill="'+col+'" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
+        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" style="--pc:'+col+'" class="staffNote" data-bar="'+mi+'" data-voice="'+vi+'" data-event="'+ei+'"></ellipse>';
     }
+    function restGlyph(x, clef){ const y = geom[clef].midY; return '<rect x="'+(x-5)+'" y="'+(y-1.5)+'" width="10" height="3" rx="1" class="staffRest"></rect>'; }
     let svg = '<svg viewBox="0 0 '+staffW+' '+staffH+'" class="staffSvg">';
-    for(let i=0;i<5;i++){
-      svg += '<line x1="'+startX+'" x2="'+(staffW-10)+'" y1="'+(trebleTop+i*lg)+'" y2="'+(trebleTop+i*lg)+'" class="staffLine"></line>';
-      svg += '<line x1="'+startX+'" x2="'+(staffW-10)+'" y1="'+(bassTop+i*lg)+'" y2="'+(bassTop+i*lg)+'" class="staffLine"></line>';
-    }
-    // the SMuFL/Unicode clef glyphs (U+1D11E, U+1D122) aren't reliably covered by common system
-    // fonts (measured ~11px wide for a 34px font here, vs ~29px for a plain letter) — plain labels
-    // render everywhere, which matters more than authenticity for a simplified staff view.
-    svg += '<text x="'+(startX-6)+'" y="'+(trebleMidY+4)+'" class="staffClef">treble</text>';
-    svg += '<text x="'+(startX-6)+'" y="'+(bassMidY+4)+'" class="staffClef">bass</text>';
-    bars.forEach((bar, bi) => {
-      const barX = startX + bi*barW;
-      svg += '<line x1="'+barX+'" x2="'+barX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline"></line>';
-      if(bar.idx != null) svg += '<text x="'+(barX+barW/2)+'" y="12" class="staffChordName" data-bar="'+bi+'">'+N[bar.idx].name+'</text>';
-      if(bar.bass != null) svg += notehead(bar.bass, 'bass', barX + barW*0.42, bi, -1);
-      (bar.notes||[]).forEach((midi, ni) => {
-        const nx = barX + 14 + ni*(barW-20)/Math.max(1, bar.notes.length-1 || 1);
-        svg += notehead(midi, 'treble', nx, bi, ni);
+    clefs.forEach(clef => {
+      for(let i=0;i<5;i++) svg += '<line x1="'+startX+'" x2="'+(staffW-10)+'" y1="'+(geom[clef].top+i*lg)+'" y2="'+(geom[clef].top+i*lg)+'" class="staffLine"></line>';
+      // the SMuFL/Unicode clef glyphs (U+1D11E, U+1D122) aren't reliably covered by common
+      // system fonts (measured ~11px wide for a 34px font here, vs ~29px for a plain letter)
+      // — plain labels render everywhere, which matters more than authenticity here.
+      svg += '<text x="'+(startX-6)+'" y="'+(geom[clef].midY+4)+'" class="staffClef">'+clef+'</text>';
+    });
+    measures.forEach((m, mi) => {
+      const barX = startX + mi*barW, innerLeft = barX+14, innerW = barW-22;
+      svg += '<line x1="'+barX+'" x2="'+barX+'" y1="'+geom[clefs[0]].top+'" y2="'+bottomY+'" class="staffBarline"></line>';
+      if(m.label) svg += '<text x="'+(barX+barW/2)+'" y="12" class="staffChordName" data-bar="'+mi+'">'+m.label+'</text>';
+      const totalBeats = measureBeats(m.timeSig);
+      clefs.forEach(clef => {
+        let cum = 0;
+        ((m.voices && m.voices[clef]) || []).forEach((ev, ei) => {
+          const x = innerLeft + (cum/totalBeats)*innerW;
+          if(ev.rest) svg += restGlyph(x, clef);
+          else (Array.isArray(ev.midi) ? ev.midi : [ev.midi]).forEach(midi => { svg += notehead(midi, clef, x, mi, clef, ei); });
+          cum += durBeats(ev.dur);
+        });
       });
     });
-    const lastX = startX + bars.length*barW;
-    svg += '<line x1="'+lastX+'" x2="'+lastX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline staffFinal"></line>';
+    const lastX = startX + measures.length*barW;
+    svg += '<line x1="'+lastX+'" x2="'+lastX+'" y1="'+geom[clefs[0]].top+'" y2="'+bottomY+'" class="staffBarline staffFinal"></line>';
     svg += '</svg>';
     container.innerHTML = svg;
     return {
-      highlight(bi, ni){
+      // voice: 'treble'|'bass', mi: measure index, ei: event index within that voice —
+      // selects every notehead sharing them (a chord event highlights as one unit)
+      highlight(voice, mi, ei){
         container.querySelectorAll('.staffNote.on').forEach(e => e.classList.remove('on'));
-        const sel = container.querySelector('.staffNote[data-bar="'+bi+'"][data-note="'+ni+'"]');
-        if(sel){ sel.classList.add('on'); if(sel.scrollIntoView) sel.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' }); }
+        const sel = container.querySelectorAll('.staffNote[data-bar="'+mi+'"][data-voice="'+voice+'"][data-event="'+ei+'"]');
+        sel.forEach(el => el.classList.add('on'));
+        if(sel[0] && sel[0].scrollIntoView) sel[0].scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' });
       }
     };
   }
@@ -1574,7 +1611,30 @@ function refreshMusicalScene(){
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
   leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Minor ring: ii & vi. Outer ring: vii° (diminished). Tap any of them to hear it.';
 }
+// a single small measure proving the staff engine's range end to end: a mix of durations, a
+// rest, a chord (not just single notes), and both staves — the same engine the full 35-bar
+// Bach piece uses, just with one bar of hand-written data instead of 35 generated ones.
+const STAFF_EXAMPLE_MEASURE = [{
+  timeSig: [4,4],
+  label: 'C',
+  voices: {
+    treble: [
+      { midi:64, dur:'q' },
+      { midi:67, dur:'e' },
+      { midi:69, dur:'e' },
+      { rest:true, dur:'q' },
+      { midi:[60,64,67], dur:'q' }
+    ],
+    bass: [ { midi:48, dur:'h' }, { midi:43, dur:'h' } ]
+  }
+}];
 function wireMusicalHome(){
+  Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
+  document.getElementById('staffColorPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    document.body.classList.toggle('staffColor', b.dataset.k === 'color');
+    document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
+  });
   const scaleSel = document.getElementById('mScaleSel');
   scaleSel.innerHTML = Object.keys(SCALES).map(id=>'<option value="'+id+'">'+SCALES[id].name+'</option>').join('');
   scaleSel.value = 'major';
@@ -1885,12 +1945,20 @@ function buildBachBar(chord, prevLastMidi){
   const bassTarget = base - 12;
   let bass = bassTarget - ((bassTarget%12+12)%12) + bassPc;
   if(bass > bassTarget+6) bass -= 12; else if(bass < bassTarget-6) bass += 12;
-  return { idx, roman: chord.roman, bass, notes };
+  return {
+    idx, roman: chord.roman,
+    timeSig: [4,4],
+    label: N[idx].name,
+    // the left hand re-strikes the same bass note halfway through the bar (two half notes) rather
+    // than holding one long tone for the whole bar — a single sustained note reads as one pitch,
+    // not the piece's harmonic pulse.
+    voices: { treble: notes.map(midi => ({ midi, dur:'e' })), bass: [{ midi:bass, dur:'h' }, { midi:bass, dur:'h' }] }
+  };
 }
 let __bachPrevLast = null;
 const BACH_PRELUDE = BACH_CHORDS.map(c => {
   const bar = buildBachBar(c, __bachPrevLast);
-  __bachPrevLast = bar.notes[bar.notes.length-1];
+  __bachPrevLast = bar.voices.treble[bar.voices.treble.length-1].midi;
   return bar;
 });
 
@@ -1898,7 +1966,7 @@ let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
 let bachArcEls = { prev:null, cur:null, next:null };
 function bachFlatten(){
   const flat = [];
-  BACH_PRELUDE.forEach((bar, bi) => { bar.notes.forEach((midi, ni) => flat.push({ bi, ni, midi })); });
+  BACH_PRELUDE.forEach((bar, mi) => { bar.voices.treble.forEach((ev, ei) => flat.push({ mi, ei, midi:ev.midi })); });
   return flat;
 }
 // draws one bar's chord as a fresh, invisible polygon (fill/stroke set now, opacity animated in later)
@@ -1957,22 +2025,22 @@ function startBach(){
   const stepMs = 200, btn = document.getElementById('musBachPlay');
   function step(){
     if(bachPos >= bachFlat.length){ stopBach(); return; }
-    const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
-    if(ev.ni === 0){
-      bachAdvanceArcs(ev.bi);
+    const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.mi];
+    if(ev.ei === 0){
+      bachAdvanceArcs(ev.mi);
       activeChordIdx = bar.idx;
       const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
       renderSuggestions();
     }
     // the left hand restrikes the bass note halfway through the bar rather than holding one long
     // tone for the whole bar — without this it reads as a single sustained note, not a harmonic pulse
-    if(ev.ni === 0 || ev.ni === 4) playFreqs([m2f(bar.bass)], stepMs/1000*4.5);
+    if(ev.ei === 0 || ev.ei === 4) playFreqs([m2f(bar.voices.bass[ev.ei===0?0:1].midi)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
     const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');
     if(noteEl) noteEl.classList.add('playing');
-    if(bachStaffHandle) bachStaffHandle.highlight(ev.bi, ev.ni);
-    if(btn) btn.textContent = '■ stop — bar '+(ev.bi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
+    if(bachStaffHandle) bachStaffHandle.highlight('treble', ev.mi, ev.ei);
+    if(btn) btn.textContent = '■ stop — bar '+(ev.mi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
     bachPos++;
     bachTimer = setTimeout(step, stepMs);
   }

@@ -195,7 +195,30 @@ function refreshMusicalScene(){
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
   leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Minor ring: ii & vi. Outer ring: vii° (diminished). Tap any of them to hear it.';
 }
+// a single small measure proving the staff engine's range end to end: a mix of durations, a
+// rest, a chord (not just single notes), and both staves — the same engine the full 35-bar
+// Bach piece uses, just with one bar of hand-written data instead of 35 generated ones.
+const STAFF_EXAMPLE_MEASURE = [{
+  timeSig: [4,4],
+  label: 'C',
+  voices: {
+    treble: [
+      { midi:64, dur:'q' },
+      { midi:67, dur:'e' },
+      { midi:69, dur:'e' },
+      { rest:true, dur:'q' },
+      { midi:[60,64,67], dur:'q' }
+    ],
+    bass: [ { midi:48, dur:'h' }, { midi:43, dur:'h' } ]
+  }
+}];
 function wireMusicalHome(){
+  Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
+  document.getElementById('staffColorPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    document.body.classList.toggle('staffColor', b.dataset.k === 'color');
+    document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
+  });
   const scaleSel = document.getElementById('mScaleSel');
   scaleSel.innerHTML = Object.keys(SCALES).map(id=>'<option value="'+id+'">'+SCALES[id].name+'</option>').join('');
   scaleSel.value = 'major';

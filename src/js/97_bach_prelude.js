@@ -69,12 +69,20 @@ function buildBachBar(chord, prevLastMidi){
   const bassTarget = base - 12;
   let bass = bassTarget - ((bassTarget%12+12)%12) + bassPc;
   if(bass > bassTarget+6) bass -= 12; else if(bass < bassTarget-6) bass += 12;
-  return { idx, roman: chord.roman, bass, notes };
+  return {
+    idx, roman: chord.roman,
+    timeSig: [4,4],
+    label: N[idx].name,
+    // the left hand re-strikes the same bass note halfway through the bar (two half notes) rather
+    // than holding one long tone for the whole bar — a single sustained note reads as one pitch,
+    // not the piece's harmonic pulse.
+    voices: { treble: notes.map(midi => ({ midi, dur:'e' })), bass: [{ midi:bass, dur:'h' }, { midi:bass, dur:'h' }] }
+  };
 }
 let __bachPrevLast = null;
 const BACH_PRELUDE = BACH_CHORDS.map(c => {
   const bar = buildBachBar(c, __bachPrevLast);
-  __bachPrevLast = bar.notes[bar.notes.length-1];
+  __bachPrevLast = bar.voices.treble[bar.voices.treble.length-1].midi;
   return bar;
 });
 
@@ -82,7 +90,7 @@ let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
 let bachArcEls = { prev:null, cur:null, next:null };
 function bachFlatten(){
   const flat = [];
-  BACH_PRELUDE.forEach((bar, bi) => { bar.notes.forEach((midi, ni) => flat.push({ bi, ni, midi })); });
+  BACH_PRELUDE.forEach((bar, mi) => { bar.voices.treble.forEach((ev, ei) => flat.push({ mi, ei, midi:ev.midi })); });
   return flat;
 }
 // draws one bar's chord as a fresh, invisible polygon (fill/stroke set now, opacity animated in later)
@@ -141,22 +149,22 @@ function startBach(){
   const stepMs = 200, btn = document.getElementById('musBachPlay');
   function step(){
     if(bachPos >= bachFlat.length){ stopBach(); return; }
-    const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
-    if(ev.ni === 0){
-      bachAdvanceArcs(ev.bi);
+    const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.mi];
+    if(ev.ei === 0){
+      bachAdvanceArcs(ev.mi);
       activeChordIdx = bar.idx;
       const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
       renderSuggestions();
     }
     // the left hand restrikes the bass note halfway through the bar rather than holding one long
     // tone for the whole bar — without this it reads as a single sustained note, not a harmonic pulse
-    if(ev.ni === 0 || ev.ni === 4) playFreqs([m2f(bar.bass)], stepMs/1000*4.5);
+    if(ev.ei === 0 || ev.ei === 4) playFreqs([m2f(bar.voices.bass[ev.ei===0?0:1].midi)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
     const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');
     if(noteEl) noteEl.classList.add('playing');
-    if(bachStaffHandle) bachStaffHandle.highlight(ev.bi, ev.ni);
-    if(btn) btn.textContent = '■ stop — bar '+(ev.bi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
+    if(bachStaffHandle) bachStaffHandle.highlight('treble', ev.mi, ev.ei);
+    if(btn) btn.textContent = '■ stop — bar '+(ev.mi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
     bachPos++;
     bachTimer = setTimeout(step, stepMs);
   }
