@@ -95,6 +95,17 @@ try {
   if (__api.View.get().key !== 0) throw new Error('tapping a note on the Musical circle should set the key');
   if (!/chordPill/.test(C['musDiagram'].innerHTML)) throw new Error('key diagram did not render any chords');
   if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('chord-tone label should spell out root/3rd/5th for the tonic triad');
+  // tap plays: Chord (default) should sound all 3 notes of the tonic triad, Note should sound just the one
+  let oscCount = 0;
+  const origCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ oscCount++; return origCreateOsc.apply(this, arguments); };
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
+  if (oscCount !== 3) throw new Error('Chord tap mode should play all 3 tonic-triad notes, played ' + oscCount);
+  fire(C['musTapPills'], 'click', { target: { closest: () => ({ dataset: { k: 'note' }, classList: { toggle(){} } }) } });
+  oscCount = 0;
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '7' } } : null } });
+  if (oscCount !== 1) throw new Error('Note tap mode should play just the tapped note, played ' + oscCount);
+  global.window.AudioContext.prototype.createOscillator = origCreateOsc;
   C['mScaleSel'].value = 'dorian'; C['mScaleSel'].onchange(); frames(5);
   if (__api.View.get().scale !== 'dorian') throw new Error('scale selector did not update state');
   // clicking a chord pill plays it and opens the shared detail card

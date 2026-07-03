@@ -4,7 +4,7 @@
 // a chord to hear it and open the same detail card Science mode uses. Modelled on what the
 // best-reviewed interactive circle-of-fifths tools (Musicca, GenMusic.im) already do well:
 // click a key -> see its chords -> click a chord -> hear it.
-let musCofBuilt = false, activeChordIdx = null;
+let musCofBuilt = false, activeChordIdx = null, musTapMode = 'chord';
 
 Modes.register('musical', {
   label: 'Musical',
@@ -18,6 +18,8 @@ Modes.register('musical', {
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
           refreshMusicalScene();
+          if(musTapMode === 'note') playFreqs([m2f(60+pc)]);
+          else if(activeChordIdx != null) playFreqs(N[activeChordIdx].freqs);
         }
       });
       musCofBuilt = true;
@@ -191,6 +193,11 @@ function wireMusicalHome(){
   scaleSel.innerHTML = Object.keys(SCALES).map(id=>'<option value="'+id+'">'+SCALES[id].name+'</option>').join('');
   scaleSel.value = 'major';
   scaleSel.onchange = () => { View.set({ scale: scaleSel.value }); refreshMusicalScene(); };
+  document.getElementById('musTapPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    musTapMode = b.dataset.k;
+    document.querySelectorAll('#musTapPills button').forEach(x => x.classList.toggle('on', x===b));
+  });
   document.getElementById('musDiagram').addEventListener('click', e => {
     const b = e.target.closest('.chordPill'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
@@ -202,8 +209,10 @@ function wireMusicalHome(){
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
-    'Tap a note on the circle to make it your key. The diagram below groups that key\'s chords by '+
-    'function:\n  Subdominant (amber) — departs from home\n  Dominant (red) — tension, wants to resolve\n  Tonic (green) — home\n\n'+
+    'Tap a note on the circle to make it your key. "Tap plays" decides what you hear: Chord plays the '+
+    'key\'s tonic chord, Note plays just that one note.\n\n'+
+    'The diagram below groups that key\'s chords by function:\n  Subdominant (amber) — departs from home\n'+
+    '  Dominant (red) — tension, wants to resolve\n  Tonic (green) — home\n\n'+
     'Click a chord to see its shape on the circle, and "where next?" for chords that tend to follow it.\n\n'+
     'Try C, then switch the scale from Major to Dorian and see how the chords change.');
 }
