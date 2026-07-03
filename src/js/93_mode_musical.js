@@ -14,6 +14,7 @@ Modes.register('musical', {
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
+        showMinors: true,
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
@@ -26,7 +27,7 @@ Modes.register('musical', {
     }
     refreshMusicalScene();
   },
-  onExit(){}
+  onExit(){ stopBach(); }
 });
 
 // a chord's notes, in stacked (root/third/fifth/...) order, as positions on the circle of fifths —

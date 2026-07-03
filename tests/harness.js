@@ -35,7 +35,7 @@ function el(){return{children:[],style:{},__h:{},dataset:{},innerHTML:'',value:'
 const cache={};
 global.document={getElementById:id=>cache[id]||(cache[id]=el()),createElement:()=>el(),createElementNS:()=>el(),querySelectorAll:()=>[],querySelector:()=>el(),__h:{},addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);}};
 global.window={};global.devicePixelRatio=2;global.innerWidth=800;global.innerHeight=600;global.addEventListener=()=>{};global.performance={now:()=>0};
-let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};global.setTimeout=()=>{};global.setInterval=()=>0;global.clearInterval=()=>{};global.MutationObserver=class{constructor(cb){this.cb=cb;}observe(){}disconnect(){}};
+let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};let timerSeq=1;global.setTimeout=()=>timerSeq++;global.setInterval=()=>0;global.clearInterval=()=>{};global.MutationObserver=class{constructor(cb){this.cb=cb;}observe(){}disconnect(){}};
 global.location={hash:'',origin:'https://x',pathname:'/'};global.history={replaceState(){}};global.navigator={clipboard:{writeText(){}}};
 const P={value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};
 global.window.AudioContext=class{constructor(){this.currentTime=0;this.state='running';this.destination={};}

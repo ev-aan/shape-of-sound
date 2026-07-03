@@ -13,6 +13,19 @@ Surfaces.register('cof', {
     const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = 22;
     let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="cofSvg">';
+    // relative-minor ring, drawn first so the major ring sits visually on top — same layout as the
+    // classic "major outside, relative minor inside" circle-of-fifths reference chart
+    if(opts.showMinors){
+      const R2 = 70, r2 = 13;
+      order.forEach((pc,i)=>{
+        const ang = -Math.PI/2 + i*(2*Math.PI/12);
+        const x = (cx+R2*Math.cos(ang)).toFixed(1), y = (cy+R2*Math.sin(ang)).toFixed(1);
+        const relMinor = (pc+9)%12;
+        const col = Palette.noteCss(relMinor, .45, .34);
+        svg += '<g class="cofMinor" data-pc="'+relMinor+'"><circle cx="'+x+'" cy="'+y+'" r="'+r2+'" fill="'+col+'"></circle>'+
+          '<text x="'+x+'" y="'+y+'" class="cofMinorLabel">'+NOTE[relMinor]+'m</text></g>';
+      });
+    }
     order.forEach((pc,i)=>{
       const ang = -Math.PI/2 + i*(2*Math.PI/12);
       const x = (cx+R*Math.cos(ang)).toFixed(1), y = (cy+R*Math.sin(ang)).toFixed(1);

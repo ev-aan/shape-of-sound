@@ -15,6 +15,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalHome();
+wireBachPrelude();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
 installBridgeButton();

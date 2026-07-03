@@ -159,6 +159,8 @@
  .cofNote:hover circle,.cofNote.sel circle{transform:scale(1.12);}
  .cofNote.near circle{stroke:#fff;stroke-width:2;}
  .cofLabel{fill:#0b1026;font:700 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+ .cofMinor circle{stroke:#00000030;stroke-width:1;}
+ .cofMinorLabel{fill:#e8eefb;font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
  .simpleCols{display:flex;gap:18px;justify-content:center;margin:0;flex-wrap:wrap;align-items:stretch;}
  .simpleCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:16px;width:210px;
@@ -178,6 +180,7 @@
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
+ .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
  .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
@@ -201,6 +204,21 @@
  .suggChip:hover{background:#ffffff14;}
  .suggTag{font-size:9.5px;color:var(--dim);}
  .musLinks{display:flex;gap:18px;justify-content:center;margin-top:20px;}
+ .musBachSection{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);}
+ .musBachBtn{font:600 12.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0b1026;
+   background:#cdd9f5;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;}
+ .musBachBtn:hover{background:#e3ebff;}
+ .musStaff{margin-top:14px;overflow-x:auto;}
+ .staffSvg{display:block;margin:0 auto;height:130px;min-width:100%;}
+ .staffLine{stroke:#8a97bf88;stroke-width:1;}
+ .staffBarline{stroke:#8a97bfaa;stroke-width:1;}
+ .staffBarline.staffFinal{stroke-width:2;}
+ .staffClef{fill:var(--dim);font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:end;text-transform:uppercase;letter-spacing:.03em;}
+ .staffAcc{fill:var(--ink);font-size:11px;}
+ .staffLedger{stroke:#8a97bfaa;stroke-width:1;}
+ .staffNote{fill:var(--ink);}
+ .staffNote.on{fill:#9ad1f0;}
+ @media(max-width:560px){.staffSvg{height:110px;}}
  @media(max-width:560px){.fnFlow{gap:8px;}.fnArrow{display:none;}.chordPill{min-width:56px;padding:6px 9px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
@@ -245,6 +263,10 @@
    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
+  <div class="musBachSection">
+   <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
+   <div id="musStaff" class="musStaff"></div>
+  </div>
  </div>
 </div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
@@ -1165,6 +1187,19 @@ Surfaces.register('cof', {
     const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = 22;
     let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="cofSvg">';
+    // relative-minor ring, drawn first so the major ring sits visually on top — same layout as the
+    // classic "major outside, relative minor inside" circle-of-fifths reference chart
+    if(opts.showMinors){
+      const R2 = 70, r2 = 13;
+      order.forEach((pc,i)=>{
+        const ang = -Math.PI/2 + i*(2*Math.PI/12);
+        const x = (cx+R2*Math.cos(ang)).toFixed(1), y = (cy+R2*Math.sin(ang)).toFixed(1);
+        const relMinor = (pc+9)%12;
+        const col = Palette.noteCss(relMinor, .45, .34);
+        svg += '<g class="cofMinor" data-pc="'+relMinor+'"><circle cx="'+x+'" cy="'+y+'" r="'+r2+'" fill="'+col+'"></circle>'+
+          '<text x="'+x+'" y="'+y+'" class="cofMinorLabel">'+NOTE[relMinor]+'m</text></g>';
+      });
+    }
     order.forEach((pc,i)=>{
       const ang = -Math.PI/2 + i*(2*Math.PI/12);
       const x = (cx+R*Math.cos(ang)).toFixed(1), y = (cy+R*Math.sin(ang)).toFixed(1);
@@ -1217,6 +1252,76 @@ Surfaces.register('keyboard', {
       if(opts.onChange) opts.onChange(new Set(held));
     });
     return { clear(){ held.clear(); container.querySelectorAll('.pianoKey').forEach(k=>k.classList.remove('held')); } };
+  }
+});
+
+// ---- SURFACE: simplified staff notation ----
+// Not full engraving (no beam/stem rules, no spacing algorithm) — just noteheads placed correctly
+// on a grand staff, enough to follow a short passage alongside audio playback. One bar = one bass
+// note (held) plus up to 8 treble notes (sixteenths), matching how 97_bach_prelude.js is shaped.
+const LETTER_STEP = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+function midiToDiatonic(midi){
+  const pc = ((midi%12)+12)%12, octave = Math.floor(midi/12)-1;
+  const name = NOTE[pc], letter = name[0], acc = name.length>1 ? '#' : '';
+  return { diatonic: octave*7 + LETTER_STEP[letter], acc };
+}
+Surfaces.register('staff', {
+  label: 'Staff',
+  render(container, bars){
+    if(!container) return null;
+    const lg = 8, barW = 80, startX = 56;
+    const trebleTop = 20, trebleMidY = trebleTop + 2*lg, trebleMidD = 34; // B4
+    const bassTop = 90, bassMidY = bassTop + 2*lg, bassMidD = 22; // D3
+    const staffW = startX + Math.max(1, bars.length)*barW + 20, staffH = 150;
+    function yFor(midi, clef){
+      const { diatonic } = midiToDiatonic(midi);
+      const midY = clef==='treble' ? trebleMidY : bassMidY, midD = clef==='treble' ? trebleMidD : bassMidD;
+      return midY - (diatonic - midD) * (lg/2);
+    }
+    function ledgers(midi, clef, x){
+      const { diatonic } = midiToDiatonic(midi);
+      const midY = clef==='treble' ? trebleMidY : bassMidY, midD = clef==='treble' ? trebleMidD : bassMidD;
+      const above = Math.floor((diatonic - (midD+4))/2), below = Math.floor(((midD-4) - diatonic)/2);
+      let svg = '';
+      for(let k=1;k<=above;k++){ const d=midD+4+2*k, y=midY-(d-midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
+      for(let k=1;k<=below;k++){ const d=midD-4-2*k, y=midY-(d-midD)*(lg/2); svg += '<line x1="'+(x-6)+'" x2="'+(x+6)+'" y1="'+y+'" y2="'+y+'" class="staffLedger"/>'; }
+      return svg;
+    }
+    function notehead(midi, clef, x, bi, ni){
+      const y = yFor(midi, clef), acc = midiToDiatonic(midi).acc;
+      return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">♯</text>' : '') +
+        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
+    }
+    let svg = '<svg viewBox="0 0 '+staffW+' '+staffH+'" class="staffSvg">';
+    for(let i=0;i<5;i++){
+      svg += '<line x1="'+startX+'" x2="'+(staffW-10)+'" y1="'+(trebleTop+i*lg)+'" y2="'+(trebleTop+i*lg)+'" class="staffLine"></line>';
+      svg += '<line x1="'+startX+'" x2="'+(staffW-10)+'" y1="'+(bassTop+i*lg)+'" y2="'+(bassTop+i*lg)+'" class="staffLine"></line>';
+    }
+    // the SMuFL/Unicode clef glyphs (U+1D11E, U+1D122) aren't reliably covered by common system
+    // fonts (measured ~11px wide for a 34px font here, vs ~29px for a plain letter) — plain labels
+    // render everywhere, which matters more than authenticity for a simplified staff view.
+    svg += '<text x="'+(startX-6)+'" y="'+(trebleMidY+4)+'" class="staffClef">treble</text>';
+    svg += '<text x="'+(startX-6)+'" y="'+(bassMidY+4)+'" class="staffClef">bass</text>';
+    bars.forEach((bar, bi) => {
+      const barX = startX + bi*barW;
+      svg += '<line x1="'+barX+'" x2="'+barX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline"></line>';
+      if(bar.bass != null) svg += notehead(bar.bass, 'bass', barX + barW*0.42, bi, -1);
+      (bar.notes||[]).forEach((midi, ni) => {
+        const nx = barX + 14 + ni*(barW-20)/Math.max(1, bar.notes.length-1 || 1);
+        svg += notehead(midi, 'treble', nx, bi, ni);
+      });
+    });
+    const lastX = startX + bars.length*barW;
+    svg += '<line x1="'+lastX+'" x2="'+lastX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline staffFinal"></line>';
+    svg += '</svg>';
+    container.innerHTML = svg;
+    return {
+      highlight(bi, ni){
+        container.querySelectorAll('.staffNote.on').forEach(e => e.classList.remove('on'));
+        const sel = container.querySelector('.staffNote[data-bar="'+bi+'"][data-note="'+ni+'"]');
+        if(sel){ sel.classList.add('on'); if(sel.scrollIntoView) sel.scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' }); }
+      }
+    };
   }
 });
 
@@ -1275,6 +1380,7 @@ Modes.register('musical', {
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
+        showMinors: true,
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
@@ -1287,7 +1393,7 @@ Modes.register('musical', {
     }
     refreshMusicalScene();
   },
-  onExit(){}
+  onExit(){ stopBach(); }
 });
 
 // a chord's notes, in stacked (root/third/fifth/...) order, as positions on the circle of fifths —
@@ -1691,6 +1797,82 @@ function wireSimpleFront(){
   document.getElementById('backToSimpleBtn').onclick = () => showSimple();
 }
 
+// ---- BACH: Prelude in C major, BWV 846 (WTC Book I, No. 1) — first 8 bars ----
+// Not a verified Urtext transcription: the chord identity per bar follows well-documented harmonic
+// analysis (I - ii7 - V7 - I, then the descending-fifths sequence toward the dominant), and each
+// bar's 8 notes are generated from that chord using the piece's own well-known broken-chord shape
+// (root, 3rd, 5th, octave, 3rd, 5th, octave, 3rd) rather than recalled note-by-note. Treat this as
+// a faithful reconstruction of the harmony, not a note-perfect score.
+const BACH_CHORDS = [
+  { root:0, q:'maj',  roman:'I'    },
+  { root:2, q:'min7', roman:'ii7'  },
+  { root:7, q:'7',    roman:'V7'   },
+  { root:0, q:'maj',  roman:'I'    },
+  { root:9, q:'min',  roman:'vi'   },
+  { root:2, q:'7',    roman:'V7/V' },
+  { root:7, q:'maj',  roman:'V'    },
+  { root:7, q:'7',    roman:'V7'   },
+];
+function buildBachBar(chord){
+  const idx = N.findIndex(n => n.root===chord.root && n.q===chord.q);
+  const ivs = N[idx].ivs;
+  const base = 60 + chord.root; // middle-register start, near the piece's own tessitura
+  const seq = [];
+  for(let oct=0; seq.length<5; oct++){
+    for(const iv of ivs){ seq.push(base + iv + oct*12); if(seq.length>=5) break; }
+  }
+  const shape = [0,1,2,3,1,2,3,1]; // the prelude's own repeating broken-chord contour
+  return { idx, roman: chord.roman, bass: base-12, notes: shape.map(i => seq[i]) };
+}
+const BACH_PRELUDE = BACH_CHORDS.map(buildBachBar);
+
+let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
+function bachFlatten(){
+  const flat = [];
+  BACH_PRELUDE.forEach((bar, bi) => { bar.notes.forEach((midi, ni) => flat.push({ bi, ni, midi })); });
+  return flat;
+}
+function stopBach(){
+  if(bachTimer){ clearTimeout(bachTimer); bachTimer = null; }
+  bachPos = 0;
+  const btn = document.getElementById('musBachPlay');
+  if(btn) btn.textContent = '▶ Bach: Prelude in C (BWV 846)';
+  document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
+}
+function startBach(){
+  stopBach();
+  const scaleSel = document.getElementById('mScaleSel');
+  View.set({ key: 0, scale: 'major' });
+  if(scaleSel) scaleSel.value = 'major';
+  refreshMusicalScene();
+  if(!bachStaffHandle) bachStaffHandle = Surfaces.get('staff').render(document.getElementById('musStaff'), BACH_PRELUDE);
+  bachFlat = bachFlatten();
+  const stepMs = 200, btn = document.getElementById('musBachPlay');
+  function step(){
+    if(bachPos >= bachFlat.length){ stopBach(); return; }
+    const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
+    if(ev.ni === 0){
+      playFreqs([m2f(bar.bass)], stepMs/1000*8);
+      drawChordArc(bar.idx);
+      renderKeyDiagram();
+      renderSuggestions();
+    }
+    playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
+    document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
+    const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');
+    if(noteEl) noteEl.classList.add('playing');
+    if(bachStaffHandle) bachStaffHandle.highlight(ev.bi, ev.ni);
+    if(btn) btn.textContent = '■ stop — bar '+(ev.bi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
+    bachPos++;
+    bachTimer = setTimeout(step, stepMs);
+  }
+  step();
+}
+function wireBachPrelude(){
+  const btn = document.getElementById('musBachPlay'); if(!btn) return;
+  btn.onclick = () => { if(bachTimer) stopBach(); else startBach(); };
+}
+
 // ---- BOOT (runs last, after all modes are registered) ----
 // Panels lead with the 2-3 controls that matter most; everything else sits behind "more options"
 // so a newcomer sees a short list to try, not a wall of controls.
@@ -1708,6 +1890,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalHome();
+wireBachPrelude();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
 installBridgeButton();

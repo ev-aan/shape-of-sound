@@ -153,6 +153,8 @@
  .cofNote:hover circle,.cofNote.sel circle{transform:scale(1.12);}
  .cofNote.near circle{stroke:#fff;stroke-width:2;}
  .cofLabel{fill:#0b1026;font:700 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+ .cofMinor circle{stroke:#00000030;stroke-width:1;}
+ .cofMinorLabel{fill:#e8eefb;font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
  .simpleCols{display:flex;gap:18px;justify-content:center;margin:0;flex-wrap:wrap;align-items:stretch;}
  .simpleCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:16px;width:210px;
@@ -172,6 +174,7 @@
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
+ .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
  .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
@@ -195,6 +198,21 @@
  .suggChip:hover{background:#ffffff14;}
  .suggTag{font-size:9.5px;color:var(--dim);}
  .musLinks{display:flex;gap:18px;justify-content:center;margin-top:20px;}
+ .musBachSection{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);}
+ .musBachBtn{font:600 12.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0b1026;
+   background:#cdd9f5;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;}
+ .musBachBtn:hover{background:#e3ebff;}
+ .musStaff{margin-top:14px;overflow-x:auto;}
+ .staffSvg{display:block;margin:0 auto;height:130px;min-width:100%;}
+ .staffLine{stroke:#8a97bf88;stroke-width:1;}
+ .staffBarline{stroke:#8a97bfaa;stroke-width:1;}
+ .staffBarline.staffFinal{stroke-width:2;}
+ .staffClef{fill:var(--dim);font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:end;text-transform:uppercase;letter-spacing:.03em;}
+ .staffAcc{fill:var(--ink);font-size:11px;}
+ .staffLedger{stroke:#8a97bfaa;stroke-width:1;}
+ .staffNote{fill:var(--ink);}
+ .staffNote.on{fill:#9ad1f0;}
+ @media(max-width:560px){.staffSvg{height:110px;}}
  @media(max-width:560px){.fnFlow{gap:8px;}.fnArrow{display:none;}.chordPill{min-width:56px;padding:6px 9px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}

@@ -118,6 +118,14 @@ try {
   fire(C['musSuggest'], 'click', { target: { closest: () => ({ dataset: { idx: suggIdx }, classList: { add(){}, remove(){} } }) } });
   if (!C['musDiagram'].innerHTML.includes('chordPill on')) throw new Error('selecting a suggestion should highlight its pill in the diagram');
   if (!C['musSuggest'].innerHTML.includes(suggName)) throw new Error('suggestions should now be relative to the newly-selected chord');
+  // Bach prelude: starting playback resets to C major, builds the staff, and plays/highlights the first note
+  C['musBachPlay'].onclick();
+  if (__api.View.get().key !== 0 || __api.View.get().scale !== 'major') throw new Error('starting the Bach demo should reset to C major');
+  if (!/staffNote/.test(C['musStaff'].innerHTML)) throw new Error('Bach demo did not render the staff');
+  if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('Bach demo should show bar 1 (Cmaj) on the circle');
+  if (!/bar 1\/8/.test(C['musBachPlay'].textContent)) throw new Error('play button should show playback progress');
+  C['musBachPlay'].onclick(); // stop
+  if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopping should restore the play button label');
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity
