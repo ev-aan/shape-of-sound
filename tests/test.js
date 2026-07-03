@@ -111,6 +111,14 @@ try {
   // tapping a ring segment (minor ring, Am = vi of C major) plays that chord and opens the detail card
   fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofRing' ? { dataset: { ring: 'minor', pc: '9' } } : null } });
   if (!/^Amin:\s+A \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('tapping the minor ring should select that chord');
+  // "+ add to progression" sends the active chord into Play's sequencer — the missing piece for
+  // building a progression (like recreating a piece) by clicking chords on the circle
+  if (C['musAddSeqBtn'].disabled) throw new Error('add-to-progression button should be enabled once a chord is active');
+  C['musAddSeqBtn'].onclick();
+  if (__api.View.get().mode !== 'play') throw new Error('add-to-progression should hand off into Play');
+  if (!/Amin/.test(C['seqSlots'].innerHTML)) throw new Error('the selected chord should land in the sequence');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
   // "where next?" suggestions should follow the newly-selected chord, and clicking one navigates too
   if (!/suggChip/.test(C['musSuggest'].innerHTML)) throw new Error('no "where next" suggestions rendered');
   const suggIdx = C['musSuggest'].innerHTML.match(/data-idx="(\d+)"/)[1];

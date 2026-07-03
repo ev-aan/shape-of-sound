@@ -30,7 +30,6 @@
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
   <div id="musCof"></div>
-  <div id="musChordLabel" class="musChordLabel"></div>
   <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
   <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
     <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
@@ -43,6 +42,10 @@
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
+   <div class="musChordRow">
+    <div id="musChordLabel" class="musChordLabel"></div>
+    <button id="musAddSeqBtn" class="musAddSeqBtn" disabled>+ add to progression</button>
+   </div>
    <div id="musStaff" class="musStaff"></div>
   </div>
  </div>

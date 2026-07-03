@@ -10,8 +10,8 @@ let musCofBuilt = false, activeChordIdx = null, musTapMode = 'chord';
 // new one later (e.g. secondary dominants, parallel major/minor) means adding an entry here and a
 // paint rule below — nothing about the circle surface itself needs to change.
 const MUSICAL_RINGS = [
-  { id:'minor', radius:70,  noteRadius:13, fn: pc => (pc+9)%12,  suffix:'m', sat:.45, light:.34 },
-  { id:'dim',   radius:148, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
+  { id:'minor', radius:140, noteRadius:13, fn: pc => (pc+9)%12,  suffix:'m', sat:.45, light:.34 },
+  { id:'dim',   radius:168, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
 ];
 
 Modes.register('musical', {
@@ -22,7 +22,7 @@ Modes.register('musical', {
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
-        viewBoxPad: 40, // room for the diminished ring, which sits outside the main note ring
+        viewBoxPad: 65, // room for the minor + diminished rings, both outside the main note ring
         rings: MUSICAL_RINGS,
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
@@ -62,6 +62,8 @@ function drawChordArc(idx){
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
   const old = svg.querySelector('.chordArc'); if(old) old.remove();
   const label = document.getElementById('musChordLabel');
+  const addBtn = document.getElementById('musAddSeqBtn');
+  if(addBtn) addBtn.disabled = idx == null;
   if(idx == null){ if(label) label.textContent = ''; return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
@@ -207,12 +209,15 @@ function wireMusicalHome(){
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
   });
+  document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
     'Tap a note on the circle to make it your key. "Tap plays" decides what you hear: Chord plays the '+
     'key\'s tonic chord, Note plays just that one note.\n\n'+
-    'The circle itself shows this key\'s diatonic chords as rings: the inner ring is minor (ii and vi), '+
-    'the outer ring is diminished (vii°) — tap either to hear that chord.\n\n'+
+    'The circle itself shows this key\'s diatonic chords as rings: the outer ring is minor (ii and vi), '+
+    'further out is diminished (vii°) — tap either to hear that chord.\n\n'+
+    '"+ add to progression" (by the Bach player) sends whichever chord is currently shown into Play\'s '+
+    'sequencer — click your way through a set of chords and it builds a real progression, one tap at a time.\n\n'+
     'Try C, then switch the scale from Major to Dorian and see how the rings change.');
 }

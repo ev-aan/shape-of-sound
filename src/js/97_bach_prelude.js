@@ -43,7 +43,7 @@ const BACH_CHORDS = [
   { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 31 G7 — pedal ends
   { root:0,  q:'maj',   roman:'I'           },                     // 32 C — tonic pedal begins
   { root:5,  q:'maj',   roman:'IV',        bassPc:0  },            // 33 F/C
-  { root:7,  q:'7',     roman:'V7',        bassPc:0  },            // 34 G7/C
+  { root:7,  q:'7',     roman:'V7'          },                     // 34 G7, root position — real V-I bass motion into the final cadence
   { root:0,  q:'maj',   roman:'I'           },                     // 35 C — final
 ];
 function buildBachBar(chord, prevLastMidi){
@@ -143,12 +143,14 @@ function startBach(){
     if(bachPos >= bachFlat.length){ stopBach(); return; }
     const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
     if(ev.ni === 0){
-      playFreqs([m2f(bar.bass)], stepMs/1000*8);
       bachAdvanceArcs(ev.bi);
       activeChordIdx = bar.idx;
       const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
       renderSuggestions();
     }
+    // the left hand restrikes the bass note halfway through the bar rather than holding one long
+    // tone for the whole bar — without this it reads as a single sustained note, not a harmonic pulse
+    if(ev.ni === 0 || ev.ni === 4) playFreqs([m2f(bar.bass)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
     const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');

@@ -32,8 +32,9 @@ Surfaces.register('staff', {
     }
     function notehead(midi, clef, x, bi, ni){
       const y = yFor(midi, clef), acc = midiToDiatonic(midi).acc;
+      const pc = ((midi%12)+12)%12, col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
       return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">♯</text>' : '') +
-        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
+        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" fill="'+col+'" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
     }
     let svg = '<svg viewBox="0 0 '+staffW+' '+staffH+'" class="staffSvg">';
     for(let i=0;i<5;i++){
@@ -48,6 +49,7 @@ Surfaces.register('staff', {
     bars.forEach((bar, bi) => {
       const barX = startX + bi*barW;
       svg += '<line x1="'+barX+'" x2="'+barX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline"></line>';
+      if(bar.idx != null) svg += '<text x="'+(barX+barW/2)+'" y="12" class="staffChordName" data-bar="'+bi+'">'+N[bar.idx].name+'</text>';
       if(bar.bass != null) svg += notehead(bar.bass, 'bass', barX + barW*0.42, bi, -1);
       (bar.notes||[]).forEach((midi, ni) => {
         const nx = barX + 14 + ni*(barW-20)/Math.max(1, bar.notes.length-1 || 1);

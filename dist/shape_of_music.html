@@ -183,7 +183,12 @@
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
  .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
- .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
+ .musChordRow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:14px;}
+ .musChordLabel{font-size:12px;color:var(--ink);min-height:1.4em;}
+ .musAddSeqBtn{font:600 11px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);
+   background:#ffffff10;border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;}
+ .musAddSeqBtn:hover:not(:disabled){background:#ffffff1c;}
+ .musAddSeqBtn:disabled{opacity:.35;cursor:default;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .bachArc{transition:opacity 1.5s linear;}
  .bachArc-next{stroke-dasharray:4 3;}
@@ -210,8 +215,9 @@
  .staffClef{fill:var(--dim);font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:end;text-transform:uppercase;letter-spacing:.03em;}
  .staffAcc{fill:var(--ink);font-size:11px;}
  .staffLedger{stroke:#8a97bfaa;stroke-width:1;}
- .staffNote{fill:var(--ink);}
- .staffNote.on{fill:#9ad1f0;}
+ .staffChordName{fill:var(--dim);font:600 8.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;}
+ .staffNote{stroke:#00000040;stroke-width:.6;}
+ .staffNote.on{stroke:#fff;stroke-width:1.6;}
  @media(max-width:560px){.staffSvg{height:110px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
@@ -244,7 +250,6 @@
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
   <div id="musCof"></div>
-  <div id="musChordLabel" class="musChordLabel"></div>
   <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
   <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
     <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
@@ -257,6 +262,10 @@
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
+   <div class="musChordRow">
+    <div id="musChordLabel" class="musChordLabel"></div>
+    <button id="musAddSeqBtn" class="musAddSeqBtn" disabled>+ add to progression</button>
+   </div>
    <div id="musStaff" class="musStaff"></div>
   </div>
  </div>
@@ -1291,8 +1300,9 @@ Surfaces.register('staff', {
     }
     function notehead(midi, clef, x, bi, ni){
       const y = yFor(midi, clef), acc = midiToDiatonic(midi).acc;
+      const pc = ((midi%12)+12)%12, col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
       return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">♯</text>' : '') +
-        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
+        '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" fill="'+col+'" class="staffNote" data-bar="'+bi+'" data-note="'+ni+'"></ellipse>';
     }
     let svg = '<svg viewBox="0 0 '+staffW+' '+staffH+'" class="staffSvg">';
     for(let i=0;i<5;i++){
@@ -1307,6 +1317,7 @@ Surfaces.register('staff', {
     bars.forEach((bar, bi) => {
       const barX = startX + bi*barW;
       svg += '<line x1="'+barX+'" x2="'+barX+'" y1="'+trebleTop+'" y2="'+(bassTop+4*lg)+'" class="staffBarline"></line>';
+      if(bar.idx != null) svg += '<text x="'+(barX+barW/2)+'" y="12" class="staffChordName" data-bar="'+bi+'">'+N[bar.idx].name+'</text>';
       if(bar.bass != null) svg += notehead(bar.bass, 'bass', barX + barW*0.42, bi, -1);
       (bar.notes||[]).forEach((midi, ni) => {
         const nx = barX + 14 + ni*(barW-20)/Math.max(1, bar.notes.length-1 || 1);
@@ -1378,8 +1389,8 @@ let musCofBuilt = false, activeChordIdx = null, musTapMode = 'chord';
 // new one later (e.g. secondary dominants, parallel major/minor) means adding an entry here and a
 // paint rule below — nothing about the circle surface itself needs to change.
 const MUSICAL_RINGS = [
-  { id:'minor', radius:70,  noteRadius:13, fn: pc => (pc+9)%12,  suffix:'m', sat:.45, light:.34 },
-  { id:'dim',   radius:148, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
+  { id:'minor', radius:140, noteRadius:13, fn: pc => (pc+9)%12,  suffix:'m', sat:.45, light:.34 },
+  { id:'dim',   radius:168, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
 ];
 
 Modes.register('musical', {
@@ -1390,7 +1401,7 @@ Modes.register('musical', {
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
-        viewBoxPad: 40, // room for the diminished ring, which sits outside the main note ring
+        viewBoxPad: 65, // room for the minor + diminished rings, both outside the main note ring
         rings: MUSICAL_RINGS,
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
@@ -1430,6 +1441,8 @@ function drawChordArc(idx){
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
   const old = svg.querySelector('.chordArc'); if(old) old.remove();
   const label = document.getElementById('musChordLabel');
+  const addBtn = document.getElementById('musAddSeqBtn');
+  if(addBtn) addBtn.disabled = idx == null;
   if(idx == null){ if(label) label.textContent = ''; return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
@@ -1575,13 +1588,16 @@ function wireMusicalHome(){
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
   });
+  document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
     'Tap a note on the circle to make it your key. "Tap plays" decides what you hear: Chord plays the '+
     'key\'s tonic chord, Note plays just that one note.\n\n'+
-    'The circle itself shows this key\'s diatonic chords as rings: the inner ring is minor (ii and vi), '+
-    'the outer ring is diminished (vii°) — tap either to hear that chord.\n\n'+
+    'The circle itself shows this key\'s diatonic chords as rings: the outer ring is minor (ii and vi), '+
+    'further out is diminished (vii°) — tap either to hear that chord.\n\n'+
+    '"+ add to progression" (by the Bach player) sends whichever chord is currently shown into Play\'s '+
+    'sequencer — click your way through a set of chords and it builds a real progression, one tap at a time.\n\n'+
     'Try C, then switch the scale from Major to Dorian and see how the rings change.');
 }
 
@@ -1843,7 +1859,7 @@ const BACH_CHORDS = [
   { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 31 G7 — pedal ends
   { root:0,  q:'maj',   roman:'I'           },                     // 32 C — tonic pedal begins
   { root:5,  q:'maj',   roman:'IV',        bassPc:0  },            // 33 F/C
-  { root:7,  q:'7',     roman:'V7',        bassPc:0  },            // 34 G7/C
+  { root:7,  q:'7',     roman:'V7'          },                     // 34 G7, root position — real V-I bass motion into the final cadence
   { root:0,  q:'maj',   roman:'I'           },                     // 35 C — final
 ];
 function buildBachBar(chord, prevLastMidi){
@@ -1943,12 +1959,14 @@ function startBach(){
     if(bachPos >= bachFlat.length){ stopBach(); return; }
     const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
     if(ev.ni === 0){
-      playFreqs([m2f(bar.bass)], stepMs/1000*8);
       bachAdvanceArcs(ev.bi);
       activeChordIdx = bar.idx;
       const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
       renderSuggestions();
     }
+    // the left hand restrikes the bass note halfway through the bar rather than holding one long
+    // tone for the whole bar — without this it reads as a single sustained note, not a harmonic pulse
+    if(ev.ni === 0 || ev.ni === 4) playFreqs([m2f(bar.bass)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
     const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');

@@ -177,7 +177,12 @@
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
  .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
- .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
+ .musChordRow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:14px;}
+ .musChordLabel{font-size:12px;color:var(--ink);min-height:1.4em;}
+ .musAddSeqBtn{font:600 11px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);
+   background:#ffffff10;border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;}
+ .musAddSeqBtn:hover:not(:disabled){background:#ffffff1c;}
+ .musAddSeqBtn:disabled{opacity:.35;cursor:default;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .bachArc{transition:opacity 1.5s linear;}
  .bachArc-next{stroke-dasharray:4 3;}
@@ -204,8 +209,9 @@
  .staffClef{fill:var(--dim);font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:end;text-transform:uppercase;letter-spacing:.03em;}
  .staffAcc{fill:var(--ink);font-size:11px;}
  .staffLedger{stroke:#8a97bfaa;stroke-width:1;}
- .staffNote{fill:var(--ink);}
- .staffNote.on{fill:#9ad1f0;}
+ .staffChordName{fill:var(--dim);font:600 8.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;}
+ .staffNote{stroke:#00000040;stroke-width:.6;}
+ .staffNote.on{stroke:#fff;stroke-width:1.6;}
  @media(max-width:560px){.staffSvg{height:110px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
