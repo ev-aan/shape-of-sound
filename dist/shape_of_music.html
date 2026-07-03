@@ -183,6 +183,8 @@
  .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
  .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
+ .bachArc{transition:opacity 1.5s linear;}
+ .bachArc-next{stroke-dasharray:4 3;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
  .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
  .musScaleRow select{width:auto;min-width:170px;}
@@ -1827,14 +1829,53 @@ function buildBachBar(chord){
 const BACH_PRELUDE = BACH_CHORDS.map(buildBachBar);
 
 let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
+let bachArcEls = { prev:null, cur:null, next:null };
 function bachFlatten(){
   const flat = [];
   BACH_PRELUDE.forEach((bar, bi) => { bar.notes.forEach((midi, ni) => flat.push({ bi, ni, midi })); });
   return flat;
 }
+// draws one bar's chord as a fresh, invisible polygon (fill/stroke set now, opacity animated in later)
+function bachMakeArc(idx, roleClass){
+  const svg = document.querySelector('#musCof svg');
+  if(!svg || idx == null) return null;
+  const n = N[idx];
+  const fn = chordFn(n, 'major', 0) || 'ext'; // the demo is fixed to C major throughout
+  const col = Palette.FN[fn] || Palette.FN.ext;
+  const pts = n.ivs.map(iv => { const p = cofNotePos((n.root+iv)%12); return p.x+','+p.y; }).join(' ');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  poly.setAttribute('points', pts);
+  poly.setAttribute('class', 'chordArc bachArc '+roleClass);
+  poly.setAttribute('fill', col+'22');
+  poly.setAttribute('stroke', col);
+  poly.style.opacity = 0;
+  svg.insertBefore(poly, svg.firstChild);
+  return poly;
+}
+// each bar, the shape that was "next" (a faint preview) becomes "cur" (solid), "cur" becomes "prev"
+// and fades out, the old "prev" (fully faded by now) is removed, and a new "next" preview fades in
+// for the bar after this one — so the upcoming chord is always visible before it arrives.
+function bachAdvanceArcs(bi){
+  if(bachArcEls.prev) bachArcEls.prev.remove();
+  bachArcEls.prev = bachArcEls.cur;
+  if(bachArcEls.prev) bachArcEls.prev.setAttribute('class', 'chordArc bachArc bachArc-prev');
+  bachArcEls.cur = bachArcEls.next || bachMakeArc(BACH_PRELUDE[bi].idx, 'bachArc-cur');
+  if(bachArcEls.cur) bachArcEls.cur.setAttribute('class', 'chordArc bachArc bachArc-cur');
+  const nextIdx = bi+1 < BACH_PRELUDE.length ? BACH_PRELUDE[bi+1].idx : null;
+  bachArcEls.next = bachMakeArc(nextIdx, 'bachArc-next');
+  requestAnimationFrame(() => {
+    if(bachArcEls.prev) bachArcEls.prev.style.opacity = 0;
+    if(bachArcEls.cur) bachArcEls.cur.style.opacity = 1;
+    if(bachArcEls.next) bachArcEls.next.style.opacity = 0.32;
+  });
+}
+function bachClearArcs(){
+  ['prev','cur','next'].forEach(r => { if(bachArcEls[r]){ bachArcEls[r].remove(); bachArcEls[r]=null; } });
+}
 function stopBach(){
   if(bachTimer){ clearTimeout(bachTimer); bachTimer = null; }
   bachPos = 0;
+  bachClearArcs();
   const btn = document.getElementById('musBachPlay');
   if(btn) btn.textContent = '▶ Bach: Prelude in C (BWV 846)';
   document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
@@ -1853,7 +1894,9 @@ function startBach(){
     const ev = bachFlat[bachPos], bar = BACH_PRELUDE[ev.bi];
     if(ev.ni === 0){
       playFreqs([m2f(bar.bass)], stepMs/1000*8);
-      drawChordArc(bar.idx);
+      bachAdvanceArcs(ev.bi);
+      activeChordIdx = bar.idx;
+      const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
       renderKeyDiagram();
       renderSuggestions();
     }
