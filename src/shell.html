@@ -93,15 +93,18 @@
 </div>
 <div id="panel">
  <div id="scienceControls">
- <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
- <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
- <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
    <select id="keySel"></select>
    <div class="pills" style="margin-top:7px;"><button id="keyFocusBtn">focus: isolate this key</button></div></div>
  <div class="grp"><div class="lbl">layout</div><div class="pills" id="layoutPills">
    <button data-k="disc" class="on">Discovered</button><button data-k="expl">Explained</button><button data-k="axes">Musical axes</button></div>
    <div id="axisSel" style="display:none;margin-top:7px;"><select id="axX"></select><select id="axY"></select><select id="axZ"></select></div></div>
+ <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
+ <button id="sciMoreBtn" class="morebtn">▾ more options</button>
+ <div id="sciMore" class="moreWrap" style="display:none;">
+ <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
+ <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
+ <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">render</div><div class="pills" id="renderPills">
    <button data-k="stars" class="on">Stars</button><button data-k="clouds">Clouds of sound</button></div></div>
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="namesBtn" class="on">chord names</button></div></div>
@@ -109,13 +112,15 @@
    <button data-k="family" class="on">Family</button><button data-k="fifths">Circle of 5ths</button></div></div>
  <div class="grp"><div class="lbl">harmonic threads</div>
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
- <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
+ </div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
  </div>
  <div id="musicalControls" style="display:none;">
  <div class="grp"><div class="lbl">key</div><select id="mKeySel"></select></div>
  <div class="grp"><div class="lbl">scale</div><select id="mScaleSel"></select></div>
  <div class="grp"><div class="lbl">what you're seeing</div><div class="hint" id="mLegend">— pick a key + scale to filter the map to that scale's chords, coloured by function.</div></div>
+ <button id="musMoreBtn" class="morebtn">▾ more options</button>
+ <div id="musMore" class="moreWrap" style="display:none;">
  <div class="grp"><div class="lbl">colour by</div><div class="pills" id="mColorPills">
    <button data-k="function" class="on">Function (T/S/D)</button><button data-k="root">Root note</button></div></div>
  <div class="grp"><div class="lbl">layout</div><div class="pills" id="mLayoutPills">
@@ -123,6 +128,7 @@
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
  <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
  <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
+ </div>
  <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
  </div>
  <div id="playControls" style="display:none;">

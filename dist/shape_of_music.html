@@ -18,6 +18,9 @@
    border-radius:12px;padding:11px 12px;backdrop-filter:blur(8px);
    width:min(330px,calc(100vw - 24px));max-height:72vh;overflow:auto;}
  .grp{margin-bottom:10px;} .grp:last-child{margin-bottom:0;}
+ .morebtn{font:inherit;font-size:11px;color:#9ad1f0;background:transparent;border:0;padding:4px 0 10px;cursor:pointer;text-align:left;width:100%;}
+ .morebtn:hover{color:var(--ink);}
+ .moreWrap .grp:first-child{margin-top:2px;}
  .lbl{font-size:10px;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px;}
  .pills{display:flex;flex-wrap:wrap;gap:6px;}
  .pills button{font:inherit;font-size:11px;color:var(--ink);background:#ffffff10;border:1px solid var(--line);
@@ -263,15 +266,18 @@
 </div>
 <div id="panel">
  <div id="scienceControls">
- <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
- <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
- <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
    <select id="keySel"></select>
    <div class="pills" style="margin-top:7px;"><button id="keyFocusBtn">focus: isolate this key</button></div></div>
  <div class="grp"><div class="lbl">layout</div><div class="pills" id="layoutPills">
    <button data-k="disc" class="on">Discovered</button><button data-k="expl">Explained</button><button data-k="axes">Musical axes</button></div>
    <div id="axisSel" style="display:none;margin-top:7px;"><select id="axX"></select><select id="axY"></select><select id="axZ"></select></div></div>
+ <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
+ <button id="sciMoreBtn" class="morebtn">▾ more options</button>
+ <div id="sciMore" class="moreWrap" style="display:none;">
+ <div class="grp"><button id="infoBtn" class="infobtn">ⓘ how are these positions computed?</button></div>
+ <div class="grp"><button id="wfBtn" class="infobtn">〜 waveform — build a wave from notes</button></div>
+ <div class="grp"><button id="cymBtn" class="infobtn">◉ cymatics — a chord's standing-wave glyph</button></div>
  <div class="grp"><div class="lbl">render</div><div class="pills" id="renderPills">
    <button data-k="stars" class="on">Stars</button><button data-k="clouds">Clouds of sound</button></div></div>
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="namesBtn" class="on">chord names</button></div></div>
@@ -279,13 +285,15 @@
    <button data-k="family" class="on">Family</button><button data-k="fifths">Circle of 5ths</button></div></div>
  <div class="grp"><div class="lbl">harmonic threads</div>
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
- <div class="grp"><div class="lbl">play a progression</div><div class="pills" id="progs"></div></div>
+ </div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
  </div>
  <div id="musicalControls" style="display:none;">
  <div class="grp"><div class="lbl">key</div><select id="mKeySel"></select></div>
  <div class="grp"><div class="lbl">scale</div><select id="mScaleSel"></select></div>
  <div class="grp"><div class="lbl">what you're seeing</div><div class="hint" id="mLegend">— pick a key + scale to filter the map to that scale's chords, coloured by function.</div></div>
+ <button id="musMoreBtn" class="morebtn">▾ more options</button>
+ <div id="musMore" class="moreWrap" style="display:none;">
  <div class="grp"><div class="lbl">colour by</div><div class="pills" id="mColorPills">
    <button data-k="function" class="on">Function (T/S/D)</button><button data-k="root">Root note</button></div></div>
  <div class="grp"><div class="lbl">layout</div><div class="pills" id="mLayoutPills">
@@ -293,6 +301,7 @@
  <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
  <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
  <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
+ </div>
  <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
  </div>
  <div id="playControls" style="display:none;">
@@ -317,7 +326,7 @@ const QORDER=['maj','min','dim','aug','sus2','sus4','7','maj7','min7','m7b5','di
 const RATIO={0:'1:1',1:'16:15',2:'9:8',3:'6:5',4:'5:4',5:'4:3',6:'7:5',7:'3:2',8:'8:5',9:'5:3',10:'9:5',11:'15:8'};
 const DEG={0:{num:'I',fn:'T'},2:{num:'ii',fn:'S'},4:{num:'iii',fn:'T'},5:{num:'IV',fn:'S'},7:{num:'V',fn:'D'},9:{num:'vi',fn:'T'},11:{num:'vii°',fn:'D'}};
 const DEGQ={0:['maj','maj7','6','add9'],2:['min','min7'],4:['min','min7'],5:['maj','maj7','6','add9'],7:['maj','7'],9:['min','min7'],11:['dim','m7b5']};
-const FN={T:'#6ad29a',S:'#f2c14e',D:'#ef6f6f'},FNNAME={T:'tonic',S:'subdominant',D:'dominant'};
+const FNNAME={T:'tonic',S:'subdominant',D:'dominant'}; // colours for T/S/D live in Palette.FN — one source for Science and Musical alike
 const N=DATA.nodes;let EDGES=DATA.edges,W=DATA.W;const wmin=DATA.w_min,wmax=DATA.w_max;
 // stash both tunings on each node so setTuning can swap the active fields in place
 N.forEach(n=>{n._et={x:n.x,y:n.y,z:n.z,freqs:n.freqs,cons:n.cons};
@@ -329,7 +338,7 @@ document.getElementById('subtitle').textContent=
 const leg=document.getElementById('legend');
 function setLegend(mode){leg.innerHTML='';
   if(keyRoot!=null){['T','S','D'].forEach(f=>{const d=document.createElement('div');
-    d.innerHTML='<i style="background:'+FN[f]+'"></i>'+FNNAME[f];leg.appendChild(d);});return;}
+    d.innerHTML='<i style="background:'+Palette.FN[f]+'"></i>'+FNNAME[f];leg.appendChild(d);});return;}
   if(mode==='family'){for(const k in FAM){const d=document.createElement('div');
     d.innerHTML='<i style="background:'+FAM[k]+'"></i>'+k;leg.appendChild(d);}}
   else{const d=document.createElement('div');d.innerHTML='<span class="bar"></span>&nbsp;root, around circle of 5ths';leg.appendChild(d);}}
@@ -397,7 +406,7 @@ function positionLabels(){for(let i=0;i<nodeLabels.length;i++){const lab=nodeLab
 function baseColor(i){const n=N[i];return colorMode==='fifths'?null:FAM[n.family];}
 function applyColors(mode){N.forEach((n,i)=>{const c=dots[i].material.color,h=halos[i].material.color;
   dots[i].material.opacity=1;halos[i].material.opacity=.55;
-  if(mode==='family'){c.set(FAM[n.family]);h.set(FAM[n.family]);}else{c.setHSL(n.cof/12,.62,.62);h.setHSL(n.cof/12,.62,.62);}});}
+  if(mode==='family'){c.set(FAM[n.family]);h.set(FAM[n.family]);}else{Palette.applyToTHREE(c,n.root);Palette.applyToTHREE(h,n.root);}});}
 
 // ---- PALETTE: one source of truth for note & function colours ----
 // pitch class -> fifths index -> hue on the colour wheel
@@ -587,19 +596,19 @@ function applyKey(root){keyRoot=root;clearKeyVisuals();
     setRender(renderMode);positionLabels();
     document.getElementById('axiscap').textContent=axisText();return;}
   N.forEach((n,i)=>{const d=diatonic(n);const c=dots[i].material.color,h=halos[i].material.color;
-    if(d){c.set(FN[d.fn]);h.set(FN[d.fn]);dots[i].material.opacity=1;halos[i].material.opacity=.7;
-      const lab=makeText(d.num,FN[d.fn],15,7.5);lab.material.opacity=1;lab.userData.idx=i;scene.add(lab);keyLabels.push(lab);}
+    if(d){c.set(Palette.FN[d.fn]);h.set(Palette.FN[d.fn]);dots[i].material.opacity=1;halos[i].material.opacity=.7;
+      const lab=makeText(d.num,Palette.FN[d.fn],15,7.5);lab.material.opacity=1;lab.userData.idx=i;scene.add(lab);keyLabels.push(lab);}
     else{c.set('#22304a');h.set('#22304a');dots[i].material.opacity=.12;halos[i].material.opacity=.04;}});
   const rep=repPerDegree();
   const A=(s,t,col)=>{if(rep[s]!==undefined&&rep[t]!==undefined)buildArrow(rep[s],rep[t],col);};
-  A(2,7,FN.S);A(5,7,FN.S);A(7,0,FN.D);A(11,0,FN.D);   // ii/IV -> V -> I, vii -> I
+  A(2,7,Palette.FN.S);A(5,7,Palette.FN.S);A(7,0,Palette.FN.D);A(11,0,Palette.FN.D);   // ii/IV -> V -> I, vii -> I
   positionKeyVisuals();
   if(edgeLines)edgeLines.visible=false;setLegend();setRender(renderMode);positionLabels();
   document.getElementById('axiscap').textContent='Key of '+NOTE[root]+' major — I ii iii IV V vi vii°  ·  green=tonic amber=subdominant red=dominant';}
 function positionKeyVisuals(){keyLabels.forEach(s=>{const p=pos[s.userData.idx];s.position.set(p.x,p.y+7,p.z);});
   if(keyRoot!=null){clearArrowsOnly();const rep=repPerDegree();
     const A=(s,t,col)=>{if(rep[s]!==undefined&&rep[t]!==undefined)buildArrow(rep[s],rep[t],col);};
-    A(2,7,FN.S);A(5,7,FN.S);A(7,0,FN.D);A(11,0,FN.D);}}
+    A(2,7,Palette.FN.S);A(5,7,Palette.FN.S);A(7,0,Palette.FN.D);A(11,0,Palette.FN.D);}}
 function clearArrowsOnly(){keyArrows.forEach(o=>{scene.remove(o);if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});keyArrows=[];}
 
 // meteor + trail
@@ -1494,11 +1503,25 @@ function wireSimpleFront(){
 }
 
 // ---- BOOT (runs last, after all modes are registered) ----
+// Panels lead with the 2-3 controls that matter most; everything else sits behind "more options"
+// so a newcomer sees a short list to try, not a wall of controls.
+function wireMoreToggle(btnId, wrapId){
+  const btn = document.getElementById(btnId), wrap = document.getElementById(wrapId);
+  if(!btn || !wrap) return;
+  wrap.style.display = 'none';
+  btn.onclick = () => {
+    const open = wrap.style.display !== 'none';
+    wrap.style.display = open ? 'none' : '';
+    btn.textContent = open ? '▾ more options' : '▴ fewer options';
+  };
+}
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalControls();
 wirePlayControls();
+wireMoreToggle('sciMoreBtn', 'sciMore');
+wireMoreToggle('musMoreBtn', 'musMore');
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view

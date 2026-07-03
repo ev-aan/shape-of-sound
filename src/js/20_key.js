@@ -28,17 +28,17 @@ function applyKey(root){keyRoot=root;clearKeyVisuals();
     setRender(renderMode);positionLabels();
     document.getElementById('axiscap').textContent=axisText();return;}
   N.forEach((n,i)=>{const d=diatonic(n);const c=dots[i].material.color,h=halos[i].material.color;
-    if(d){c.set(FN[d.fn]);h.set(FN[d.fn]);dots[i].material.opacity=1;halos[i].material.opacity=.7;
-      const lab=makeText(d.num,FN[d.fn],15,7.5);lab.material.opacity=1;lab.userData.idx=i;scene.add(lab);keyLabels.push(lab);}
+    if(d){c.set(Palette.FN[d.fn]);h.set(Palette.FN[d.fn]);dots[i].material.opacity=1;halos[i].material.opacity=.7;
+      const lab=makeText(d.num,Palette.FN[d.fn],15,7.5);lab.material.opacity=1;lab.userData.idx=i;scene.add(lab);keyLabels.push(lab);}
     else{c.set('#22304a');h.set('#22304a');dots[i].material.opacity=.12;halos[i].material.opacity=.04;}});
   const rep=repPerDegree();
   const A=(s,t,col)=>{if(rep[s]!==undefined&&rep[t]!==undefined)buildArrow(rep[s],rep[t],col);};
-  A(2,7,FN.S);A(5,7,FN.S);A(7,0,FN.D);A(11,0,FN.D);   // ii/IV -> V -> I, vii -> I
+  A(2,7,Palette.FN.S);A(5,7,Palette.FN.S);A(7,0,Palette.FN.D);A(11,0,Palette.FN.D);   // ii/IV -> V -> I, vii -> I
   positionKeyVisuals();
   if(edgeLines)edgeLines.visible=false;setLegend();setRender(renderMode);positionLabels();
   document.getElementById('axiscap').textContent='Key of '+NOTE[root]+' major — I ii iii IV V vi vii°  ·  green=tonic amber=subdominant red=dominant';}
 function positionKeyVisuals(){keyLabels.forEach(s=>{const p=pos[s.userData.idx];s.position.set(p.x,p.y+7,p.z);});
   if(keyRoot!=null){clearArrowsOnly();const rep=repPerDegree();
     const A=(s,t,col)=>{if(rep[s]!==undefined&&rep[t]!==undefined)buildArrow(rep[s],rep[t],col);};
-    A(2,7,FN.S);A(5,7,FN.S);A(7,0,FN.D);A(11,0,FN.D);}}
+    A(2,7,Palette.FN.S);A(5,7,Palette.FN.S);A(7,0,Palette.FN.D);A(11,0,Palette.FN.D);}}
 function clearArrowsOnly(){keyArrows.forEach(o=>{scene.remove(o);if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});keyArrows=[];}

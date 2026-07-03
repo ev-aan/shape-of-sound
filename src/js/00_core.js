@@ -4,7 +4,7 @@ const QORDER=['maj','min','dim','aug','sus2','sus4','7','maj7','min7','m7b5','di
 const RATIO={0:'1:1',1:'16:15',2:'9:8',3:'6:5',4:'5:4',5:'4:3',6:'7:5',7:'3:2',8:'8:5',9:'5:3',10:'9:5',11:'15:8'};
 const DEG={0:{num:'I',fn:'T'},2:{num:'ii',fn:'S'},4:{num:'iii',fn:'T'},5:{num:'IV',fn:'S'},7:{num:'V',fn:'D'},9:{num:'vi',fn:'T'},11:{num:'vii°',fn:'D'}};
 const DEGQ={0:['maj','maj7','6','add9'],2:['min','min7'],4:['min','min7'],5:['maj','maj7','6','add9'],7:['maj','7'],9:['min','min7'],11:['dim','m7b5']};
-const FN={T:'#6ad29a',S:'#f2c14e',D:'#ef6f6f'},FNNAME={T:'tonic',S:'subdominant',D:'dominant'};
+const FNNAME={T:'tonic',S:'subdominant',D:'dominant'}; // colours for T/S/D live in Palette.FN — one source for Science and Musical alike
 const N=DATA.nodes;let EDGES=DATA.edges,W=DATA.W;const wmin=DATA.w_min,wmax=DATA.w_max;
 // stash both tunings on each node so setTuning can swap the active fields in place
 N.forEach(n=>{n._et={x:n.x,y:n.y,z:n.z,freqs:n.freqs,cons:n.cons};
@@ -16,7 +16,7 @@ document.getElementById('subtitle').textContent=
 const leg=document.getElementById('legend');
 function setLegend(mode){leg.innerHTML='';
   if(keyRoot!=null){['T','S','D'].forEach(f=>{const d=document.createElement('div');
-    d.innerHTML='<i style="background:'+FN[f]+'"></i>'+FNNAME[f];leg.appendChild(d);});return;}
+    d.innerHTML='<i style="background:'+Palette.FN[f]+'"></i>'+FNNAME[f];leg.appendChild(d);});return;}
   if(mode==='family'){for(const k in FAM){const d=document.createElement('div');
     d.innerHTML='<i style="background:'+FAM[k]+'"></i>'+k;leg.appendChild(d);}}
   else{const d=document.createElement('div');d.innerHTML='<span class="bar"></span>&nbsp;root, around circle of 5ths';leg.appendChild(d);}}
@@ -84,4 +84,4 @@ function positionLabels(){for(let i=0;i<nodeLabels.length;i++){const lab=nodeLab
 function baseColor(i){const n=N[i];return colorMode==='fifths'?null:FAM[n.family];}
 function applyColors(mode){N.forEach((n,i)=>{const c=dots[i].material.color,h=halos[i].material.color;
   dots[i].material.opacity=1;halos[i].material.opacity=.55;
-  if(mode==='family'){c.set(FAM[n.family]);h.set(FAM[n.family]);}else{c.setHSL(n.cof/12,.62,.62);h.setHSL(n.cof/12,.62,.62);}});}
+  if(mode==='family'){c.set(FAM[n.family]);h.set(FAM[n.family]);}else{Palette.applyToTHREE(c,n.root);Palette.applyToTHREE(h,n.root);}});}

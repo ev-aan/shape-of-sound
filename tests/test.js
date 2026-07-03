@@ -50,6 +50,16 @@ try {
   fire(C['waveNotes'], 'click', { target: { closest: () => ({ dataset: { n: '10' } }) } });
   C['waveH'].value = '12'; C['waveH'].oninput(); C['wavePlay'].onclick(); C['waveClose'].onclick();
   C['keySel'].value = '0'; fire(C['keySel'], 'change', {}); frames(5);
+  // colour consistency: the key legend must draw its T/S/D swatches from the same Palette.FN
+  // that Musical mode's function-colouring uses — they used to be two different colour constants
+  const legendSwatches = C['legend'].children.map(c => c.innerHTML).join('');
+  if (!legendSwatches.includes(__api.Palette.FN.T)) throw new Error('key legend should use Palette.FN, the single source of T/S/D colours');
+  C['keySel'].value = '-1'; fire(C['keySel'], 'change', {}); frames(5);
+  // progressive disclosure: Science/Musical panels start collapsed to their primary controls
+  if (C['sciMore'].style.display !== 'none') throw new Error('Science "more options" should start collapsed');
+  C['sciMoreBtn'].onclick();
+  if (C['sciMore'].style.display === 'none') throw new Error('Science "more options" toggle should reveal secondary controls');
+  C['sciMoreBtn'].onclick();
   // Play tab: keyboard + sequencer live together; the old per-panel compose buttons are gone
   if (C['composeBtn']) throw new Error('composeBtn should have been removed from the Science panel');
   fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'play' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
@@ -77,6 +87,9 @@ try {
   fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
   frames(5);
   if (typeof __api === 'undefined' || __api.View.get().mode !== 'musical') throw new Error('mode toggle failed');
+  if (C['musMore'].style.display !== 'none') throw new Error('Musical "more options" should start collapsed');
+  C['musMoreBtn'].onclick();
+  if (C['musMore'].style.display === 'none') throw new Error('Musical "more options" toggle should reveal secondary controls');
   C['mKeySel'].value = '0'; C['mKeySel'].onchange(); frames(5);
   C['mScaleSel'].value = 'dorian'; C['mScaleSel'].onchange(); frames(5);
   fire(C['mColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'root' }, classList: { add(){}, remove(){}, toggle(){} } }) } });

@@ -1,9 +1,23 @@
 // ---- BOOT (runs last, after all modes are registered) ----
+// Panels lead with the 2-3 controls that matter most; everything else sits behind "more options"
+// so a newcomer sees a short list to try, not a wall of controls.
+function wireMoreToggle(btnId, wrapId){
+  const btn = document.getElementById(btnId), wrap = document.getElementById(wrapId);
+  if(!btn || !wrap) return;
+  wrap.style.display = 'none';
+  btn.onclick = () => {
+    const open = wrap.style.display !== 'none';
+    wrap.style.display = open ? 'none' : '';
+    btn.textContent = open ? '▾ more options' : '▴ fewer options';
+  };
+}
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalControls();
 wirePlayControls();
+wireMoreToggle('sciMoreBtn', 'sciMore');
+wireMoreToggle('musMoreBtn', 'musMore');
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view
