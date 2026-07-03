@@ -98,7 +98,7 @@ try {
   if (__api.View.get().scale !== 'dorian') throw new Error('scale selector did not update state');
   // clicking a chord pill plays it and opens the shared detail card
   const pillIdx = C['musDiagram'].innerHTML.match(/data-idx="(\d+)"/)[1];
-  fire(C['musDiagram'], 'click', { target: { closest: () => ({ dataset: { idx: pillIdx } }) } });
+  fire(C['musDiagram'], 'click', { target: { closest: () => ({ dataset: { idx: pillIdx }, classList: { add(){}, remove(){} } }) } });
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity

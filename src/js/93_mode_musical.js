@@ -4,7 +4,7 @@
 // a chord to hear it and open the same detail card Science mode uses. Modelled on what the
 // best-reviewed interactive circle-of-fifths tools (Musicca, GenMusic.im) already do well:
 // click a key -> see its chords -> click a chord -> hear it.
-let musCofBuilt = false;
+let musCofBuilt = false, activeChordIdx = null;
 
 Modes.register('musical', {
   label: 'Musical',
@@ -13,7 +13,11 @@ Modes.register('musical', {
     document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
-        onSelect(pc){ View.set({ key: pc, scale: View.get().scale || 'major' }); refreshMusicalScene(); }
+        onSelect(pc){
+          activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
+          View.set({ key: pc, scale: View.get().scale || 'major' });
+          refreshMusicalScene();
+        }
       });
       musCofBuilt = true;
     }
@@ -21,6 +25,32 @@ Modes.register('musical', {
   },
   onExit(){}
 });
+
+// a chord's notes, in stacked (root/third/fifth/...) order, as positions on the circle of fifths —
+// this is what makes the shape mean something: a major triad traces the same shape everywhere,
+// a minor triad another, a diminished chord a tighter one, wherever they're rooted.
+function cofNotePos(pc){
+  const i = (pc*7)%12, ang = -Math.PI/2 + i*(2*Math.PI/12), cx=150, cy=150, R=110;
+  return { x:+(cx+R*Math.cos(ang)).toFixed(1), y:+(cy+R*Math.sin(ang)).toFixed(1) };
+}
+function drawChordArc(idx){
+  activeChordIdx = idx;
+  const svg = document.querySelector('#musCof svg'); if(!svg) return;
+  const old = svg.querySelector('.chordArc'); if(old) old.remove();
+  if(idx == null) return;
+  const n = N[idx];
+  const pcs = n.ivs.map(iv => (n.root+iv)%12);
+  const pts = pcs.map(pc => { const p = cofNotePos(pc); return p.x+','+p.y; }).join(' ');
+  const v = View.get();
+  const fn = (v.key!=null ? chordFn(n, v.scale, v.key) : null) || 'ext';
+  const col = Palette.FN[fn] || Palette.FN.ext;
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  poly.setAttribute('points', pts);
+  poly.setAttribute('class', 'chordArc');
+  poly.setAttribute('fill', col+'22');
+  poly.setAttribute('stroke', col);
+  svg.insertBefore(poly, svg.firstChild);
+}
 
 const ROMAN = ['I','II','III','IV','V','VI','VII'];
 function romanFor(deg, quality){
@@ -57,7 +87,8 @@ function paintMusicalCircle(){
 }
 function chordPillHTML(item){
   const col = Palette.FN[item.fn] || Palette.FN.ext;
-  return '<button class="chordPill" data-idx="'+item.idx+'" style="--pc:'+col+'"><span class="rn">'+item.roman+'</span><span class="cn">'+item.name+'</span></button>';
+  const on = item.idx === activeChordIdx ? ' on' : '';
+  return '<button class="chordPill'+on+'" data-idx="'+item.idx+'" style="--pc:'+col+'"><span class="rn">'+item.roman+'</span><span class="cn">'+item.name+'</span></button>';
 }
 function fnColHTML(label, items){
   if(!items.length) return '';
@@ -84,11 +115,16 @@ function renderKeyDiagram(){
   }
 }
 function refreshMusicalScene(){
+  const v = View.get();
+  // default the shown shape to the tonic chord whenever the key/scale changes under it
+  if(v.key != null && (activeChordIdx == null || N[activeChordIdx].root !== v.key || !chordInScale(N[activeChordIdx], v.scale, v.key))){
+    activeChordIdx = repChordForDegree(v.scale, v.key, 0);
+  }
   paintMusicalCircle();
   renderKeyDiagram();
+  drawChordArc(v.key != null ? activeChordIdx : null);
   const leg = document.getElementById('mLegend');
   if(!leg) return;
-  const v = View.get();
   if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
   leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Subdominant (amber) leads to dominant (red), which resolves to tonic (green).';
@@ -103,6 +139,9 @@ function wireMusicalHome(){
     const idx = +b.dataset.idx;
     playFreqs(N[idx].freqs);
     renderDetail(idx);
+    drawChordArc(idx);
+    document.querySelectorAll('#musDiagram .chordPill.on').forEach(p => p.classList.remove('on'));
+    b.classList.add('on');
   });
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
