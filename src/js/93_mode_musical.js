@@ -73,6 +73,29 @@ function repChordForDegree(scaleId, keyRoot, offset){
   }
   return best;
 }
+function repChordsForKey(scaleId, keyRoot){
+  return SCALES[scaleId].pcs.map(offset => repChordForDegree(scaleId, keyRoot, offset)).filter(idx => idx != null);
+}
+// "where next?" — reuses the same overtone-overlap (W) and voice-leading (vlDist) scoring the
+// Play sequencer's suggestNext() uses, but scoped to this key's own chords and its actual scale
+// (suggestNext's functional bonus only understands the major scale via the Science-mode keyRoot).
+function suggestNextInKey(a, scaleId, keyRoot){
+  const fa = chordFn(N[a], scaleId, keyRoot);
+  const list = repChordsForKey(scaleId, keyRoot).filter(b => b !== a).map(b => {
+    const ov = W[a][b], vl = vlDist(a,b), vlS = 1/(1+vl);
+    const fb2 = chordFn(N[b], scaleId, keyRoot);
+    let fn = 0, tag = '';
+    if(fa && fb2){
+      if(fa==='D' && fb2==='T'){ fn=0.6; tag='resolves home'; }
+      else if(fa==='S' && fb2==='D'){ fn=0.45; tag='builds tension'; }
+      else if(fa==='T' && fb2==='S'){ fn=0.25; tag='moves away'; }
+      else fn=0.1;
+    }
+    return { b, score: 0.5*ov + 0.3*vlS + 0.2*fn, tag };
+  });
+  list.sort((x,y)=>y.score-x.score);
+  return list;
+}
 function paintMusicalCircle(){
   const v = View.get();
   const inScale = v.key!=null ? scalePcs(v.scale, v.key) : null;
@@ -114,6 +137,30 @@ function renderKeyDiagram(){
     host.innerHTML = '<div class="fnFlow">'+fnColHTML('chords', groups.ext)+'</div>';
   }
 }
+function suggChipHTML(o){
+  const v = View.get(), fn = chordFn(N[o.b], v.scale, v.key) || 'ext';
+  const col = Palette.FN[fn] || Palette.FN.ext;
+  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+
+    (o.tag ? '<span class="suggTag">'+o.tag+'</span>' : '')+'</button>';
+}
+function renderSuggestions(){
+  const host = document.getElementById('musSuggest'); if(!host) return;
+  const v = View.get();
+  if(v.key == null || activeChordIdx == null){ host.innerHTML = ''; return; }
+  const list = suggestNextInKey(activeChordIdx, v.scale, v.key).slice(0,4);
+  if(!list.length){ host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="fnLbl">where next from '+N[activeChordIdx].name+'?</div><div class="suggRow">'+list.map(suggChipHTML).join('')+'</div>';
+}
+// the one path for "make this chord the one we're looking at" — used by both the diagram pills
+// and the "where next?" suggestion chips, so clicking a suggestion behaves exactly like clicking
+// its pill would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
+function selectMusicalChord(idx){
+  playFreqs(N[idx].freqs);
+  renderDetail(idx);
+  drawChordArc(idx);
+  renderKeyDiagram();
+  renderSuggestions();
+}
 function refreshMusicalScene(){
   const v = View.get();
   // default the shown shape to the tonic chord whenever the key/scale changes under it
@@ -123,6 +170,7 @@ function refreshMusicalScene(){
   paintMusicalCircle();
   renderKeyDiagram();
   drawChordArc(v.key != null ? activeChordIdx : null);
+  renderSuggestions();
   const leg = document.getElementById('mLegend');
   if(!leg) return;
   if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
@@ -136,17 +184,17 @@ function wireMusicalHome(){
   scaleSel.onchange = () => { View.set({ scale: scaleSel.value }); refreshMusicalScene(); };
   document.getElementById('musDiagram').addEventListener('click', e => {
     const b = e.target.closest('.chordPill'); if(!b) return;
-    const idx = +b.dataset.idx;
-    playFreqs(N[idx].freqs);
-    renderDetail(idx);
-    drawChordArc(idx);
-    document.querySelectorAll('#musDiagram .chordPill.on').forEach(p => p.classList.remove('on'));
-    b.classList.add('on');
+    selectMusicalChord(+b.dataset.idx);
+  });
+  document.getElementById('musSuggest').addEventListener('click', e => {
+    const b = e.target.closest('.suggChip'); if(!b) return;
+    selectMusicalChord(+b.dataset.idx);
   });
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
     'Tap a note on the circle to make it your key. The diagram below groups that key\'s chords by '+
     'function:\n  Subdominant (amber) — departs from home\n  Dominant (red) — tension, wants to resolve\n  Tonic (green) — home\n\n'+
+    'Click a chord to see its shape on the circle, and "where next?" for chords that tend to follow it.\n\n'+
     'Try C, then switch the scale from Major to Dorian and see how the chords change.');
 }

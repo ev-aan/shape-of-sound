@@ -99,6 +99,13 @@ try {
   // clicking a chord pill plays it and opens the shared detail card
   const pillIdx = C['musDiagram'].innerHTML.match(/data-idx="(\d+)"/)[1];
   fire(C['musDiagram'], 'click', { target: { closest: () => ({ dataset: { idx: pillIdx }, classList: { add(){}, remove(){} } }) } });
+  // "where next?" suggestions should follow the newly-selected chord, and clicking one navigates too
+  if (!/suggChip/.test(C['musSuggest'].innerHTML)) throw new Error('no "where next" suggestions rendered');
+  const suggIdx = C['musSuggest'].innerHTML.match(/data-idx="(\d+)"/)[1];
+  const suggName = __api.N[+suggIdx].name;
+  fire(C['musSuggest'], 'click', { target: { closest: () => ({ dataset: { idx: suggIdx }, classList: { add(){}, remove(){} } }) } });
+  if (!C['musDiagram'].innerHTML.includes('chordPill on')) throw new Error('selecting a suggestion should highlight its pill in the diagram');
+  if (!C['musSuggest'].innerHTML.includes(suggName)) throw new Error('suggestions should now be relative to the newly-selected chord');
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity

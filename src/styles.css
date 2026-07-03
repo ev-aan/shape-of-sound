@@ -187,6 +187,12 @@
  .chordPill.on{background:#ffffff1c;outline:1.5px solid var(--pc,#cdd9f5);}
  .chordPill .rn{font:700 15px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
  .chordPill .cn{font-size:10px;color:var(--dim);margin-top:2px;}
+ .musSuggest{margin-top:18px;}
+ .suggRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+ .suggChip{font:inherit;cursor:pointer;border:1px solid var(--pc,var(--line));border-radius:99px;padding:6px 12px;
+   background:#ffffff08;color:var(--ink);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+ .suggChip:hover{background:#ffffff14;}
+ .suggTag{font-size:9.5px;color:var(--dim);}
  .musLinks{display:flex;gap:18px;justify-content:center;margin-top:20px;}
  @media(max-width:560px){.fnFlow{gap:8px;}.fnArrow{display:none;}.chordPill{min-width:56px;padding:6px 9px;}}
  #playKeyboard{margin-top:6px;}
