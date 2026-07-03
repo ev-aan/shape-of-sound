@@ -169,9 +169,10 @@
  #musicalHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
  @media(max-width:640px){#musicalHome{padding-top:145px;align-items:flex-start;}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
- .musWrap .cofSvg{max-width:280px;}
+ .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
+ .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
  .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}

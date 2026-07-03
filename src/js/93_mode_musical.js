@@ -13,6 +13,7 @@ Modes.register('musical', {
     document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
+        caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
@@ -33,11 +34,18 @@ function cofNotePos(pc){
   const i = (pc*7)%12, ang = -Math.PI/2 + i*(2*Math.PI/12), cx=150, cy=150, R=110;
   return { x:+(cx+R*Math.cos(ang)).toFixed(1), y:+(cy+R*Math.sin(ang)).toFixed(1) };
 }
+// interval-from-root -> the chord-tone role name, for the "C (root) · E (3rd) · G (5th)" label
+const IV_LABEL = {0:'root',1:'♭2',2:'2nd',3:'♭3',4:'3rd',5:'4th',6:'♭5',7:'5th',8:'♯5',9:'6th',10:'♭7',11:'7th'};
+function chordToneText(idx){
+  const n = N[idx];
+  return n.name+':  '+n.ivs.map(iv => NOTE[(n.root+iv)%12]+' ('+(IV_LABEL[iv]||iv)+')').join('  ·  ');
+}
 function drawChordArc(idx){
   activeChordIdx = idx;
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
   const old = svg.querySelector('.chordArc'); if(old) old.remove();
-  if(idx == null) return;
+  const label = document.getElementById('musChordLabel');
+  if(idx == null){ if(label) label.textContent = ''; return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
   const pts = pcs.map(pc => { const p = cofNotePos(pc); return p.x+','+p.y; }).join(' ');
@@ -50,6 +58,7 @@ function drawChordArc(idx){
   poly.setAttribute('fill', col+'22');
   poly.setAttribute('stroke', col);
   svg.insertBefore(poly, svg.firstChild);
+  if(label) label.textContent = chordToneText(idx);
 }
 
 const ROMAN = ['I','II','III','IV','V','VI','VII'];

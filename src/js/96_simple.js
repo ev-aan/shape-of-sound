@@ -34,8 +34,19 @@ function showAdvanced(){
   resize();
   updateCamera();
 }
+// tap a note: highlight it and its two perfect-fifth neighbours, name the relation in plain language.
+// Scoped to this one mounted circle — Musical mode's own instance does something else entirely on tap.
+function exploreNeighbours(pc, container){
+  container.querySelectorAll('.cofNote').forEach(n => n.classList.remove('sel','near'));
+  const g = container.querySelector('.cofNote[data-pc="'+pc+'"]');
+  if(g) g.classList.add('sel');
+  const up = (pc+7)%12, down = (pc+5)%12;
+  container.querySelectorAll('.cofNote').forEach(n => { if(+n.dataset.pc===up || +n.dataset.pc===down) n.classList.add('near'); });
+  const cap = container.querySelector('.cofCaption');
+  if(cap) cap.textContent = NOTE[pc]+' blends best with '+NOTE[up]+' and '+NOTE[down]+' — a perfect fifth away in either direction.';
+}
 function wireSimpleFront(){
-  Surfaces.get('cof').render(document.getElementById('simpleCof'));
+  Surfaces.get('cof').render(document.getElementById('simpleCof'), { onSelect: exploreNeighbours });
   document.getElementById('simpleMusicalCard').addEventListener('click', e => {
     if(e.target.closest && e.target.closest('.cofNote')) return; // let the note's own tap-to-explore handle it
     showAdvanced(); Modes.enter('musical');

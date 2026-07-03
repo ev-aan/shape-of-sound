@@ -175,9 +175,10 @@
  #musicalHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
  @media(max-width:640px){#musicalHome{padding-top:145px;align-items:flex-start;}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
- .musWrap .cofSvg{max-width:280px;}
+ .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
  .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
+ .musChordLabel{margin-top:10px;font-size:12px;color:var(--ink);min-height:1.4em;}
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
  .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
@@ -232,6 +233,7 @@
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
   <div id="musCof"></div>
+  <div id="musChordLabel" class="musChordLabel"></div>
   <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
   <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">— tap a note on the circle to explore its key.</div>
   <div id="musDiagram" class="musDiagram"></div>
@@ -1148,11 +1150,13 @@ function computeTonnetz(){
 
 // ---- SURFACE: circle of fifths (SVG) ----
 // The first Surfaces entry: the plain map musicians already know, no physics attached.
+// Purely structural — draws the ring and (optionally) a caption strip, then hands taps to whoever
+// asked for them via opts.onSelect. Each consumer decides what a tap means: the Simple front door
+// highlights fifths-neighbours, Musical mode sets a key. Nothing is shared/global, so two mounted
+// instances never fight over the same caption element.
 // Mirror this file's shape for the keyboard / staff / fretboard surfaces later.
 Surfaces.register('cof', {
   label: 'Circle of fifths',
-  // opts.onSelect(pc), if given, fires in addition to the built-in "explore neighbours" tap —
-  // lets a consumer (e.g. Musical mode) use the same tap to also set a key, without losing the caption.
   render(container, opts){
     if(!container) return;
     opts = opts || {};
@@ -1167,28 +1171,15 @@ Surfaces.register('cof', {
         '<text x="'+x+'" y="'+y+'" class="cofLabel">'+NOTE[pc]+'</text></g>';
     });
     svg += '</svg>';
-    container.innerHTML = svg + '<div class="cofCaption" id="cofCaption">Tap a note to see how it relates.</div>';
+    container.innerHTML = svg + (opts.caption === false ? '' : '<div class="cofCaption">'+(opts.initialCaption || 'Tap a note to see how it relates.')+'</div>');
     if(opts.onSelect){
       container.addEventListener('click', e => {
         const g = e.target.closest && e.target.closest('.cofNote');
-        if(g) opts.onSelect(+g.dataset.pc);
+        if(g) opts.onSelect(+g.dataset.pc, container);
       });
     }
   },
-  refresh(container){ this.render(container); }
-});
-
-// tap a note: highlight it and its two perfect-fifth neighbours, name the relation in plain language
-document.addEventListener('click', e => {
-  const g = e.target.closest && e.target.closest('.cofNote');
-  if(!g) return;
-  const pc = +g.dataset.pc;
-  document.querySelectorAll('.cofNote').forEach(n => n.classList.remove('sel','near'));
-  g.classList.add('sel');
-  const up = (pc+7)%12, down = (pc+5)%12;
-  document.querySelectorAll('.cofNote').forEach(n => { if(+n.dataset.pc===up || +n.dataset.pc===down) n.classList.add('near'); });
-  const cap = document.getElementById('cofCaption');
-  if(cap) cap.textContent = NOTE[pc]+' blends best with '+NOTE[up]+' and '+NOTE[down]+' — a perfect fifth away in either direction.';
+  refresh(container, opts){ this.render(container, opts); }
 });
 
 // ---- SURFACE: piano keyboard (SVG) ----
@@ -1281,6 +1272,7 @@ Modes.register('musical', {
     document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
+        caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
@@ -1301,11 +1293,18 @@ function cofNotePos(pc){
   const i = (pc*7)%12, ang = -Math.PI/2 + i*(2*Math.PI/12), cx=150, cy=150, R=110;
   return { x:+(cx+R*Math.cos(ang)).toFixed(1), y:+(cy+R*Math.sin(ang)).toFixed(1) };
 }
+// interval-from-root -> the chord-tone role name, for the "C (root) · E (3rd) · G (5th)" label
+const IV_LABEL = {0:'root',1:'♭2',2:'2nd',3:'♭3',4:'3rd',5:'4th',6:'♭5',7:'5th',8:'♯5',9:'6th',10:'♭7',11:'7th'};
+function chordToneText(idx){
+  const n = N[idx];
+  return n.name+':  '+n.ivs.map(iv => NOTE[(n.root+iv)%12]+' ('+(IV_LABEL[iv]||iv)+')').join('  ·  ');
+}
 function drawChordArc(idx){
   activeChordIdx = idx;
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
   const old = svg.querySelector('.chordArc'); if(old) old.remove();
-  if(idx == null) return;
+  const label = document.getElementById('musChordLabel');
+  if(idx == null){ if(label) label.textContent = ''; return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
   const pts = pcs.map(pc => { const p = cofNotePos(pc); return p.x+','+p.y; }).join(' ');
@@ -1318,6 +1317,7 @@ function drawChordArc(idx){
   poly.setAttribute('fill', col+'22');
   poly.setAttribute('stroke', col);
   svg.insertBefore(poly, svg.firstChild);
+  if(label) label.textContent = chordToneText(idx);
 }
 
 const ROMAN = ['I','II','III','IV','V','VI','VII'];
@@ -1656,8 +1656,19 @@ function showAdvanced(){
   resize();
   updateCamera();
 }
+// tap a note: highlight it and its two perfect-fifth neighbours, name the relation in plain language.
+// Scoped to this one mounted circle — Musical mode's own instance does something else entirely on tap.
+function exploreNeighbours(pc, container){
+  container.querySelectorAll('.cofNote').forEach(n => n.classList.remove('sel','near'));
+  const g = container.querySelector('.cofNote[data-pc="'+pc+'"]');
+  if(g) g.classList.add('sel');
+  const up = (pc+7)%12, down = (pc+5)%12;
+  container.querySelectorAll('.cofNote').forEach(n => { if(+n.dataset.pc===up || +n.dataset.pc===down) n.classList.add('near'); });
+  const cap = container.querySelector('.cofCaption');
+  if(cap) cap.textContent = NOTE[pc]+' blends best with '+NOTE[up]+' and '+NOTE[down]+' — a perfect fifth away in either direction.';
+}
 function wireSimpleFront(){
-  Surfaces.get('cof').render(document.getElementById('simpleCof'));
+  Surfaces.get('cof').render(document.getElementById('simpleCof'), { onSelect: exploreNeighbours });
   document.getElementById('simpleMusicalCard').addEventListener('click', e => {
     if(e.target.closest && e.target.closest('.cofNote')) return; // let the note's own tap-to-explore handle it
     showAdvanced(); Modes.enter('musical');
