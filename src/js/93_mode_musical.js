@@ -1,10 +1,18 @@
 // ---- MODE: MUSICAL (theory view) ----
-// A full 2D takeover, no 3D map: tap a note on the circle of fifths to make it your key, and a
-// diagram below groups that key's chords by function (Subdominant -> Dominant -> Tonic) — tap
-// a chord to hear it and open the same detail card Science mode uses. Modelled on what the
-// best-reviewed interactive circle-of-fifths tools (Musicca, GenMusic.im) already do well:
-// click a key -> see its chords -> click a chord -> hear it.
+// A full 2D takeover, no 3D map: tap a note on the circle of fifths to make it your key. The
+// circle itself shows that key's diatonic chords as concentric rings — minor (ii/vi) and
+// diminished (vii°) — positioned by their real circle-of-fifths relationship to the key, the way
+// "The Chord Wheel" (Jim Fleser) and similar reference charts do it, instead of a flat list below
+// the circle. Tap any ring segment to hear it and open the same detail card Science mode uses.
 let musCofBuilt = false, activeChordIdx = null, musTapMode = 'chord';
+
+// Rings are just data: { id, radius, noteRadius, fn(pc)->derivedPc, suffix, sat, light }. Adding a
+// new one later (e.g. secondary dominants, parallel major/minor) means adding an entry here and a
+// paint rule below — nothing about the circle surface itself needs to change.
+const MUSICAL_RINGS = [
+  { id:'minor', radius:70,  noteRadius:13, fn: pc => (pc+9)%12,  suffix:'m', sat:.45, light:.34 },
+  { id:'dim',   radius:148, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
+];
 
 Modes.register('musical', {
   label: 'Musical',
@@ -14,13 +22,19 @@ Modes.register('musical', {
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
-        showMinors: true,
+        viewBoxPad: 40, // room for the diminished ring, which sits outside the main note ring
+        rings: MUSICAL_RINGS,
         onSelect(pc){
           activeChordIdx = null; // key changed — let refreshMusicalScene re-pick the tonic below
           View.set({ key: pc, scale: View.get().scale || 'major' });
           refreshMusicalScene();
           if(musTapMode === 'note') playFreqs([m2f(60+pc)]);
           else if(activeChordIdx != null) playFreqs(N[activeChordIdx].freqs);
+        },
+        onSelectRing(ringId, pc){
+          const q = ringId === 'dim' ? 'dim' : 'min';
+          const idx = N.findIndex(n => n.root === pc && n.q === q);
+          if(idx >= 0) selectMusicalChord(idx);
         }
       });
       musCofBuilt = true;
@@ -119,35 +133,27 @@ function paintMusicalCircle(){
     else if(inScale.has(pc)) el.classList.add('inScale');
     else el.classList.add('dim');
   });
-}
-function chordPillHTML(item){
-  const col = Palette.FN[item.fn] || Palette.FN.ext;
-  const on = item.idx === activeChordIdx ? ' on' : '';
-  return '<button class="chordPill'+on+'" data-idx="'+item.idx+'" style="--pc:'+col+'"><span class="rn">'+item.roman+'</span><span class="cn">'+item.name+'</span></button>';
-}
-function fnColHTML(label, items){
-  if(!items.length) return '';
-  return '<div class="fnCol"><div class="fnLbl">'+label+'</div>'+items.map(chordPillHTML).join('')+'</div>';
-}
-function renderKeyDiagram(){
-  const host = document.getElementById('musDiagram');
-  const v = View.get();
-  if(v.key == null){ host.innerHTML = '<div class="hint">Tap a note on the circle above to explore its key.</div>'; return; }
+  // the minor ring position at a given angular slot only "means" ii or vi of the current key if
+  // it's actually at that slot AND actually a minor triad there — checked by scale degree, not by
+  // "is this pc a diatonic minor somewhere" (which would wrongly also light up iii, a minor triad
+  // that just isn't one of the ring's two ii/vi neighbour slots).
+  document.querySelectorAll('#musCof .cofRing').forEach(el => el.classList.remove('active','dim'));
+  if(v.key == null) return;
   const s = SCALES[v.scale];
-  const groups = { T:[], S:[], D:[], ext:[] };
-  s.pcs.forEach((offset, deg) => {
-    const idx = repChordForDegree(v.scale, v.key, offset);
-    if(idx == null) return;
-    const fn = chordFn(N[idx], v.scale, v.key) || 'ext';
-    (groups[fn] || groups.ext).push({ idx, roman: romanFor(deg, N[idx].q), name: N[idx].name, fn });
+  if(s.pcs.length !== 7){ document.querySelectorAll('#musCof .cofRing').forEach(el => el.classList.add('dim')); return; }
+  const degreeRoot = deg => (v.key + s.pcs[deg]) % 12;
+  const degreeIdx = deg => repChordForDegree(v.scale, v.key, s.pcs[deg]);
+  const ii = degreeIdx(1), vi = degreeIdx(5), vii = degreeIdx(6);
+  document.querySelectorAll('#musCof .cofRing-minor').forEach(el => {
+    const pc = +el.dataset.pc;
+    const hit = (pc===degreeRoot(1) && ii!=null && N[ii].q==='min') || (pc===degreeRoot(5) && vi!=null && N[vi].q==='min');
+    el.classList.add(hit ? 'active' : 'dim');
   });
-  if(groups.S.length || groups.D.length || groups.T.length){
-    host.innerHTML = '<div class="fnFlow">'+fnColHTML('subdominant', groups.S)+'<span class="fnArrow">→</span>'+
-      fnColHTML('dominant', groups.D)+'<span class="fnArrow">→</span>'+fnColHTML('tonic', groups.T)+'</div>'+
-      (groups.ext.length ? '<div class="fnFlow" style="margin-top:10px;">'+fnColHTML('other', groups.ext)+'</div>' : '');
-  } else {
-    host.innerHTML = '<div class="fnFlow">'+fnColHTML('chords', groups.ext)+'</div>';
-  }
+  document.querySelectorAll('#musCof .cofRing-dim').forEach(el => {
+    const pc = +el.dataset.pc;
+    const hit = pc===degreeRoot(6) && vii!=null && N[vii].q==='dim';
+    el.classList.add(hit ? 'active' : 'dim');
+  });
 }
 function suggChipHTML(o){
   const v = View.get(), fn = chordFn(N[o.b], v.scale, v.key) || 'ext';
@@ -163,14 +169,13 @@ function renderSuggestions(){
   if(!list.length){ host.innerHTML = ''; return; }
   host.innerHTML = '<div class="fnLbl">where next from '+N[activeChordIdx].name+'?</div><div class="suggRow">'+list.map(suggChipHTML).join('')+'</div>';
 }
-// the one path for "make this chord the one we're looking at" — used by both the diagram pills
-// and the "where next?" suggestion chips, so clicking a suggestion behaves exactly like clicking
-// its pill would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
+// the one path for "make this chord the one we're looking at" — used by the ring taps and the
+// "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
+// segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
 function selectMusicalChord(idx){
   playFreqs(N[idx].freqs);
   renderDetail(idx);
   drawChordArc(idx);
-  renderKeyDiagram();
   renderSuggestions();
 }
 function refreshMusicalScene(){
@@ -180,14 +185,13 @@ function refreshMusicalScene(){
     activeChordIdx = repChordForDegree(v.scale, v.key, 0);
   }
   paintMusicalCircle();
-  renderKeyDiagram();
   drawChordArc(v.key != null ? activeChordIdx : null);
   renderSuggestions();
   const leg = document.getElementById('mLegend');
   if(!leg) return;
   if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
-  leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Subdominant (amber) leads to dominant (red), which resolves to tonic (green).';
+  leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Minor ring: ii & vi. Outer ring: vii° (diminished). Tap any of them to hear it.';
 }
 function wireMusicalHome(){
   const scaleSel = document.getElementById('mScaleSel');
@@ -199,10 +203,6 @@ function wireMusicalHome(){
     musTapMode = b.dataset.k;
     document.querySelectorAll('#musTapPills button').forEach(x => x.classList.toggle('on', x===b));
   });
-  document.getElementById('musDiagram').addEventListener('click', e => {
-    const b = e.target.closest('.chordPill'); if(!b) return;
-    selectMusicalChord(+b.dataset.idx);
-  });
   document.getElementById('musSuggest').addEventListener('click', e => {
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
@@ -212,8 +212,7 @@ function wireMusicalHome(){
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
     'Tap a note on the circle to make it your key. "Tap plays" decides what you hear: Chord plays the '+
     'key\'s tonic chord, Note plays just that one note.\n\n'+
-    'The diagram below groups that key\'s chords by function:\n  Subdominant (amber) — departs from home\n'+
-    '  Dominant (red) — tension, wants to resolve\n  Tonic (green) — home\n\n'+
-    'Click a chord to see its shape on the circle, and "where next?" for chords that tend to follow it.\n\n'+
-    'Try C, then switch the scale from Major to Dorian and see how the chords change.');
+    'The circle itself shows this key\'s diatonic chords as rings: the inner ring is minor (ii and vi), '+
+    'the outer ring is diminished (vii°) — tap either to hear that chord.\n\n'+
+    'Try C, then switch the scale from Major to Dorian and see how the rings change.');
 }

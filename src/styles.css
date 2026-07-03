@@ -153,8 +153,10 @@
  .cofNote:hover circle,.cofNote.sel circle{transform:scale(1.12);}
  .cofNote.near circle{stroke:#fff;stroke-width:2;}
  .cofLabel{fill:#0b1026;font:700 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
- .cofMinor circle{stroke:#00000030;stroke-width:1;}
- .cofMinorLabel{fill:#e8eefb;font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+ .cofRing circle{stroke:#00000030;stroke-width:1;cursor:pointer;}
+ .cofRing.dim circle{opacity:.25;}
+ .cofRing.active circle{opacity:1;stroke:#fff;stroke-width:1.5;}
+ .cofRingLabel{fill:#e8eefb;font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
  .simpleCols{display:flex;gap:18px;justify-content:center;margin:0;flex-wrap:wrap;align-items:stretch;}
  .simpleCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:16px;width:210px;
@@ -182,17 +184,7 @@
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
  .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
  .musScaleRow select{width:auto;min-width:170px;}
- .musDiagram{margin-top:16px;min-height:70px;}
- .fnFlow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
- .fnCol{display:flex;flex-direction:column;align-items:center;gap:6px;}
  .fnLbl{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
- .fnArrow{font-size:20px;color:var(--dim);}
- .chordPill{font:inherit;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--pc,var(--line));
-   border-radius:8px;padding:7px 12px;background:#ffffff08;color:var(--ink);display:flex;flex-direction:column;align-items:center;min-width:64px;}
- .chordPill:hover{background:#ffffff14;}
- .chordPill.on{background:#ffffff1c;outline:1.5px solid var(--pc,#cdd9f5);}
- .chordPill .rn{font:700 15px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
- .chordPill .cn{font-size:10px;color:var(--dim);margin-top:2px;}
  .musSuggest{margin-top:18px;}
  .suggRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
  .suggChip{font:inherit;cursor:pointer;border:1px solid var(--pc,var(--line));border-radius:99px;padding:6px 12px;
@@ -215,7 +207,6 @@
  .staffNote{fill:var(--ink);}
  .staffNote.on{fill:#9ad1f0;}
  @media(max-width:560px){.staffSvg{height:110px;}}
- @media(max-width:560px){.fnFlow{gap:8px;}.fnArrow{display:none;}.chordPill{min-width:56px;padding:6px 9px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}

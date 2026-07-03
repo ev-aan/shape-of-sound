@@ -1,31 +1,82 @@
-// ---- BACH: Prelude in C major, BWV 846 (WTC Book I, No. 1) — first 8 bars ----
-// Not a verified Urtext transcription: the chord identity per bar follows well-documented harmonic
-// analysis (I - ii7 - V7 - I, then the descending-fifths sequence toward the dominant), and each
-// bar's 8 notes are generated from that chord using the piece's own well-known broken-chord shape
-// (root, 3rd, 5th, octave, 3rd, 5th, octave, 3rd) rather than recalled note-by-note. Treat this as
-// a faithful reconstruction of the harmony, not a note-perfect score.
+// ---- BACH: Prelude in C major, BWV 846 (WTC Book I, No. 1) — all 35 bars ----
+// Not a verified Urtext transcription. Bars 1-13 follow a specific, well-sourced bar-by-bar
+// analysis (including inversions/bass notes: e.g. m2 is ii7 with the 7th in the bass, m12 a
+// secondary leading-tone diminished 7th over a G pedal). Bars 14-35 are a stylized reconstruction
+// that follows the piece's well-documented STRUCTURE (a descending-seconds sequence with secondary
+// leading-tone diminished 7ths back to the tonic, a secondary dominant tonicizing IV7, the two
+// famous diminished-7th bars, an extended dominant pedal, then a tonic pedal to the final cadence)
+// rather than a bar-exact transcription of that structure. Each bar's 8 notes are generated from
+// its chord using the piece's own repeating broken-chord shape (root-3rd-5th-octave, twice), with
+// the starting octave chosen to stay close to where the previous bar left off — real voice leading,
+// not a register jump every time the chord root changes.
 const BACH_CHORDS = [
-  { root:0, q:'maj',  roman:'I'    },
-  { root:2, q:'min7', roman:'ii7'  },
-  { root:7, q:'7',    roman:'V7'   },
-  { root:0, q:'maj',  roman:'I'    },
-  { root:9, q:'min',  roman:'vi'   },
-  { root:2, q:'7',    roman:'V7/V' },
-  { root:7, q:'maj',  roman:'V'    },
-  { root:7, q:'7',    roman:'V7'   },
+  { root:0,  q:'maj',   roman:'I'          },                     // 1
+  { root:2,  q:'min7',  roman:'ii7',      bassPc:0  },             // 2  Dm7, 7th (C) in bass
+  { root:7,  q:'7',     roman:'V7',       bassPc:11 },             // 3  G7, 3rd (B) in bass
+  { root:0,  q:'maj',   roman:'I'          },                      // 4
+  { root:9,  q:'min',   roman:'vi',       bassPc:0  },             // 5  Am, 3rd (C) in bass
+  { root:2,  q:'7',     roman:'V7/V',     bassPc:0  },             // 6  D7, 7th (C) in bass
+  { root:7,  q:'maj',   roman:'V',        bassPc:11 },             // 7  G, 3rd (B) in bass
+  { root:0,  q:'maj7',  roman:'I7'         },                      // 8  Cmaj7
+  { root:9,  q:'min',   roman:'vi'          },                     // 9  Am (min7 has no root=9 entry in the data)
+  { root:2,  q:'7',     roman:'V7/V'       },                      // 10 D7
+  { root:7,  q:'maj',   roman:'V'          },                      // 11 G
+  { root:1,  q:'dim7',  roman:'vii°7/ii',  bassPc:7  },            // 12 C#dim7, over G
+  { root:2,  q:'min',   roman:'ii',       bassPc:5  },             // 13 Dm, 3rd (F) in bass
+  { root:7,  q:'7',     roman:'V7'          },                     // 14 G7
+  { root:0,  q:'maj',   roman:'I'           },                     // 15 C
+  { root:5,  q:'maj',   roman:'IV'          },                     // 16 F
+  { root:11, q:'dim',   roman:'vii°'        },                     // 17 Bdim
+  { root:4,  q:'min',   roman:'iii'         },                     // 18 Em
+  { root:9,  q:'min',   roman:'vi'          },                     // 19 Am
+  { root:0,  q:'7',     roman:'V7/IV'       },                     // 20 C7
+  { root:5,  q:'7',     roman:'IV7'         },                     // 21 F7
+  { root:0,  q:'dim7',  roman:'vii°7/V'     },                     // 22 F#dim7 (same 4 notes as Cdim7 — dim7 is symmetric, only 3 canonical roots exist in the data)
+  { root:2,  q:'dim7',  roman:'vii°7/I',   bassPc:8  },            // 23 Bdim7, 3rd inversion (Ab bass) (same 4 notes as Ddim7)
+  { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 24 G7 — dominant pedal begins
+  { root:0,  q:'maj',   roman:'I',         bassPc:7  },            // 25 C/G
+  { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 26 G7
+  { root:2,  q:'min7',  roman:'ii7',       bassPc:7  },            // 27 Dm7/G
+  { root:0,  q:'maj',   roman:'I',         bassPc:7  },            // 28 C/G
+  { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 29 G7
+  { root:9,  q:'min',   roman:'vi',        bassPc:7  },            // 30 Am/G
+  { root:7,  q:'7',     roman:'V7',        bassPc:7  },            // 31 G7 — pedal ends
+  { root:0,  q:'maj',   roman:'I'           },                     // 32 C — tonic pedal begins
+  { root:5,  q:'maj',   roman:'IV',        bassPc:0  },            // 33 F/C
+  { root:7,  q:'7',     roman:'V7',        bassPc:0  },            // 34 G7/C
+  { root:0,  q:'maj',   roman:'I'           },                     // 35 C — final
 ];
-function buildBachBar(chord){
+function buildBachBar(chord, prevLastMidi){
   const idx = N.findIndex(n => n.root===chord.root && n.q===chord.q);
   const ivs = N[idx].ivs;
-  const base = 60 + chord.root; // middle-register start, near the piece's own tessitura
+  let base = 60 + chord.root; // middle-register start, near the piece's own tessitura
+  if(prevLastMidi != null){ // pull into the closest octave to the previous bar's last note
+    while(base - prevLastMidi > 6) base -= 12;
+    while(prevLastMidi - base > 6) base += 12;
+  }
+  // "closest to the previous bar" only guarantees smoothness one step at a time — over 35 bars a
+  // small per-bar bias compounds into register drift (this used to walk the whole passage upward
+  // by over an octave). Keep the passage inside a fixed comfortable window as a backstop.
+  while(base > 74) base -= 12;
+  while(base < 43) base += 12;
   const seq = [];
   for(let oct=0; seq.length<5; oct++){
     for(const iv of ivs){ seq.push(base + iv + oct*12); if(seq.length>=5) break; }
   }
   const shape = [0,1,2,3,1,2,3,1]; // the prelude's own repeating broken-chord contour
-  return { idx, roman: chord.roman, bass: base-12, notes: shape.map(i => seq[i]) };
+  const notes = shape.map(i => seq[i]);
+  const bassPc = chord.bassPc != null ? chord.bassPc : chord.root;
+  const bassTarget = base - 12;
+  let bass = bassTarget - ((bassTarget%12+12)%12) + bassPc;
+  if(bass > bassTarget+6) bass -= 12; else if(bass < bassTarget-6) bass += 12;
+  return { idx, roman: chord.roman, bass, notes };
 }
-const BACH_PRELUDE = BACH_CHORDS.map(buildBachBar);
+let __bachPrevLast = null;
+const BACH_PRELUDE = BACH_CHORDS.map(c => {
+  const bar = buildBachBar(c, __bachPrevLast);
+  __bachPrevLast = bar.notes[bar.notes.length-1];
+  return bar;
+});
 
 let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
 let bachArcEls = { prev:null, cur:null, next:null };
@@ -96,7 +147,6 @@ function startBach(){
       bachAdvanceArcs(ev.bi);
       activeChordIdx = bar.idx;
       const label = document.getElementById('musChordLabel'); if(label) label.textContent = chordToneText(bar.idx);
-      renderKeyDiagram();
       renderSuggestions();
     }
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);

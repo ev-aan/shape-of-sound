@@ -93,7 +93,7 @@ try {
   // tap a note on Musical's own circle of fifths to set the key
   fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
   if (__api.View.get().key !== 0) throw new Error('tapping a note on the Musical circle should set the key');
-  if (!/chordPill/.test(C['musDiagram'].innerHTML)) throw new Error('key diagram did not render any chords');
+  if (!/cofRing-minor/.test(C['musCof'].innerHTML) || !/cofRing-dim/.test(C['musCof'].innerHTML)) throw new Error('minor/diminished rings did not render on the circle');
   if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('chord-tone label should spell out root/3rd/5th for the tonic triad');
   // tap plays: Chord (default) should sound all 3 notes of the tonic triad, Note should sound just the one
   let oscCount = 0;
@@ -108,22 +108,22 @@ try {
   global.window.AudioContext.prototype.createOscillator = origCreateOsc;
   C['mScaleSel'].value = 'dorian'; C['mScaleSel'].onchange(); frames(5);
   if (__api.View.get().scale !== 'dorian') throw new Error('scale selector did not update state');
-  // clicking a chord pill plays it and opens the shared detail card
-  const pillIdx = C['musDiagram'].innerHTML.match(/data-idx="(\d+)"/)[1];
-  fire(C['musDiagram'], 'click', { target: { closest: () => ({ dataset: { idx: pillIdx }, classList: { add(){}, remove(){} } }) } });
+  // tapping a ring segment (minor ring, Am = vi of C major) plays that chord and opens the detail card
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofRing' ? { dataset: { ring: 'minor', pc: '9' } } : null } });
+  if (!/^Amin:\s+A \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('tapping the minor ring should select that chord');
   // "where next?" suggestions should follow the newly-selected chord, and clicking one navigates too
   if (!/suggChip/.test(C['musSuggest'].innerHTML)) throw new Error('no "where next" suggestions rendered');
   const suggIdx = C['musSuggest'].innerHTML.match(/data-idx="(\d+)"/)[1];
   const suggName = __api.N[+suggIdx].name;
   fire(C['musSuggest'], 'click', { target: { closest: () => ({ dataset: { idx: suggIdx }, classList: { add(){}, remove(){} } }) } });
-  if (!C['musDiagram'].innerHTML.includes('chordPill on')) throw new Error('selecting a suggestion should highlight its pill in the diagram');
+  if (!C['musChordLabel'].textContent.startsWith(suggName)) throw new Error('selecting a suggestion should make it the active chord');
   if (!C['musSuggest'].innerHTML.includes(suggName)) throw new Error('suggestions should now be relative to the newly-selected chord');
   // Bach prelude: starting playback resets to C major, builds the staff, and plays/highlights the first note
   C['musBachPlay'].onclick();
   if (__api.View.get().key !== 0 || __api.View.get().scale !== 'major') throw new Error('starting the Bach demo should reset to C major');
   if (!/staffNote/.test(C['musStaff'].innerHTML)) throw new Error('Bach demo did not render the staff');
   if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('Bach demo should show bar 1 (Cmaj) on the circle');
-  if (!/bar 1\/8/.test(C['musBachPlay'].textContent)) throw new Error('play button should show playback progress');
+  if (!/bar 1\/35/.test(C['musBachPlay'].textContent)) throw new Error('play button should show playback progress');
   C['musBachPlay'].onclick(); // stop
   if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopping should restore the play button label');
   // bridge: from Musical back to Science should work with observer callback
@@ -150,6 +150,6 @@ try {
   global.location.hash = '#mode=musical&dim=3d&tune=ET&key=9&scale=lydian';
   __api.Link.applyFromHash(); frames(5);
   if (__api.View.get().scale !== 'lydian' || __api.View.get().key !== 9) throw new Error('deep-link restore failed');
-  if (!/chordPill/.test(C['musDiagram'].innerHTML)) throw new Error('deep-link restore should re-render the key diagram');
+  if (!C['musChordLabel'].textContent) throw new Error('deep-link restore should re-render the chord-tone label');
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }
