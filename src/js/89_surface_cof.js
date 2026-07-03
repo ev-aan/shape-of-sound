@@ -3,8 +3,11 @@
 // Mirror this file's shape for the keyboard / staff / fretboard surfaces later.
 Surfaces.register('cof', {
   label: 'Circle of fifths',
-  render(container){
+  // opts.onSelect(pc), if given, fires in addition to the built-in "explore neighbours" tap —
+  // lets a consumer (e.g. Musical mode) use the same tap to also set a key, without losing the caption.
+  render(container, opts){
     if(!container) return;
+    opts = opts || {};
     const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = 22;
     let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="cofSvg">';
@@ -17,6 +20,12 @@ Surfaces.register('cof', {
     });
     svg += '</svg>';
     container.innerHTML = svg + '<div class="cofCaption" id="cofCaption">Tap a note to see how it relates.</div>';
+    if(opts.onSelect){
+      container.addEventListener('click', e => {
+        const g = e.target.closest && e.target.closest('.cofNote');
+        if(g) opts.onSelect(+g.dataset.pc);
+      });
+    }
   },
   refresh(container){ this.render(container); }
 });

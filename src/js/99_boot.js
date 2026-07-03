@@ -14,10 +14,9 @@ function wireMoreToggle(btnId, wrapId){
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
-wireMusicalControls();
+wireMusicalHome();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
-wireMoreToggle('musMoreBtn', 'musMore');
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view

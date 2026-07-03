@@ -4,8 +4,7 @@ Modes.register('science', {
   label: 'Science',
   panelId: 'scienceControls',
   onEnter(){
-    document.getElementById('scienceControls').style.display = '';
-    document.getElementById('musicalControls').style.display = 'none';
+    showMode('science');
     document.getElementById('topbarLabel').textContent = 'Science — physics from overtone overlap';
     applyColors(colorMode);
     setRender(renderMode);

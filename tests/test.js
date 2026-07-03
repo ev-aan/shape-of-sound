@@ -83,17 +83,22 @@ try {
   fire(C['cym'], 'click', { target: { closest: () => ({ dataset: { cs: 'circular' } }) } });
   C['cymH'].value = '6'; C['cymH'].oninput();
   C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
-  // pass-1 architecture: mode toggle + Musical mode + bridge
+  // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
+  // function-coloured diagram of that key's chords (subdominant -> dominant -> tonic)
   fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
   frames(5);
   if (typeof __api === 'undefined' || __api.View.get().mode !== 'musical') throw new Error('mode toggle failed');
-  if (C['musMore'].style.display !== 'none') throw new Error('Musical "more options" should start collapsed');
-  C['musMoreBtn'].onclick();
-  if (C['musMore'].style.display === 'none') throw new Error('Musical "more options" toggle should reveal secondary controls');
-  C['mKeySel'].value = '0'; C['mKeySel'].onchange(); frames(5);
+  if (C['scene'].style.display !== 'none') throw new Error('Musical mode should hide the 3D map');
+  if (C['panel'].style.display !== 'none') throw new Error('Musical mode should hide the small side panel');
+  // tap a note on Musical's own circle of fifths to set the key
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
+  if (__api.View.get().key !== 0) throw new Error('tapping a note on the Musical circle should set the key');
+  if (!/chordPill/.test(C['musDiagram'].innerHTML)) throw new Error('key diagram did not render any chords');
   C['mScaleSel'].value = 'dorian'; C['mScaleSel'].onchange(); frames(5);
-  fire(C['mColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'root' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
-  C['mScaleSel'].value = 'pentmaj'; C['mScaleSel'].onchange(); frames(5);
+  if (__api.View.get().scale !== 'dorian') throw new Error('scale selector did not update state');
+  // clicking a chord pill plays it and opens the shared detail card
+  const pillIdx = C['musDiagram'].innerHTML.match(/data-idx="(\d+)"/)[1];
+  fire(C['musDiagram'], 'click', { target: { closest: () => ({ dataset: { idx: pillIdx } }) } });
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity
@@ -118,8 +123,6 @@ try {
   global.location.hash = '#mode=musical&dim=3d&tune=ET&key=9&scale=lydian';
   __api.Link.applyFromHash(); frames(5);
   if (__api.View.get().scale !== 'lydian' || __api.View.get().key !== 9) throw new Error('deep-link restore failed');
-  // tonnetz layout should compute without error and place chords
-  fire(C['mLayoutPills'], 'click', { target: { closest: () => ({ dataset: { k: 'tonnetz' }, classList:{add(){},remove(){},toggle(){}}, disabled:false }) } });
-  frames(30);
+  if (!/chordPill/.test(C['musDiagram'].innerHTML)) throw new Error('deep-link restore should re-render the key diagram');
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }

@@ -172,6 +172,27 @@
  .simpleFullLink:hover{color:var(--ink);}
  @media(max-width:480px){.simpleWrap h1{font-size:22px;}}
  @media(max-width:560px){.simpleCols{flex-direction:column;align-items:center;}}
+ #musicalHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
+ @media(max-width:640px){#musicalHome{padding-top:145px;align-items:flex-start;}}
+ .musWrap{max-width:640px;width:100%;text-align:center;}
+ .musWrap .cofSvg{max-width:280px;}
+ .cofNote.dim circle{opacity:.28;}
+ .cofNote.tonic circle{stroke:#fff;stroke-width:2.5;}
+ .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
+ .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+ .musScaleRow select{width:auto;min-width:170px;}
+ .musDiagram{margin-top:16px;min-height:70px;}
+ .fnFlow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+ .fnCol{display:flex;flex-direction:column;align-items:center;gap:6px;}
+ .fnLbl{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+ .fnArrow{font-size:20px;color:var(--dim);}
+ .chordPill{font:inherit;cursor:pointer;border:1px solid var(--line);border-left:3px solid var(--pc,var(--line));
+   border-radius:8px;padding:7px 12px;background:#ffffff08;color:var(--ink);display:flex;flex-direction:column;align-items:center;min-width:64px;}
+ .chordPill:hover{background:#ffffff14;}
+ .chordPill .rn{font:700 15px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ .chordPill .cn{font-size:10px;color:var(--dim);margin-top:2px;}
+ .musLinks{display:flex;gap:18px;justify-content:center;margin-top:20px;}
+ @media(max-width:560px){.fnFlow{gap:8px;}.fnArrow{display:none;}.chordPill{min-width:56px;padding:6px 9px;}}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
@@ -200,6 +221,19 @@
 </div>
 <div id="advancedApp" style="display:none;">
 <canvas id="scene"></canvas>
+<div id="musicalHome" style="display:none;">
+ <div class="musWrap">
+  <div id="musCof"></div>
+  <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
+  <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">— tap a note on the circle to explore its key.</div>
+  <div id="musDiagram" class="musDiagram"></div>
+  <div class="musLinks">
+   <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
+   <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+  </div>
+  <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
+ </div>
+</div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
@@ -287,22 +321,6 @@
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
  </div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
- </div>
- <div id="musicalControls" style="display:none;">
- <div class="grp"><div class="lbl">key</div><select id="mKeySel"></select></div>
- <div class="grp"><div class="lbl">scale</div><select id="mScaleSel"></select></div>
- <div class="grp"><div class="lbl">what you're seeing</div><div class="hint" id="mLegend">— pick a key + scale to filter the map to that scale's chords, coloured by function.</div></div>
- <button id="musMoreBtn" class="morebtn">▾ more options</button>
- <div id="musMore" class="moreWrap" style="display:none;">
- <div class="grp"><div class="lbl">colour by</div><div class="pills" id="mColorPills">
-   <button data-k="function" class="on">Function (T/S/D)</button><button data-k="root">Root note</button></div></div>
- <div class="grp"><div class="lbl">layout</div><div class="pills" id="mLayoutPills">
-   <button data-k="disc" class="on">Discovered (physics)</button><button data-k="expl">Explained (fifths cylinder)</button><button data-k="tonnetz">Tonnetz-style lattice</button></div></div>
- <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
- <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
- <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
- </div>
- <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
  </div>
  <div id="playControls" style="display:none;">
  <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
@@ -462,6 +480,21 @@ const Modes = (function(){
   function currentId(){ return current; }
   return { register, get, list, enter, currentId };
 })();
+
+// ---- MODE CHROME: which top-level surface is on screen for a given mode ----
+// Single place that knows the full set of mode-owned elements, so a new mode can't forget to
+// hide someone else's panel (science/play share the small #panel; musical is a full 2D takeover).
+function showMode(mode){
+  document.getElementById('panel').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
+  document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
+  document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
+  document.getElementById('scene').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('title').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('legend').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('dimToggle').style.display = (mode === 'musical') ? 'none' : '';
+  appVisible = (mode !== 'musical');
+}
 
 // ---- SCALES: pitch-class sets sourced from standard music theory ----
 // A chord belongs to (key, scale) if every one of its pitch classes lies in the scale.
@@ -1109,8 +1142,11 @@ function computeTonnetz(){
 // Mirror this file's shape for the keyboard / staff / fretboard surfaces later.
 Surfaces.register('cof', {
   label: 'Circle of fifths',
-  render(container){
+  // opts.onSelect(pc), if given, fires in addition to the built-in "explore neighbours" tap —
+  // lets a consumer (e.g. Musical mode) use the same tap to also set a key, without losing the caption.
+  render(container, opts){
     if(!container) return;
+    opts = opts || {};
     const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = 22;
     let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="cofSvg">';
@@ -1123,6 +1159,12 @@ Surfaces.register('cof', {
     });
     svg += '</svg>';
     container.innerHTML = svg + '<div class="cofCaption" id="cofCaption">Tap a note to see how it relates.</div>';
+    if(opts.onSelect){
+      container.addEventListener('click', e => {
+        const g = e.target.closest && e.target.closest('.cofNote');
+        if(g) opts.onSelect(+g.dataset.pc);
+      });
+    }
   },
   refresh(container){ this.render(container); }
 });
@@ -1206,8 +1248,7 @@ Modes.register('science', {
   label: 'Science',
   panelId: 'scienceControls',
   onEnter(){
-    document.getElementById('scienceControls').style.display = '';
-    document.getElementById('musicalControls').style.display = 'none';
+    showMode('science');
     document.getElementById('topbarLabel').textContent = 'Science — physics from overtone overlap';
     applyColors(colorMode);
     setRender(renderMode);
@@ -1216,86 +1257,118 @@ Modes.register('science', {
   onExit(){}
 });
 
-// ---- MODE: MUSICAL (theory view — scales, keys, function colouring) ----
+// ---- MODE: MUSICAL (theory view) ----
+// A full 2D takeover, no 3D map: tap a note on the circle of fifths to make it your key, and a
+// diagram below groups that key's chords by function (Subdominant -> Dominant -> Tonic) — tap
+// a chord to hear it and open the same detail card Science mode uses. Modelled on what the
+// best-reviewed interactive circle-of-fifths tools (Musicca, GenMusic.im) already do well:
+// click a key -> see its chords -> click a chord -> hear it.
+let musCofBuilt = false;
+
 Modes.register('musical', {
   label: 'Musical',
-  panelId: 'musicalControls',
   onEnter(){
-    document.getElementById('scienceControls').style.display = 'none';
-    document.getElementById('musicalControls').style.display = '';
+    showMode('musical');
     document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
+    if(!musCofBuilt){
+      Surfaces.get('cof').render(document.getElementById('musCof'), {
+        onSelect(pc){ View.set({ key: pc, scale: View.get().scale || 'major' }); refreshMusicalScene(); }
+      });
+      musCofBuilt = true;
+    }
     refreshMusicalScene();
   },
   onExit(){}
 });
 
-let musColorMode = 'function';
-
-function wireMusicalControls(){
-  const keySel = document.getElementById('mKeySel');
-  keySel.innerHTML = '<option value="-1">— none —</option>' + NOTE.map((nm,i)=>'<option value="'+i+'">'+nm+'</option>').join('');
+const ROMAN = ['I','II','III','IV','V','VI','VII'];
+function romanFor(deg, quality){
+  const base = ROMAN[deg] || String(deg+1);
+  if(quality==='dim'||quality==='dim7'||quality==='m7b5') return base.toLowerCase()+'°';
+  if(quality==='min'||quality==='min7'||quality==='mMaj7') return base.toLowerCase();
+  if(quality==='aug') return base+'+';
+  return base;
+}
+// the best-fitting simple chord (prefer plain triads over 7ths/adds) rooted at this scale degree
+function repChordForDegree(scaleId, keyRoot, offset){
+  const root = (keyRoot + offset) % 12;
+  let best = null, bestScore = -1;
+  for(let i=0;i<N.length;i++){
+    const n = N[i];
+    if(n.root !== root || !chordInScale(n, scaleId, keyRoot)) continue;
+    const score = ['maj','min','dim'].includes(n.q) ? 3 : (['aug','sus2','sus4'].includes(n.q) ? 2 :
+      (['7','maj7','min7','m7b5','dim7','mMaj7'].includes(n.q) ? 1 : 0));
+    if(score > bestScore){ bestScore = score; best = i; }
+  }
+  return best;
+}
+function paintMusicalCircle(){
+  const v = View.get();
+  const inScale = v.key!=null ? scalePcs(v.scale, v.key) : null;
+  document.querySelectorAll('#musCof .cofNote').forEach(el => {
+    el.classList.remove('tonic','inScale','dim');
+    if(!inScale) return;
+    const pc = +el.dataset.pc;
+    if(pc === v.key) el.classList.add('tonic');
+    else if(inScale.has(pc)) el.classList.add('inScale');
+    else el.classList.add('dim');
+  });
+}
+function chordPillHTML(item){
+  const col = Palette.FN[item.fn] || Palette.FN.ext;
+  return '<button class="chordPill" data-idx="'+item.idx+'" style="--pc:'+col+'"><span class="rn">'+item.roman+'</span><span class="cn">'+item.name+'</span></button>';
+}
+function fnColHTML(label, items){
+  if(!items.length) return '';
+  return '<div class="fnCol"><div class="fnLbl">'+label+'</div>'+items.map(chordPillHTML).join('')+'</div>';
+}
+function renderKeyDiagram(){
+  const host = document.getElementById('musDiagram');
+  const v = View.get();
+  if(v.key == null){ host.innerHTML = '<div class="hint">Tap a note on the circle above to explore its key.</div>'; return; }
+  const s = SCALES[v.scale];
+  const groups = { T:[], S:[], D:[], ext:[] };
+  s.pcs.forEach((offset, deg) => {
+    const idx = repChordForDegree(v.scale, v.key, offset);
+    if(idx == null) return;
+    const fn = chordFn(N[idx], v.scale, v.key) || 'ext';
+    (groups[fn] || groups.ext).push({ idx, roman: romanFor(deg, N[idx].q), name: N[idx].name, fn });
+  });
+  if(groups.S.length || groups.D.length || groups.T.length){
+    host.innerHTML = '<div class="fnFlow">'+fnColHTML('subdominant', groups.S)+'<span class="fnArrow">→</span>'+
+      fnColHTML('dominant', groups.D)+'<span class="fnArrow">→</span>'+fnColHTML('tonic', groups.T)+'</div>'+
+      (groups.ext.length ? '<div class="fnFlow" style="margin-top:10px;">'+fnColHTML('other', groups.ext)+'</div>' : '');
+  } else {
+    host.innerHTML = '<div class="fnFlow">'+fnColHTML('chords', groups.ext)+'</div>';
+  }
+}
+function refreshMusicalScene(){
+  paintMusicalCircle();
+  renderKeyDiagram();
+  const leg = document.getElementById('mLegend');
+  if(!leg) return;
+  const v = View.get();
+  if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
+  const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
+  leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Subdominant (amber) leads to dominant (red), which resolves to tonic (green).';
+}
+function wireMusicalHome(){
   const scaleSel = document.getElementById('mScaleSel');
   scaleSel.innerHTML = Object.keys(SCALES).map(id=>'<option value="'+id+'">'+SCALES[id].name+'</option>').join('');
-  keySel.value = -1;
   scaleSel.value = 'major';
-  keySel.onchange = ()=>{ const val = +keySel.value; View.set({ key: val<0 ? null : val }); refreshMusicalScene(); };
-  scaleSel.onchange = ()=>{ View.set({ scale: scaleSel.value }); refreshMusicalScene(); };
-  const cp = document.getElementById('mColorPills');
-  cp.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
-    [...cp.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
-    b.classList.add('on'); musColorMode = b.dataset.k; refreshMusicalScene(); });
-  const lp = document.getElementById('mLayoutPills');
-  lp.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
-    [...lp.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
-    b.classList.add('on'); setLayout(b.dataset.k); });
-  const nb = document.getElementById('mNamesBtn');
-  nb.onclick = ()=>{ showNames = !showNames; nb.classList.toggle('on', showNames); positionLabels(); };
+  scaleSel.onchange = () => { View.set({ scale: scaleSel.value }); refreshMusicalScene(); };
+  document.getElementById('musDiagram').addEventListener('click', e => {
+    const b = e.target.closest('.chordPill'); if(!b) return;
+    const idx = +b.dataset.idx;
+    playFreqs(N[idx].freqs);
+    renderDetail(idx);
+  });
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
   const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
-    'Musical mode filters the map to your chosen key + scale.\n\n'+
-    'Chord colours (Function mode):\n  Tonic (green) = home\n  Subdominant (amber) = departure\n  Dominant (red) = tension resolving to tonic\n\n'+
-    'Try Key: C, Scale: Major. Then Dorian. Then Minor Pentatonic.\n'+
-    'Switch Layout: Explained to see the same chords rearranged on the fifths cylinder.');
-}
-
-function refreshMusicalScene(){
-  const v = View.get();
-  if(typeof setRender === 'function') setRender(renderMode);
-  applyMusicalColors();
-  positionLabels();
-  const leg = document.getElementById('mLegend');
-  if(leg){
-    if(v.key==null){ leg.textContent = '— pick a key + scale to filter the map to that scale\'s chords, coloured by function.'; }
-    else {
-      const s = SCALES[v.scale];
-      const count = N.filter(n=>chordInScale(n, v.scale, v.key)).length;
-      leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Green=tonic (home). Amber=subdominant (departure). Red=dominant (tension resolving to tonic).';
-    }
-  }
-}
-
-function applyMusicalColors(){
-  const v = View.get();
-  N.forEach((n,i)=>{
-    const c = dots[i].material.color, h = halos[i].material.color;
-    if(v.key==null){
-      c.set(FAM[n.family]); h.set(FAM[n.family]);
-      dots[i].material.opacity = 1; halos[i].material.opacity = .55;
-      return;
-    }
-    const inScale = chordInScale(n, v.scale, v.key);
-    if(!inScale){ dots[i].material.opacity = 0; halos[i].material.opacity = 0; return; }
-    dots[i].material.opacity = 1; halos[i].material.opacity = .7;
-    if(musColorMode === 'root'){
-      Palette.applyToTHREE(c, n.root, .68, .6);
-      Palette.applyToTHREE(h, n.root, .68, .6);
-    } else {
-      const fn = chordFn(n, v.scale, v.key) || 'ext';
-      const col = Palette.FN[fn] || Palette.FN.ext;
-      c.set(col); h.set(col);
-    }
-  });
+    'Tap a note on the circle to make it your key. The diagram below groups that key\'s chords by '+
+    'function:\n  Subdominant (amber) — departs from home\n  Dominant (red) — tension, wants to resolve\n  Tonic (green) — home\n\n'+
+    'Try C, then switch the scale from Major to Dorian and see how the chords change.');
 }
 
 // ---- MODE: PLAY (keyboard + sequencer, one workspace for building a progression) ----
@@ -1305,9 +1378,7 @@ Modes.register('play', {
   label: 'Play',
   panelId: 'playControls',
   onEnter(){
-    document.getElementById('scienceControls').style.display = 'none';
-    document.getElementById('musicalControls').style.display = 'none';
-    document.getElementById('playControls').style.display = '';
+    showMode('play');
     document.getElementById('topbarLabel').textContent = 'Play — build chords on the keyboard, or tap stars on the map';
     applyColors(colorMode);
     setRender(renderMode);
@@ -1518,10 +1589,9 @@ function wireMoreToggle(btnId, wrapId){
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
-wireMusicalControls();
+wireMusicalHome();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
-wireMoreToggle('musMoreBtn', 'musMore');
 installBridgeButton();
 wireSimpleFront();
 // Simple front door by default; Advanced only if the URL already carries a shared view

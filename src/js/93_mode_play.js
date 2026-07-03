@@ -5,9 +5,7 @@ Modes.register('play', {
   label: 'Play',
   panelId: 'playControls',
   onEnter(){
-    document.getElementById('scienceControls').style.display = 'none';
-    document.getElementById('musicalControls').style.display = 'none';
-    document.getElementById('playControls').style.display = '';
+    showMode('play');
     document.getElementById('topbarLabel').textContent = 'Play — build chords on the keyboard, or tap stars on the map';
     applyColors(colorMode);
     setRender(renderMode);

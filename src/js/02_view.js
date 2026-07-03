@@ -36,3 +36,18 @@ const Modes = (function(){
   function currentId(){ return current; }
   return { register, get, list, enter, currentId };
 })();
+
+// ---- MODE CHROME: which top-level surface is on screen for a given mode ----
+// Single place that knows the full set of mode-owned elements, so a new mode can't forget to
+// hide someone else's panel (science/play share the small #panel; musical is a full 2D takeover).
+function showMode(mode){
+  document.getElementById('panel').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
+  document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
+  document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
+  document.getElementById('scene').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('title').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('legend').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('dimToggle').style.display = (mode === 'musical') ? 'none' : '';
+  appVisible = (mode !== 'musical');
+}

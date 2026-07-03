@@ -27,6 +27,19 @@
 </div>
 <div id="advancedApp" style="display:none;">
 <canvas id="scene"></canvas>
+<div id="musicalHome" style="display:none;">
+ <div class="musWrap">
+  <div id="musCof"></div>
+  <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
+  <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">— tap a note on the circle to explore its key.</div>
+  <div id="musDiagram" class="musDiagram"></div>
+  <div class="musLinks">
+   <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
+   <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+  </div>
+  <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
+ </div>
+</div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
@@ -114,22 +127,6 @@
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
  </div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
- </div>
- <div id="musicalControls" style="display:none;">
- <div class="grp"><div class="lbl">key</div><select id="mKeySel"></select></div>
- <div class="grp"><div class="lbl">scale</div><select id="mScaleSel"></select></div>
- <div class="grp"><div class="lbl">what you're seeing</div><div class="hint" id="mLegend">— pick a key + scale to filter the map to that scale's chords, coloured by function.</div></div>
- <button id="musMoreBtn" class="morebtn">▾ more options</button>
- <div id="musMore" class="moreWrap" style="display:none;">
- <div class="grp"><div class="lbl">colour by</div><div class="pills" id="mColorPills">
-   <button data-k="function" class="on">Function (T/S/D)</button><button data-k="root">Root note</button></div></div>
- <div class="grp"><div class="lbl">layout</div><div class="pills" id="mLayoutPills">
-   <button data-k="disc" class="on">Discovered (physics)</button><button data-k="expl">Explained (fifths cylinder)</button><button data-k="tonnetz">Tonnetz-style lattice</button></div></div>
- <div class="grp"><div class="lbl">labels</div><div class="pills"><button id="mNamesBtn" class="on">chord names</button></div></div>
- <div class="grp"><button id="mScalesChartBtn" class="infobtn">▤ scales reference chart</button></div>
- <div class="grp"><button id="mInfoBtn" class="infobtn">ⓘ music theory notes</button></div>
- </div>
- <div class="hint">Tap a star to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on the detail card to swap modes for the same chord.</div>
  </div>
  <div id="playControls" style="display:none;">
  <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
