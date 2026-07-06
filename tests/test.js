@@ -132,11 +132,42 @@ try {
   if (!/staffClef">treble/.test(soloContainer.innerHTML)) throw new Error('solo staff should render a treble clef');
   if (/staffClef">bass/.test(soloContainer.innerHTML)) throw new Error('a treble-only measure should not draw a grand staff');
   if (!/staffRest/.test(soloContainer.innerHTML)) throw new Error('a rest should render in a solo measure');
+  // key signatures: a diatonic scale in a sharp key should carry no inline accidentals at all —
+  // only the signature glyphs at the clef account for every sharp/flat in the key
+  const sharpScale = document.createElement('div');
+  __api.Surfaces.get('staff').render(sharpScale, [{ timeSig:[4,4], voices:{ treble:[62,64,66,67,69,71,73,74].map(midi => ({ midi, dur:'e' })) } }], { keySig:2 });
+  const sharpGlyphs = (sharpScale.innerHTML.match(/♯/g) || []).length;
+  if (sharpGlyphs !== 2) throw new Error('D major (2 sharps): expected exactly 2 sharp glyphs (the signature, no inline accidentals), got ' + sharpGlyphs);
+  const flatScale = document.createElement('div');
+  __api.Surfaces.get('staff').render(flatScale, [{ timeSig:[4,4], voices:{ treble:[65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } }], { keySig:-1 });
+  const flatGlyphs = (flatScale.innerHTML.match(/♭/g) || []).length;
+  if (flatGlyphs !== 1) throw new Error('F major (1 flat): expected exactly 1 flat glyph (the signature, no inline accidentals), got ' + flatGlyphs);
+  if (/♯/.test(flatScale.innerHTML)) throw new Error('a flat key should spell its notes with flats, not sharps');
+  // a note that cancels the key signature's alteration should show a natural sign, and a note
+  // that matches the signature should still carry no inline accidental of its own
+  const cancelTest = document.createElement('div');
+  __api.Surfaces.get('staff').render(cancelTest, [{ timeSig:[4,4], voices:{ treble:[{ midi:65, dur:'q' }, { midi:66, dur:'q' }, { midi:67, dur:'q' }] } }], { keySig:1 }); // F natural, F#, G in G major
+  const cancelSharps = (cancelTest.innerHTML.match(/♯/g) || []).length, cancelNaturals = (cancelTest.innerHTML.match(/♮/g) || []).length;
+  if (cancelSharps !== 1) throw new Error('G major (1 sharp): expected exactly 1 sharp glyph (the signature; F# itself is implied), got ' + cancelSharps);
+  if (cancelNaturals !== 1) throw new Error('an F natural in G major should show a natural sign to cancel the key signature’s F#, got ' + cancelNaturals + ' naturals');
+  // voice-leading arrows: nearest-note pairing from Cmaj to Gmaj should pair C->B (the shared
+  // tone G is a hold, not a motion, and gets left out) and E->D, one pair per moving note
+  const cIdx = __api.N.findIndex(n => n.root === 0 && n.q === 'maj'), gIdx = __api.N.findIndex(n => n.root === 7 && n.q === 'maj');
+  const vlPairs = __api.voiceLeadingPairs(cIdx, gIdx);
+  if (vlPairs.length !== 2) throw new Error('Cmaj->Gmaj should produce 2 voice-leading pairs (the shared G is a hold, not a move), got ' + vlPairs.length);
+  if (vlPairs.some(p => p.from === 7)) throw new Error('a common tone (G, shared by both chords) should not produce a voice-leading pair');
+  if (!vlPairs.some(p => p.from === 0 && p.to === 11)) throw new Error('Cmaj->Gmaj should pair C(0) with its nearest neighbour B(11)');
+  if (!vlPairs.some(p => p.from === 4 && p.to === 2)) throw new Error('Cmaj->Gmaj should pair E(4) with its nearest neighbour D(2)');
+  if (__api.voiceLeadingPairs(cIdx, cIdx).length !== 0) throw new Error('a chord transitioning to itself should have no voice-leading pairs at all');
   // the standalone example measure (wired at boot, alongside the Bach piece) exercises the engine's
   // range end to end: mixed durations, a rest, a chord event, and a full grand staff
   if (!/staffRest/.test(C['musExampleStaff'].innerHTML)) throw new Error('example measure did not render its rest');
   const exampleNoteCount = (C['musExampleStaff'].innerHTML.match(/class="staffNote"/g) || []).length;
   if (exampleNoteCount !== 8) throw new Error('example measure should render 8 noteheads (3 treble notes + 3-note chord + 2 bass notes), got ' + exampleNoteCount);
+  // the two key-signature demo measures (wired at boot alongside the others) should each show
+  // just their signature glyphs, no inline accidentals, since every note in them is diatonic
+  if ((C['musKeySigSharpStaff'].innerHTML.match(/♯/g) || []).length !== 2) throw new Error('D major demo should show exactly 2 sharp glyphs');
+  if ((C['musKeySigFlatStaff'].innerHTML.match(/♭/g) || []).length !== 1) throw new Error('F major demo should show exactly 1 flat glyph');
   // colour toggle: black & white by default, one click recolours every staff surface on the page
   if (document.body.classList.contains('staffColor')) throw new Error('colour mode should default off');
   fire(C['staffColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'color' } }) } });

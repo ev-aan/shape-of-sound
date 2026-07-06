@@ -186,6 +186,8 @@
  .chordArc{stroke-width:2.5;stroke-linejoin:round;pointer-events:none;}
  .bachArc{transition:opacity 1.5s linear;}
  .bachArc-next{stroke-dasharray:4 3;}
+ .vlArrow{stroke:#9ad1f0;stroke-width:1.6;opacity:.85;pointer-events:none;}
+ .vlArrowHead{fill:#9ad1f0;}
  .musScaleRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
  .musScaleLbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
  .musScaleRow select{width:auto;min-width:170px;}

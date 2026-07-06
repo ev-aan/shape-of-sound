@@ -61,6 +61,10 @@ function drawChordArc(idx){
   activeChordIdx = idx;
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
   const old = svg.querySelector('.chordArc'); if(old) old.remove();
+  // arrows only mean something for the transition that just happened — any redraw not
+  // immediately followed by drawVoiceLeadingArrows (key change, scale change, tap-mode
+  // refresh) should clear them rather than leave a stale trail on screen.
+  svg.querySelectorAll('.vlArrow').forEach(el => el.remove());
   const label = document.getElementById('musChordLabel');
   const addBtn = document.getElementById('musAddSeqBtn');
   if(addBtn) addBtn.disabled = idx == null;
@@ -78,6 +82,48 @@ function drawChordArc(idx){
   poly.setAttribute('stroke', col);
   svg.insertBefore(poly, svg.firstChild);
   if(label) label.textContent = chordToneText(idx);
+}
+
+// a one-time arrowhead marker for the voice-leading lines below — the circle's <svg> is built
+// once (musCofBuilt) and persists across chord selections, so this only ever needs to run once.
+let musArrowMarkerBuilt = false;
+function ensureVlArrowMarker(svg){
+  if(musArrowMarkerBuilt) return;
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  defs.innerHTML = '<marker id="vlArrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" '+
+    'markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="vlArrowHead"></path></marker>';
+  svg.appendChild(defs);
+  musArrowMarkerBuilt = true;
+}
+// nearest-note pairing from chord A to chord B, one direction only (the direction this
+// transition actually moves), by pitch class — the same "nearest match" vlDist sums over both
+// chords, but kept per-pair here since drawing needs to know *which* note goes *where*. A note
+// that lands on itself is a held common tone, not a motion, so it's left out of the result.
+function voiceLeadingPairs(fromIdx, toIdx){
+  const pa = N[fromIdx].ivs.map(iv => (N[fromIdx].root+iv)%12);
+  const pb = N[toIdx].ivs.map(iv => (N[toIdx].root+iv)%12);
+  return pa.map(from => {
+    let to = pb[0], best = 99;
+    pb.forEach(q => { const d = Math.abs(from-q)%12, dd = Math.min(d, 12-d); if(dd < best){ best = dd; to = q; } });
+    return { from, to };
+  }).filter(pair => pair.to !== pair.from);
+}
+// after moving from one chord to another, draw a thin arrow for each pair above — how the
+// voices actually moved, not just "here's what's next" (which the suggestion chips already say
+// in words).
+function drawVoiceLeadingArrows(fromIdx, toIdx){
+  const svg = document.querySelector('#musCof svg');
+  if(!svg || fromIdx == null || toIdx == null || fromIdx === toIdx) return;
+  ensureVlArrowMarker(svg);
+  voiceLeadingPairs(fromIdx, toIdx).forEach(({ from, to }) => {
+    const a = cofNotePos(from), b = cofNotePos(to);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+    line.setAttribute('class', 'vlArrow');
+    line.setAttribute('marker-end', 'url(#vlArrowHead)');
+    svg.appendChild(line);
+  });
 }
 
 const ROMAN = ['I','II','III','IV','V','VI','VII'];
@@ -175,9 +221,11 @@ function renderSuggestions(){
 // "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
 // segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
 function selectMusicalChord(idx){
+  const prevIdx = activeChordIdx;
   playFreqs(N[idx].freqs);
   renderDetail(idx);
   drawChordArc(idx);
+  if(prevIdx != null) drawVoiceLeadingArrows(prevIdx, idx);
   renderSuggestions();
 }
 function refreshMusicalScene(){
@@ -212,8 +260,21 @@ const STAFF_EXAMPLE_MEASURE = [{
     bass: [ { midi:48, dur:'h' }, { midi:43, dur:'h' } ]
   }
 }];
+// two more small measures proving the key-signature feature: a diatonic scale in a sharp key
+// and a flat key. Every note here belongs to its key, so none of them should carry an inline
+// accidental — only the signature glyphs at the clef should show sharps/flats.
+const STAFF_KEYSIG_SHARP_MEASURE = [{
+  timeSig: [4,4],
+  voices: { treble: [62,64,66,67,69,71,73,74].map(midi => ({ midi, dur:'e' })) } // D major scale
+}];
+const STAFF_KEYSIG_FLAT_MEASURE = [{
+  timeSig: [4,4],
+  voices: { treble: [65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } // F major scale
+}];
 function wireMusicalHome(){
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
+  Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
+  Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
   document.getElementById('staffColorPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     document.body.classList.toggle('staffColor', b.dataset.k === 'color');
