@@ -49,11 +49,12 @@ screen.
 Things in their lineup we don't have an equivalent of yet. All five are now scheduled,
 in priority order (cheapest / most-reused-infrastructure first):
 
-1. **Voice-leading / motion arrows.** *(top priority — in progress)* We show *which*
-   chords are suggested next (`renderSuggestions`) as chips, but not *how the notes move*
-   between them. An arrow (or animated line) from each note in the current chord to its
-   nearest note in the next chord — on the circle, and eventually on the staff — is close
-   to their arrow-diagram idea and reuses voice-leading data (`vlDist`) we already compute.
+1. **Voice-leading / motion arrows.** *(done — [93_mode_musical.js](src/js/93_mode_musical.js))*
+   Selecting a new chord now draws a thin arrow from each note of the previous chord to its
+   nearest note in the new one (skipping common tones), on the circle — the same
+   nearest-pitch-class logic `vlDist` already used for its distance score, now surfaced
+   visually instead of only as a number. Still open: the same idea on the staff, once a
+   passage (not just an isolated chord pair) is on screen at once.
 2. **Interval visualizer.** A focused, reusable "distance between these two notes" diagram
    (semitone count, ratio, consonance) — smaller in scope than the full 3D map, good as
    its own small `Surfaces` entry.
