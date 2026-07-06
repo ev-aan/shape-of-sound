@@ -55,9 +55,11 @@ in priority order (cheapest / most-reused-infrastructure first):
    nearest-pitch-class logic `vlDist` already used for its distance score, now surfaced
    visually instead of only as a number. Still open: the same idea on the staff, once a
    passage (not just an isolated chord pair) is on screen at once.
-2. **Interval visualizer.** A focused, reusable "distance between these two notes" diagram
-   (semitone count, ratio, consonance) — smaller in scope than the full 3D map, good as
-   its own small `Surfaces` entry.
+2. **Interval visualizer.** *(done — [89_surface_interval.js](src/js/89_surface_interval.js))*
+   A focused, reusable "distance between these two notes" diagram: semitone count, interval
+   name, ratio, and a ratio-simplicity consonance read — deliberately smaller in scope than
+   the full physics-based 3D map, its own standalone `Surfaces` entry with two note pickers
+   in Musical mode.
 3. **Chord "superstructure" / extensions view.** A stacked-thirds diagram (root → 3rd →
    5th → 7th → 9th → 11th → 13th) showing how extended chords build on triads — a natural
    companion to the chord-tone text label we already show above each measure.

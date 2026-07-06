@@ -227,6 +227,19 @@
  body.staffColor .staffNote{fill:var(--pc);}
  .staffNote.on{stroke:#fff;stroke-width:1.6;}
  @media(max-width:560px){.staffSvg{height:110px;}}
+ .ivRow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+ .ivRow select{width:auto;min-width:70px;}
+ .ivArrowChar{color:var(--dim);font-size:13px;}
+ .ivSvg{display:block;margin:10px auto 0;height:90px;max-width:320px;width:100%;}
+ .ivLine{stroke:#8a97bfaa;stroke-width:1;}
+ .ivTick{stroke:#8a97bf66;stroke-width:1;}
+ .ivArc{fill:none;stroke:#9ad1f0;stroke-width:1.4;}
+ .ivArcLabel{fill:#9ad1f0;font-size:9.5px;text-anchor:middle;}
+ .ivDot{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .ivNoteLabel{fill:var(--dim);font-size:10px;text-anchor:middle;}
+ .ivInfo{text-align:center;margin-top:2px;}
+ .ivName{font-size:14px;font-weight:600;}
+ .ivDetail{font-size:11px;color:var(--dim);margin-top:3px;}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
@@ -281,6 +294,14 @@
   <div class="musStaffSection">
    <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
    <div id="musKeySigFlatStaff" class="musStaff"></div>
+  </div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">interval visualizer — pick two notes to see the distance between them</div>
+   <div class="ivRow">
+    <select id="ivNoteA"></select><span class="ivArrowChar">→</span><select id="ivNoteB"></select>
+    <button id="ivPlayBtn" class="musAddSeqBtn">♪ hear it</button>
+   </div>
+   <div id="musInterval"></div>
   </div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
@@ -1252,6 +1273,51 @@ Surfaces.register('cof', {
   refresh(container, opts){ this.render(container, opts); }
 });
 
+// ---- SURFACE: interval visualizer ----
+// A small, standalone "distance between these two notes" diagram: semitone count, interval
+// name, the classic small-integer ratio (RATIO, already used in the chord detail card), and a
+// consonance read derived from that ratio's simplicity (smaller numbers = smoother) — the
+// simple-ratio model, not the physics-based roughness model behind the 3D map. Deliberately a
+// smaller, standalone tool rather than a substitute for that map.
+const INTERVAL_NAME = ['Unison','Minor 2nd','Major 2nd','Minor 3rd','Major 3rd','Perfect 4th',
+  'Tritone','Perfect 5th','Minor 6th','Major 6th','Minor 7th','Major 7th'];
+function intervalConsonance(iv){
+  const [a, b] = (RATIO[iv] || '1:1').split(':').map(Number);
+  const sum = a + b, minSum = 2, maxSum = 31; // 1:1 (unison) .. 16:15 (minor 2nd), the simplest/densest ratios in RATIO
+  return Math.round(100 * (1 - (sum - minSum) / (maxSum - minSum)));
+}
+Surfaces.register('interval', {
+  label: 'Interval',
+  render(container, opts){
+    if(!container) return null;
+    const a = ((opts.a % 12) + 12) % 12, b = ((opts.b % 12) + 12) % 12;
+    const iv = ((b - a) % 12 + 12) % 12;
+    const colA = Palette.noteCss(a, .68, .62), colB = Palette.noteCss(b, .68, .62);
+    const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 60, arcY = 26;
+    const xFor = semis => pad + semis*step;
+    const xa = xFor(0), xb = xFor(iv), midX = (xa + xb) / 2;
+    let ticks = '';
+    for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="ivTick"></line>'; }
+    const svg = '<svg viewBox="0 0 '+w+' 90" class="ivSvg">'+
+      '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="ivLine"></line>'+
+      ticks+
+      (iv > 0 ? '<path d="M'+xa+' '+(y-6)+' Q '+midX+' '+arcY+' '+xb+' '+(y-6)+'" class="ivArc"></path>'+
+        '<text x="'+midX+'" y="'+(arcY-4)+'" class="ivArcLabel">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
+      '<circle cx="'+xa+'" cy="'+y+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
+      '<circle cx="'+xb+'" cy="'+y+'" r="7" style="--pc:'+colB+'" class="ivDot"></circle>'+
+      '<text x="'+xa+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[a]+'</text>'+
+      '<text x="'+xb+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[b]+'</text>'+
+      '</svg>';
+    const cons = intervalConsonance(iv);
+    container.innerHTML = svg +
+      '<div class="ivInfo">'+
+        '<div class="ivName">'+INTERVAL_NAME[iv]+'</div>'+
+        '<div class="ivDetail">ratio '+(RATIO[iv]||'1:1')+' &nbsp;·&nbsp; consonance '+cons+'/100 <span class="r">(simple ratio = smoother)</span></div>'+
+      '</div>';
+    return {};
+  }
+});
+
 // ---- SURFACE: piano keyboard (SVG) ----
 // One octave, real key shapes, Palette-tinted. Tapping a key plays it and toggles it "held" —
 // Play mode reads the held set via opts.onChange to figure out what chord you're building.
@@ -1742,6 +1808,13 @@ function wireMusicalHome(){
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
   Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
+  const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
+  ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
+  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value });
+  ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
+  document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
+  renderIntervalViz();
   document.getElementById('staffColorPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     document.body.classList.toggle('staffColor', b.dataset.k === 'color');

@@ -221,6 +221,19 @@
  body.staffColor .staffNote{fill:var(--pc);}
  .staffNote.on{stroke:#fff;stroke-width:1.6;}
  @media(max-width:560px){.staffSvg{height:110px;}}
+ .ivRow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px;}
+ .ivRow select{width:auto;min-width:70px;}
+ .ivArrowChar{color:var(--dim);font-size:13px;}
+ .ivSvg{display:block;margin:10px auto 0;height:90px;max-width:320px;width:100%;}
+ .ivLine{stroke:#8a97bfaa;stroke-width:1;}
+ .ivTick{stroke:#8a97bf66;stroke-width:1;}
+ .ivArc{fill:none;stroke:#9ad1f0;stroke-width:1.4;}
+ .ivArcLabel{fill:#9ad1f0;font-size:9.5px;text-anchor:middle;}
+ .ivDot{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .ivNoteLabel{fill:var(--dim);font-size:10px;text-anchor:middle;}
+ .ivInfo{text-align:center;margin-top:2px;}
+ .ivName{font-size:14px;font-weight:600;}
+ .ivDetail{font-size:11px;color:var(--dim);margin-top:3px;}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}

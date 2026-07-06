@@ -168,6 +168,28 @@ try {
   // just their signature glyphs, no inline accidentals, since every note in them is diatonic
   if ((C['musKeySigSharpStaff'].innerHTML.match(/♯/g) || []).length !== 2) throw new Error('D major demo should show exactly 2 sharp glyphs');
   if ((C['musKeySigFlatStaff'].innerHTML.match(/♭/g) || []).length !== 1) throw new Error('F major demo should show exactly 1 flat glyph');
+  // interval visualizer: a fresh render for a known pair should name the interval and show its ratio
+  const p5 = document.createElement('div');
+  __api.Surfaces.get('interval').render(p5, { a:0, b:7 });
+  if (!/Perfect 5th/.test(p5.innerHTML)) throw new Error('C -> G should be identified as a Perfect 5th');
+  if (!/3:2/.test(p5.innerHTML)) throw new Error('a Perfect 5th should show its 3:2 ratio');
+  const m2 = document.createElement('div');
+  __api.Surfaces.get('interval').render(m2, { a:0, b:1 });
+  if (!/Minor 2nd/.test(m2.innerHTML)) throw new Error('C -> C# should be identified as a Minor 2nd');
+  if (!/16:15/.test(m2.innerHTML)) throw new Error('a Minor 2nd should show its 16:15 ratio');
+  // the note selects (wired at boot alongside the others) should default to a fifth apart, and
+  // changing one should re-render the diagram for the new pair
+  if (C['ivNoteA'].innerHTML.match(/<option/g).length !== 12 || C['ivNoteB'].innerHTML.match(/<option/g).length !== 12) throw new Error('interval note selects should list all 12 notes');
+  if (!/Perfect 5th/.test(C['musInterval'].innerHTML)) throw new Error('interval visualizer should default to C -> G, a Perfect 5th');
+  C['ivNoteB'].value = '4'; C['ivNoteB'].onchange();
+  if (!/Major 3rd/.test(C['musInterval'].innerHTML)) throw new Error('changing a note select should re-render the interval diagram');
+  C['ivNoteB'].value = '7'; C['ivNoteB'].onchange(); // restore the default pairing for anything downstream
+  let ivOscCount = 0;
+  const origIvCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ ivOscCount++; return origIvCreateOsc.apply(this, arguments); };
+  C['ivPlayBtn'].onclick();
+  global.window.AudioContext.prototype.createOscillator = origIvCreateOsc;
+  if (ivOscCount !== 2) throw new Error('"hear it" should play both notes of the interval, played ' + ivOscCount);
   // colour toggle: black & white by default, one click recolours every staff surface on the page
   if (document.body.classList.contains('staffColor')) throw new Error('colour mode should default off');
   fire(C['staffColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'color' } }) } });
