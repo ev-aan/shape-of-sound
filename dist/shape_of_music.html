@@ -179,8 +179,11 @@
  /* align-items:flex-start (not center) + enough top padding to clear the fixed #topbar's full
     stack (mode pills, tune toggle, label, share button — ~150-160px tall) — centering this
     content vertically let it get pushed up underneath that chrome on short/desktop viewports. */
- #musicalHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;}
- #lessonsHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;}
+ #musicalHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;animation:pageEnter .25s ease;}
+ #lessonsHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;animation:pageEnter .25s ease;}
+ /* toggling display:none -> '' restarts a CSS animation from scratch — a free "new page" cue
+    every time a mode switch shows one of these full-page takeovers, no JS transition needed. */
+ @keyframes pageEnter{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
@@ -629,12 +632,20 @@ function showMode(mode){
   document.getElementById('panel').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
   document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
-  document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
-  document.getElementById('lessonsHome').style.display = (mode === 'lessons') ? '' : 'none';
+  const musicalHome = document.getElementById('musicalHome'), lessonsHome = document.getElementById('lessonsHome');
+  musicalHome.style.display = (mode === 'musical') ? '' : 'none';
+  lessonsHome.style.display = (mode === 'lessons') ? '' : 'none';
+  // a fresh page starts at the top, not wherever a previous visit happened to be scrolled to
+  musicalHome.scrollTop = 0;
+  lessonsHome.scrollTop = 0;
   document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
+  // effect there — showing it anyway is exactly the kind of chrome bleeding across pages that
+  // makes each mode feel less like its own distinct page.
+  document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
   appVisible = (mode !== 'musical' && mode !== 'lessons');
 }
 

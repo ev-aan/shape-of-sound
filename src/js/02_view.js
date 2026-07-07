@@ -44,11 +44,19 @@ function showMode(mode){
   document.getElementById('panel').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
   document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
-  document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
-  document.getElementById('lessonsHome').style.display = (mode === 'lessons') ? '' : 'none';
+  const musicalHome = document.getElementById('musicalHome'), lessonsHome = document.getElementById('lessonsHome');
+  musicalHome.style.display = (mode === 'musical') ? '' : 'none';
+  lessonsHome.style.display = (mode === 'lessons') ? '' : 'none';
+  // a fresh page starts at the top, not wherever a previous visit happened to be scrolled to
+  musicalHome.scrollTop = 0;
+  lessonsHome.scrollTop = 0;
   document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
+  // effect there — showing it anyway is exactly the kind of chrome bleeding across pages that
+  // makes each mode feel less like its own distinct page.
+  document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
   appVisible = (mode !== 'musical' && mode !== 'lessons');
 }

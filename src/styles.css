@@ -173,8 +173,11 @@
  /* align-items:flex-start (not center) + enough top padding to clear the fixed #topbar's full
     stack (mode pills, tune toggle, label, share button — ~150-160px tall) — centering this
     content vertically let it get pushed up underneath that chrome on short/desktop viewports. */
- #musicalHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;}
- #lessonsHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;}
+ #musicalHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;animation:pageEnter .25s ease;}
+ #lessonsHome{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:175px 24px 24px;overflow:auto;animation:pageEnter .25s ease;}
+ /* toggling display:none -> '' restarts a CSS animation from scratch — a free "new page" cue
+    every time a mode switch shows one of these full-page takeovers, no JS transition needed. */
+ @keyframes pageEnter{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}

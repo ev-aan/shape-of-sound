@@ -263,9 +263,20 @@ try {
   if (!/lessonCard/.test(C['lessonNav'].innerHTML)) throw new Error('lesson nav should render lesson cards');
   fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
   if (!C['musInterval'].innerHTML) throw new Error('selecting the intervals lesson should still have its mount point populated (wired at boot)');
+  // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
+  // fixed equal temperament) — showing it there would be chrome bleeding across pages
+  if (C['tuneToggle'].style.display === '') throw new Error('Lessons mode should hide the tune toggle, which has no effect on its demos');
+  // a mode switch is a fresh page: scroll position shouldn't carry over from a previous visit
+  C['lessonsHome'].scrollTop = 400;
   fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
   frames(5);
   if (C['lessonsHome'].style.display === '') throw new Error('leaving Lessons should hide #lessonsHome');
+  if (C['tuneToggle'].style.display !== '') throw new Error('Science mode should show the tune toggle again');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  if (C['lessonsHome'].scrollTop !== 0) throw new Error('re-entering Lessons should reset scroll to the top, not resume a previous scroll position');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity
