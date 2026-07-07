@@ -68,9 +68,16 @@ function wireLessonsHome(){
   const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
   ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
-  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value });
+  let ivOrientation = 'horizontal';
+  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value, orientation:ivOrientation });
   ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
   document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
+  document.getElementById('ivOrientPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ivOrientation = b.dataset.k;
+    document.querySelectorAll('#ivOrientPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderIntervalViz();
+  });
   renderIntervalViz();
   document.getElementById('staffColorPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;

@@ -11,6 +11,43 @@ function intervalConsonance(iv){
   const sum = a + b, minSum = 2, maxSum = 31; // 1:1 (unison) .. 16:15 (minor 2nd), the simplest/densest ratios in RATIO
   return Math.round(100 * (1 - (sum - minSum) / (maxSum - minSum)));
 }
+// horizontal reads well laid over a piano keyboard (semitones as physical key-distance); vertical
+// stacks the two notes the way theory books draw an interval on a staff (lower note at the
+// bottom) — same data, two honest readings of it, not one "correct" layout.
+function intervalSvgHorizontal(a, b, iv, colA, colB){
+  const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 60, arcY = 26;
+  const xFor = semis => pad + semis*step;
+  const xa = xFor(0), xb = xFor(iv), midX = (xa + xb) / 2;
+  let ticks = '';
+  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="ivTick"></line>'; }
+  return '<svg viewBox="0 0 '+w+' 90" class="ivSvg">'+
+    '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="ivLine"></line>'+
+    ticks+
+    (iv > 0 ? '<path d="M'+xa+' '+(y-6)+' Q '+midX+' '+arcY+' '+xb+' '+(y-6)+'" class="ivArc"></path>'+
+      '<text x="'+midX+'" y="'+(arcY-4)+'" class="ivArcLabel">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
+    '<circle cx="'+xa+'" cy="'+y+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
+    '<circle cx="'+xb+'" cy="'+y+'" r="7" style="--pc:'+colB+'" class="ivDot"></circle>'+
+    '<text x="'+xa+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[a]+'</text>'+
+    '<text x="'+xb+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[b]+'</text>'+
+    '</svg>';
+}
+function intervalSvgVertical(a, b, iv, colA, colB){
+  const w = 195, h = 230, pad = 26, step = (h - 2*pad) / 12, cx = 70, arcX = cx + 24;
+  const yFor = semis => (h - pad) - semis*step; // higher semitone = higher up, lower note at the bottom
+  const ya = yFor(0), yb = yFor(iv), midY = (ya + yb) / 2;
+  let ticks = '';
+  for(let s=0; s<=12; s++){ const yy = yFor(s); ticks += '<line x1="'+(cx-4)+'" x2="'+(cx+4)+'" y1="'+yy+'" y2="'+yy+'" class="ivTick"></line>'; }
+  return '<svg viewBox="0 0 '+w+' '+h+'" class="ivSvg ivSvg-vert">'+
+    '<line x1="'+cx+'" x2="'+cx+'" y1="'+pad+'" y2="'+(h-pad)+'" class="ivLine"></line>'+
+    ticks+
+    (iv > 0 ? '<path d="M'+(cx+6)+' '+ya+' Q '+arcX+' '+midY+' '+(cx+6)+' '+yb+'" class="ivArc"></path>'+
+      '<text x="'+(arcX+5)+'" y="'+(midY+3)+'" class="ivArcLabel ivArcLabelVert">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
+    '<circle cx="'+cx+'" cy="'+ya+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
+    '<circle cx="'+cx+'" cy="'+yb+'" r="7" style="--pc:'+colB+'" class="ivDot"></circle>'+
+    '<text x="'+(cx-14)+'" y="'+(ya+4)+'" class="ivNoteLabel ivNoteLabelVert">'+NOTE[a]+'</text>'+
+    '<text x="'+(cx-14)+'" y="'+(yb+4)+'" class="ivNoteLabel ivNoteLabelVert">'+NOTE[b]+'</text>'+
+    '</svg>';
+}
 Surfaces.register('interval', {
   label: 'Interval',
   render(container, opts){
@@ -18,21 +55,7 @@ Surfaces.register('interval', {
     const a = ((opts.a % 12) + 12) % 12, b = ((opts.b % 12) + 12) % 12;
     const iv = ((b - a) % 12 + 12) % 12;
     const colA = Palette.noteCss(a, .68, .62), colB = Palette.noteCss(b, .68, .62);
-    const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 60, arcY = 26;
-    const xFor = semis => pad + semis*step;
-    const xa = xFor(0), xb = xFor(iv), midX = (xa + xb) / 2;
-    let ticks = '';
-    for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="ivTick"></line>'; }
-    const svg = '<svg viewBox="0 0 '+w+' 90" class="ivSvg">'+
-      '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="ivLine"></line>'+
-      ticks+
-      (iv > 0 ? '<path d="M'+xa+' '+(y-6)+' Q '+midX+' '+arcY+' '+xb+' '+(y-6)+'" class="ivArc"></path>'+
-        '<text x="'+midX+'" y="'+(arcY-4)+'" class="ivArcLabel">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
-      '<circle cx="'+xa+'" cy="'+y+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
-      '<circle cx="'+xb+'" cy="'+y+'" r="7" style="--pc:'+colB+'" class="ivDot"></circle>'+
-      '<text x="'+xa+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[a]+'</text>'+
-      '<text x="'+xb+'" y="'+(y+22)+'" class="ivNoteLabel">'+NOTE[b]+'</text>'+
-      '</svg>';
+    const svg = opts.orientation === 'vertical' ? intervalSvgVertical(a, b, iv, colA, colB) : intervalSvgHorizontal(a, b, iv, colA, colB);
     const cons = intervalConsonance(iv);
     container.innerHTML = svg +
       '<div class="ivInfo">'+

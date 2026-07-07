@@ -177,6 +177,13 @@ try {
   __api.Surfaces.get('interval').render(m2, { a:0, b:1 });
   if (!/Minor 2nd/.test(m2.innerHTML)) throw new Error('C -> C# should be identified as a Minor 2nd');
   if (!/16:15/.test(m2.innerHTML)) throw new Error('a Minor 2nd should show its 16:15 ratio');
+  // vertical orientation: same interval, a stacked (staff-like) layout instead of the horizontal
+  // (piano-like) one — same name/ratio, different SVG class
+  const p5vert = document.createElement('div');
+  __api.Surfaces.get('interval').render(p5vert, { a:0, b:7, orientation:'vertical' });
+  if (!/ivSvg-vert/.test(p5vert.innerHTML)) throw new Error('orientation:"vertical" should render the stacked layout');
+  if (!/Perfect 5th/.test(p5vert.innerHTML)) throw new Error('vertical orientation should still identify the interval correctly');
+  if (/ivSvg-vert/.test(p5.innerHTML)) throw new Error('the default (horizontal) render should not carry the vertical class');
   // the note selects (wired at boot alongside the others) should default to a fifth apart, and
   // changing one should re-render the diagram for the new pair
   if (C['ivNoteA'].innerHTML.match(/<option/g).length !== 12 || C['ivNoteB'].innerHTML.match(/<option/g).length !== 12) throw new Error('interval note selects should list all 12 notes');
@@ -184,6 +191,11 @@ try {
   C['ivNoteB'].value = '4'; C['ivNoteB'].onchange();
   if (!/Major 3rd/.test(C['musInterval'].innerHTML)) throw new Error('changing a note select should re-render the interval diagram');
   C['ivNoteB'].value = '7'; C['ivNoteB'].onchange(); // restore the default pairing for anything downstream
+  // the orientation pills (wired at boot) should default to horizontal and switch on click
+  if (/ivSvg-vert/.test(C['musInterval'].innerHTML)) throw new Error('interval visualizer should default to the horizontal layout');
+  fire(C['ivOrientPills'], 'click', { target: { closest: () => ({ dataset: { k: 'vertical' }, classList: { toggle(){} } }) } });
+  if (!/ivSvg-vert/.test(C['musInterval'].innerHTML)) throw new Error('selecting "Vertical (staff)" should switch to the stacked layout');
+  fire(C['ivOrientPills'], 'click', { target: { closest: () => ({ dataset: { k: 'horizontal' }, classList: { toggle(){} } }) } }); // restore the default
   let ivOscCount = 0;
   const origIvCreateOsc = global.window.AudioContext.prototype.createOscillator;
   global.window.AudioContext.prototype.createOscillator = function(){ ivOscCount++; return origIvCreateOsc.apply(this, arguments); };
