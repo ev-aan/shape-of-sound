@@ -41,13 +41,14 @@ const Modes = (function(){
 // Single place that knows the full set of mode-owned elements, so a new mode can't forget to
 // hide someone else's panel (science/play share the small #panel; musical is a full 2D takeover).
 function showMode(mode){
-  document.getElementById('panel').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('panel').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
   document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
   document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
-  document.getElementById('scene').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('title').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('legend').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('dimToggle').style.display = (mode === 'musical') ? 'none' : '';
-  appVisible = (mode !== 'musical');
+  document.getElementById('lessonsHome').style.display = (mode === 'lessons') ? '' : 'none';
+  document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  appVisible = (mode !== 'musical' && mode !== 'lessons');
 }

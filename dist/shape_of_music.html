@@ -178,6 +178,8 @@
  @media(max-width:560px){.simpleCols{flex-direction:column;align-items:center;}}
  #musicalHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
  @media(max-width:640px){#musicalHome{padding-top:145px;align-items:flex-start;}}
+ #lessonsHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
+ @media(max-width:640px){#lessonsHome{padding-top:145px;align-items:flex-start;}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
@@ -257,6 +259,15 @@
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
  .pianoKey.held{stroke:#fff;stroke-width:2;}
  .pianoLabel{fill:#0b1026cc;font:600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;pointer-events:none;}
+ .lessonNav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:6px;}
+ .lessonCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:12px;padding:11px 14px;
+   width:150px;text-align:left;transition:background .15s;}
+ .lessonCard:hover{background:#ffffff14;}
+ .lessonCard.on{background:#ffffff1c;border-color:#cdd9f5;}
+ .lessonTitle{font:600 12px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);}
+ .lessonBlurb{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.35;}
+ .lessonBody{display:none;}
+ .lessonBody.on{display:block;}
 
 </style></head><body>
 <div id="simpleFront">
@@ -293,40 +304,6 @@
    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
-  <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
-    <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
-   <div id="musExampleStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">D major (2 sharps) — the scale carries no inline accidentals</div>
-   <div id="musKeySigSharpStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
-   <div id="musKeySigFlatStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">interval visualizer — pick two notes to see the distance between them</div>
-   <div class="ivRow">
-    <select id="ivNoteA"></select><span class="ivArrowChar">→</span><select id="ivNoteB"></select>
-    <button id="ivPlayBtn" class="musAddSeqBtn">♪ hear it</button>
-   </div>
-   <div id="musInterval"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
-   <div class="ivRow">
-    <select id="ssRootSel"></select>
-    <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
-   </div>
-   <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
-    <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
-    <button data-k="6">11th</button><button data-k="7">13th</button>
-   </div>
-   <div id="musSuperstructure"></div>
-  </div>
   <div class="musStaffSection">
    <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
    <div id="musNeighbors" class="musSuggest"></div>
@@ -343,11 +320,59 @@
   </div>
  </div>
 </div>
+<div id="lessonsHome" style="display:none;">
+ <div class="musWrap">
+  <div id="lessonNav" class="lessonNav"></div>
+  <p class="hint" style="text-align:center;">Want a full worked example instead? See the Bach Prelude playback in Musical mode.</p>
+  <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
+    <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
+  <div class="lessonBody" data-lesson="measure-basics">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
+    <div id="musExampleStaff" class="musStaff"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="key-signatures">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">D major (2 sharps) — the scale carries no inline accidentals</div>
+    <div id="musKeySigSharpStaff" class="musStaff"></div>
+   </div>
+   <div class="musStaffSection">
+    <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
+    <div id="musKeySigFlatStaff" class="musStaff"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="intervals">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">interval visualizer — pick two notes to see the distance between them</div>
+    <div class="ivRow">
+     <select id="ivNoteA"></select><span class="ivArrowChar">→</span><select id="ivNoteB"></select>
+     <button id="ivPlayBtn" class="musAddSeqBtn">♪ hear it</button>
+    </div>
+    <div id="musInterval"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="extensions">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
+    <div class="ivRow">
+     <select id="ssRootSel"></select>
+     <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
+    </div>
+    <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
+     <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
+     <button data-k="6">11th</button><button data-k="7">13th</button>
+    </div>
+    <div id="musSuperstructure"></div>
+   </div>
+  </div>
+ </div>
+</div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
  <div id="modeToggle" class="pills">
-   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button>
+   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button><button data-mode="lessons">Lessons</button>
  </div>
  <div id="dimToggle" class="pills">
    <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>
@@ -594,15 +619,16 @@ const Modes = (function(){
 // Single place that knows the full set of mode-owned elements, so a new mode can't forget to
 // hide someone else's panel (science/play share the small #panel; musical is a full 2D takeover).
 function showMode(mode){
-  document.getElementById('panel').style.display = (mode === 'musical') ? 'none' : '';
+  document.getElementById('panel').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('scienceControls').style.display = (mode === 'science') ? '' : 'none';
   document.getElementById('playControls').style.display = (mode === 'play') ? '' : 'none';
   document.getElementById('musicalHome').style.display = (mode === 'musical') ? '' : 'none';
-  document.getElementById('scene').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('title').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('legend').style.display = (mode === 'musical') ? 'none' : '';
-  document.getElementById('dimToggle').style.display = (mode === 'musical') ? 'none' : '';
-  appVisible = (mode !== 'musical');
+  document.getElementById('lessonsHome').style.display = (mode === 'lessons') ? '' : 'none';
+  document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  appVisible = (mode !== 'musical' && mode !== 'lessons');
 }
 
 // ---- SCALES: pitch-class sets sourced from standard music theory ----
@@ -1644,6 +1670,107 @@ Modes.register('science', {
   onExit(){}
 });
 
+// ---- MODE: LESSONS (standalone teaching-tool demos) ----
+// Each demo here is fully self-contained — its own controls, no dependency on Musical mode's
+// live circle-of-fifths state (activeChordIdx) the way Bach playback and neighbouring-chords are.
+// One file, one call, same pattern as every other mode (Modes.register).
+const LESSONS = [
+  { id:'measure-basics', title:'Reading a measure', blurb:'quarter notes, eighths, a rest, a chord — the staff engine end to end' },
+  { id:'key-signatures', title:'Key signatures', blurb:'why a scale in D major or F major needs no inline accidentals' },
+  { id:'intervals',      title:'Intervals',        blurb:'the distance between two notes, named and measured' },
+  { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
+];
+let activeLesson = LESSONS[0].id;
+
+Modes.register('lessons', {
+  label: 'Lessons',
+  onEnter(){
+    showMode('lessons');
+    document.getElementById('topbarLabel').textContent = 'Lessons — small standalone music-theory demos';
+  },
+  onExit(){}
+});
+
+function selectLesson(id){
+  activeLesson = id;
+  document.querySelectorAll('#lessonsHome .lessonBody').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
+  document.querySelectorAll('#lessonsHome .lessonCard').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
+}
+function lessonCardHTML(l){
+  return '<div class="lessonCard" data-lesson="'+l.id+'"><div class="lessonTitle">'+l.title+'</div>'+
+    '<div class="lessonBlurb">'+l.blurb+'</div></div>';
+}
+// a single small measure proving the staff engine's range end to end: a mix of durations, a
+// rest, a chord (not just single notes), and both staves — the same engine the full 35-bar
+// Bach piece uses, just with one bar of hand-written data instead of 35 generated ones.
+const STAFF_EXAMPLE_MEASURE = [{
+  timeSig: [4,4],
+  label: 'C',
+  voices: {
+    treble: [
+      { midi:64, dur:'q' },
+      { midi:67, dur:'e' },
+      { midi:69, dur:'e' },
+      { rest:true, dur:'q' },
+      { midi:[60,64,67], dur:'q' }
+    ],
+    bass: [ { midi:48, dur:'h' }, { midi:43, dur:'h' } ]
+  }
+}];
+// two more small measures proving the key-signature feature: a diatonic scale in a sharp key
+// and a flat key. Every note here belongs to its key, so none of them should carry an inline
+// accidental — only the signature glyphs at the clef should show sharps/flats.
+const STAFF_KEYSIG_SHARP_MEASURE = [{
+  timeSig: [4,4],
+  voices: { treble: [62,64,66,67,69,71,73,74].map(midi => ({ midi, dur:'e' })) } // D major scale
+}];
+const STAFF_KEYSIG_FLAT_MEASURE = [{
+  timeSig: [4,4],
+  voices: { treble: [65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } // F major scale
+}];
+function wireLessonsHome(){
+  document.getElementById('lessonNav').innerHTML = LESSONS.map(lessonCardHTML).join('');
+  document.getElementById('lessonNav').addEventListener('click', e => {
+    const c = e.target.closest('.lessonCard'); if(!c) return;
+    selectLesson(c.dataset.lesson);
+  });
+  Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
+  Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
+  Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
+  const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
+  ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
+  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value });
+  ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
+  document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
+  renderIntervalViz();
+  document.getElementById('staffColorPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    document.body.classList.toggle('staffColor', b.dataset.k === 'color');
+    document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
+  });
+  const ssRootSel = document.getElementById('ssRootSel');
+  ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  ssRootSel.value = 0;
+  let ssQuality = 'major', ssExtend = 3;
+  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
+  ssRootSel.onchange = renderSuperstructure;
+  document.getElementById('ssQualPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssQuality = b.dataset.k;
+    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  document.getElementById('ssExtendPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssExtend = +b.dataset.k;
+    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  renderSuperstructure();
+  selectLesson(activeLesson);
+}
+
 // ---- MODE: MUSICAL (theory view) ----
 // A full 2D takeover, no 3D map: tap a note on the circle of fifths to make it your key. The
 // circle itself shows that key's diatonic chords as concentric rings — minor (ii/vi) and
@@ -1934,50 +2061,7 @@ function refreshMusicalScene(){
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
   leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Minor ring: ii & vi. Outer ring: vii° (diminished). Tap any of them to hear it.';
 }
-// a single small measure proving the staff engine's range end to end: a mix of durations, a
-// rest, a chord (not just single notes), and both staves — the same engine the full 35-bar
-// Bach piece uses, just with one bar of hand-written data instead of 35 generated ones.
-const STAFF_EXAMPLE_MEASURE = [{
-  timeSig: [4,4],
-  label: 'C',
-  voices: {
-    treble: [
-      { midi:64, dur:'q' },
-      { midi:67, dur:'e' },
-      { midi:69, dur:'e' },
-      { rest:true, dur:'q' },
-      { midi:[60,64,67], dur:'q' }
-    ],
-    bass: [ { midi:48, dur:'h' }, { midi:43, dur:'h' } ]
-  }
-}];
-// two more small measures proving the key-signature feature: a diatonic scale in a sharp key
-// and a flat key. Every note here belongs to its key, so none of them should carry an inline
-// accidental — only the signature glyphs at the clef should show sharps/flats.
-const STAFF_KEYSIG_SHARP_MEASURE = [{
-  timeSig: [4,4],
-  voices: { treble: [62,64,66,67,69,71,73,74].map(midi => ({ midi, dur:'e' })) } // D major scale
-}];
-const STAFF_KEYSIG_FLAT_MEASURE = [{
-  timeSig: [4,4],
-  voices: { treble: [65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } // F major scale
-}];
 function wireMusicalHome(){
-  Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
-  Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
-  Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
-  const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
-  ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
-  ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
-  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value });
-  ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
-  document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
-  renderIntervalViz();
-  document.getElementById('staffColorPills').addEventListener('click', e => {
-    const b = e.target.closest('button'); if(!b) return;
-    document.body.classList.toggle('staffColor', b.dataset.k === 'color');
-    document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
-  });
   const scaleSel = document.getElementById('mScaleSel');
   scaleSel.innerHTML = Object.keys(SCALES).map(id=>'<option value="'+id+'">'+SCALES[id].name+'</option>').join('');
   scaleSel.value = 'major';
@@ -1995,25 +2079,6 @@ function wireMusicalHome(){
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
   });
-  const ssRootSel = document.getElementById('ssRootSel');
-  ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
-  ssRootSel.value = 0;
-  let ssQuality = 'major', ssExtend = 3;
-  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
-  ssRootSel.onchange = renderSuperstructure;
-  document.getElementById('ssQualPills').addEventListener('click', e => {
-    const b = e.target.closest('button'); if(!b) return;
-    ssQuality = b.dataset.k;
-    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x===b));
-    renderSuperstructure();
-  });
-  document.getElementById('ssExtendPills').addEventListener('click', e => {
-    const b = e.target.closest('button'); if(!b) return;
-    ssExtend = +b.dataset.k;
-    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', x===b));
-    renderSuperstructure();
-  });
-  renderSuperstructure();
   document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
@@ -2437,6 +2502,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalHome();
+wireLessonsHome();
 wireBachPrelude();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');

@@ -240,6 +240,20 @@ try {
   if (!/bar 1\/35/.test(C['musBachPlay'].textContent)) throw new Error('play button should show playback progress');
   C['musBachPlay'].onclick(); // stop
   if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopping should restore the play button label');
+  // Lessons mode: a 4th top-level surface for the standalone teaching demos only (Bach and
+  // neighbouring chords stay in Musical mode since they depend on its live chord-selection state)
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  if (__api.View.get().mode !== 'lessons') throw new Error('Lessons tab did not activate');
+  if (C['lessonsHome'].style.display === 'none') throw new Error('Lessons mode should show #lessonsHome');
+  if (C['musicalHome'].style.display !== 'none') throw new Error('Lessons mode should hide #musicalHome');
+  if (C['scene'].style.display !== 'none') throw new Error('Lessons mode should hide the 3D map, same as Musical');
+  if (!/lessonCard/.test(C['lessonNav'].innerHTML)) throw new Error('lesson nav should render lesson cards');
+  fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
+  if (!C['musInterval'].innerHTML) throw new Error('selecting the intervals lesson should still have its mount point populated (wired at boot)');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  if (C['lessonsHome'].style.display === '') throw new Error('leaving Lessons should hide #lessonsHome');
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
   // palette sanity

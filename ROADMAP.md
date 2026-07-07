@@ -97,7 +97,11 @@ extensions of existing ones, which is exactly the point of that registry.
 
 - Tuplet and tie support in the measure engine (deferred from the original staff-engine
   plan; still open).
-- A lesson-content browser once there are enough small modules to need one (explicitly
-  deferred until then — no browser UI for a single module).
+- ~~A lesson-content browser once there are enough small modules to need one~~ — **done**:
+  a new Lessons mode ([93_mode_lessons.js](src/js/93_mode_lessons.js)) now hosts the four
+  standalone demos (measure basics, key signatures, intervals, chord extensions) as a
+  browsable card list, split out from Musical mode, which keeps the circle-of-fifths,
+  suggestions, neighbouring chords, and Bach playback — the parts that depend on its own
+  live chord-selection state and aren't actually standalone.
 - A second instrument surface (fretboard) once a second surface is actually needed by real
   content, to keep the instrument-agnostic data model honest.

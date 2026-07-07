@@ -40,40 +40,6 @@
    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
-  <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
-    <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
-   <div id="musExampleStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">D major (2 sharps) — the scale carries no inline accidentals</div>
-   <div id="musKeySigSharpStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
-   <div id="musKeySigFlatStaff" class="musStaff"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">interval visualizer — pick two notes to see the distance between them</div>
-   <div class="ivRow">
-    <select id="ivNoteA"></select><span class="ivArrowChar">→</span><select id="ivNoteB"></select>
-    <button id="ivPlayBtn" class="musAddSeqBtn">♪ hear it</button>
-   </div>
-   <div id="musInterval"></div>
-  </div>
-  <div class="musStaffSection">
-   <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
-   <div class="ivRow">
-    <select id="ssRootSel"></select>
-    <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
-   </div>
-   <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
-    <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
-    <button data-k="6">11th</button><button data-k="7">13th</button>
-   </div>
-   <div id="musSuperstructure"></div>
-  </div>
   <div class="musStaffSection">
    <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
    <div id="musNeighbors" class="musSuggest"></div>
@@ -90,11 +56,59 @@
   </div>
  </div>
 </div>
+<div id="lessonsHome" style="display:none;">
+ <div class="musWrap">
+  <div id="lessonNav" class="lessonNav"></div>
+  <p class="hint" style="text-align:center;">Want a full worked example instead? See the Bach Prelude playback in Musical mode.</p>
+  <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
+    <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
+  <div class="lessonBody" data-lesson="measure-basics">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
+    <div id="musExampleStaff" class="musStaff"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="key-signatures">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">D major (2 sharps) — the scale carries no inline accidentals</div>
+    <div id="musKeySigSharpStaff" class="musStaff"></div>
+   </div>
+   <div class="musStaffSection">
+    <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
+    <div id="musKeySigFlatStaff" class="musStaff"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="intervals">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">interval visualizer — pick two notes to see the distance between them</div>
+    <div class="ivRow">
+     <select id="ivNoteA"></select><span class="ivArrowChar">→</span><select id="ivNoteB"></select>
+     <button id="ivPlayBtn" class="musAddSeqBtn">♪ hear it</button>
+    </div>
+    <div id="musInterval"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="extensions">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
+    <div class="ivRow">
+     <select id="ssRootSel"></select>
+     <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
+    </div>
+    <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
+     <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
+     <button data-k="6">11th</button><button data-k="7">13th</button>
+    </div>
+    <div id="musSuperstructure"></div>
+   </div>
+  </div>
+ </div>
+</div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
 <div id="topbar">
  <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
  <div id="modeToggle" class="pills">
-   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button>
+   <button data-mode="science" class="on">Science</button><button data-mode="musical">Musical</button><button data-mode="play">Play</button><button data-mode="lessons">Lessons</button>
  </div>
  <div id="dimToggle" class="pills">
    <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>

@@ -172,6 +172,8 @@
  @media(max-width:560px){.simpleCols{flex-direction:column;align-items:center;}}
  #musicalHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
  @media(max-width:640px){#musicalHome{padding-top:145px;align-items:flex-start;}}
+ #lessonsHome{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:70px 24px 24px;overflow:auto;}
+ @media(max-width:640px){#lessonsHome{padding-top:145px;align-items:flex-start;}}
  .musWrap{max-width:640px;width:100%;text-align:center;}
  .musWrap .cofSvg{max-width:400px;}
  .cofNote.dim circle{opacity:.28;}
@@ -251,3 +253,12 @@
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
  .pianoKey.held{stroke:#fff;stroke-width:2;}
  .pianoLabel{fill:#0b1026cc;font:600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;pointer-events:none;}
+ .lessonNav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:6px;}
+ .lessonCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:12px;padding:11px 14px;
+   width:150px;text-align:left;transition:background .15s;}
+ .lessonCard:hover{background:#ffffff14;}
+ .lessonCard.on{background:#ffffff1c;border-color:#cdd9f5;}
+ .lessonTitle{font:600 12px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);}
+ .lessonBlurb{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.35;}
+ .lessonBody{display:none;}
+ .lessonBody.on{display:block;}

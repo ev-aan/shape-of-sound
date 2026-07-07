@@ -15,6 +15,7 @@ wireTopbar();
 wireDimToggle();
 wireTuneToggle();
 wireMusicalHome();
+wireLessonsHome();
 wireBachPrelude();
 wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
