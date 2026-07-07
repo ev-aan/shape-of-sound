@@ -190,6 +190,42 @@ try {
   C['ivPlayBtn'].onclick();
   global.window.AudioContext.prototype.createOscillator = origIvCreateOsc;
   if (ivOscCount !== 2) throw new Error('"hear it" should play both notes of the interval, played ' + ivOscCount);
+  // chord superstructure: a triad (upTo:3) lights exactly 3 nodes and leaves the rest dim
+  const ssMajor = document.createElement('div');
+  __api.Surfaces.get('superstructure').render(ssMajor, { root:0, quality:'major', upTo:3 });
+  const ssMajorLit = (ssMajor.innerHTML.match(/class="ssNode"/g) || []).length, ssMajorDim = (ssMajor.innerHTML.match(/ssNode-dim/g) || []).length;
+  if (ssMajorLit !== 3) throw new Error('a triad (upTo:3) should light exactly 3 nodes, got ' + ssMajorLit);
+  if (ssMajorDim !== 4) throw new Error('a triad (upTo:3) should leave exactly 4 nodes dim (7th/9th/11th/13th), got ' + ssMajorDim);
+  if (!/>E</.test(ssMajor.innerHTML)) throw new Error('a major stack on C should include E as its 3rd');
+  const ssFull = document.createElement('div');
+  __api.Surfaces.get('superstructure').render(ssFull, { root:0, quality:'major', upTo:7 });
+  if ((ssFull.innerHTML.match(/ssNode-dim/g) || []).length !== 0) throw new Error('upTo:7 (a 13th chord) should leave nothing dim');
+  const ssMinor = document.createElement('div');
+  __api.Surfaces.get('superstructure').render(ssMinor, { root:0, quality:'minor', upTo:4 });
+  if (!/>D#</.test(ssMinor.innerHTML)) throw new Error('a minor stack on C should include D# (the minor 3rd), not E');
+  // the superstructure controls (wired at boot) should default to a triad and respond to the extend pills
+  if ((C['musSuperstructure'].innerHTML.match(/class="ssNode"/g) || []).length !== 3) throw new Error('superstructure should default to a triad (3 lit nodes)');
+  fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '7' }, classList: { toggle(){} } }) } });
+  if ((C['musSuperstructure'].innerHTML.match(/ssNode-dim/g) || []).length !== 0) throw new Error('selecting 13th should light every node in the stack');
+  fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '3' }, classList: { toggle(){} } }) } }); // restore the default for anything downstream
+  // neighbouring chords: systematic proximity, not a ranked recommendation — Am (shares C and E
+  // with Cmaj) should show up, the chord itself never should, and the list stays capped/tagged
+  const nbList = __api.neighboringChords(cIdx);
+  if (nbList.some(o => o.b === cIdx)) throw new Error('neighboringChords should never include the chord itself');
+  if (nbList.some(o => __api.N[o.b].root === __api.N[cIdx].root)) throw new Error('neighboringChords should exclude same-root variants (Cmaj7, C7, ...) — that\'s decorating the same chord, not a neighbour');
+  const eminIdx = __api.N.findIndex(n => n.root === 4 && n.q === 'min');
+  if (!nbList.some(o => o.b === eminIdx)) throw new Error('Emin (shares E and G with Cmaj) should show up as a neighbouring chord');
+  if (nbList.length > 8) throw new Error('neighboringChords should cap its list at 8, got ' + nbList.length);
+  if (nbList.some(o => !o.tag)) throw new Error('every neighbouring-chord entry should carry an explanatory tag');
+  if (!C['musNeighbors'].innerHTML) throw new Error('the neighbours panel should be populated once a chord is active');
+  // piano roll: one rect per note event, reusing exactly the staff engine's measure data shape
+  const rollTest = document.createElement('div');
+  __api.Surfaces.get('pianoroll').render(rollTest, [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:'q' }, { midi:64, dur:'q' }], bass:[{ midi:48, dur:'h' }] } }]);
+  const rollNoteCount = (rollTest.innerHTML.match(/class="rollNote"/g) || []).length;
+  if (rollNoteCount !== 3) throw new Error('piano roll should render one bar per note event, got ' + rollNoteCount);
+  // the Bach piano roll (wired at boot alongside the staff view) renders the whole 35-bar passage
+  const bachRollCount = (C['musPianoRoll'].innerHTML.match(/class="rollNote"/g) || []).length;
+  if (bachRollCount !== 350) throw new Error('Bach piano roll should render 350 note bars (35 bars x (8 treble + 2 bass)), got ' + bachRollCount);
   // colour toggle: black & white by default, one click recolours every staff surface on the page
   if (document.body.classList.contains('staffColor')) throw new Error('colour mode should default off');
   fire(C['staffColorPills'], 'click', { target: { closest: () => ({ dataset: { k: 'color' } }) } });

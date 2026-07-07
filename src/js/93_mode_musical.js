@@ -134,6 +134,13 @@ function romanFor(deg, quality){
   if(quality==='aug') return base+'+';
   return base;
 }
+// how "basic" a chord quality is — plain triads first, then the common colour tones, then
+// everything else — used both to pick a key's representative chord per degree and to break
+// proximity ties in neighboringChords (a beginner should see Am before C#m7b5 as a neighbour).
+function chordSimplicity(q){
+  return ['maj','min','dim'].includes(q) ? 3 : (['aug','sus2','sus4'].includes(q) ? 2 :
+    (['7','maj7','min7','m7b5','dim7','mMaj7'].includes(q) ? 1 : 0));
+}
 // the best-fitting simple chord (prefer plain triads over 7ths/adds) rooted at this scale degree
 function repChordForDegree(scaleId, keyRoot, offset){
   const root = (keyRoot + offset) % 12;
@@ -141,8 +148,7 @@ function repChordForDegree(scaleId, keyRoot, offset){
   for(let i=0;i<N.length;i++){
     const n = N[i];
     if(n.root !== root || !chordInScale(n, scaleId, keyRoot)) continue;
-    const score = ['maj','min','dim'].includes(n.q) ? 3 : (['aug','sus2','sus4'].includes(n.q) ? 2 :
-      (['7','maj7','min7','m7b5','dim7','mMaj7'].includes(n.q) ? 1 : 0));
+    const score = chordSimplicity(n.q);
     if(score > bestScore){ bestScore = score; best = i; }
   }
   return best;
@@ -217,6 +223,43 @@ function renderSuggestions(){
   if(!list.length){ host.innerHTML = ''; return; }
   host.innerHTML = '<div class="fnLbl">where next from '+N[activeChordIdx].name+'?</div><div class="suggRow">'+list.map(suggChipHTML).join('')+'</div>';
 }
+// exploration, not recommendation: everything close to this chord by simple proximity (shared
+// tones or a single semitone of motion), not scored by function or "where next" — a systematic
+// browse rather than a top pick. Capped to keep the list readable, not because more don't exist.
+function neighboringChords(idx){
+  const pa = N[idx].ivs.map(iv => (N[idx].root+iv)%12);
+  const setA = new Set(pa);
+  const out = [];
+  for(let b=0;b<N.length;b++){
+    // same root, different quality (Cmaj -> Cmaj7 -> C6...) is a different relationship — decorating
+    // the same chord, not a neighbour — and would otherwise crowd out every different-root relative
+    // (the relative minor, a chromatic mediant) since there are so many same-root variants to match.
+    if(b === idx || N[b].root === N[idx].root) continue;
+    const pb = N[b].ivs.map(iv => (N[b].root+iv)%12);
+    const common = pb.filter(p => setA.has(p)).length;
+    const vl = vlDist(idx, b);
+    let tag = null;
+    if(common >= 2 && common >= Math.min(pa.length, pb.length) - 1) tag = 'shares '+common+' tones';
+    else if(vl <= 1) tag = 'one semitone away';
+    else if(vl <= 2) tag = 'two semitones away';
+    if(tag) out.push({ b, common, vl, tag });
+  }
+  out.sort((x,y) => (y.common - x.common) || (x.vl - y.vl) || (chordSimplicity(N[y.b].q) - chordSimplicity(N[x.b].q)));
+  return out.slice(0, 8);
+}
+function nbChipHTML(o){
+  const v = View.get(), fn = (v.key != null ? chordFn(N[o.b], v.scale, v.key) : null) || 'ext';
+  const col = Palette.FN[fn] || Palette.FN.ext;
+  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+
+    '<span class="suggTag">'+o.tag+'</span></button>';
+}
+function renderNeighbors(){
+  const host = document.getElementById('musNeighbors'); if(!host) return;
+  if(activeChordIdx == null){ host.innerHTML = ''; return; }
+  const list = neighboringChords(activeChordIdx);
+  if(!list.length){ host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
+}
 // the one path for "make this chord the one we're looking at" — used by the ring taps and the
 // "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
 // segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
@@ -227,6 +270,7 @@ function selectMusicalChord(idx){
   drawChordArc(idx);
   if(prevIdx != null) drawVoiceLeadingArrows(prevIdx, idx);
   renderSuggestions();
+  renderNeighbors();
 }
 function refreshMusicalScene(){
   const v = View.get();
@@ -237,6 +281,7 @@ function refreshMusicalScene(){
   paintMusicalCircle();
   drawChordArc(v.key != null ? activeChordIdx : null);
   renderSuggestions();
+  renderNeighbors();
   const leg = document.getElementById('mLegend');
   if(!leg) return;
   if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
@@ -300,6 +345,29 @@ function wireMusicalHome(){
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
   });
+  document.getElementById('musNeighbors').addEventListener('click', e => {
+    const b = e.target.closest('.suggChip'); if(!b) return;
+    selectMusicalChord(+b.dataset.idx);
+  });
+  const ssRootSel = document.getElementById('ssRootSel');
+  ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  ssRootSel.value = 0;
+  let ssQuality = 'major', ssExtend = 3;
+  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
+  ssRootSel.onchange = renderSuperstructure;
+  document.getElementById('ssQualPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssQuality = b.dataset.k;
+    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  document.getElementById('ssExtendPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssExtend = +b.dataset.k;
+    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  renderSuperstructure();
   document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;

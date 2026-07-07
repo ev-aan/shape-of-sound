@@ -173,4 +173,7 @@ function startBach(){
 function wireBachPrelude(){
   const btn = document.getElementById('musBachPlay'); if(!btn) return;
   btn.onclick = () => { if(bachTimer) stopBach(); else startBach(); };
+  // same 35-bar measure data the staff view above plays through one bar at a time, laid out as
+  // a piano roll instead — the whole passage visible at once, for free, from the same data.
+  Surfaces.get('pianoroll').render(document.getElementById('musPianoRoll'), BACH_PRELUDE);
 }

@@ -62,6 +62,22 @@
    </div>
    <div id="musInterval"></div>
   </div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
+   <div class="ivRow">
+    <select id="ssRootSel"></select>
+    <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
+   </div>
+   <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
+    <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
+    <button data-k="6">11th</button><button data-k="7">13th</button>
+   </div>
+   <div id="musSuperstructure"></div>
+  </div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
+   <div id="musNeighbors" class="musSuggest"></div>
+  </div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
    <div class="musChordRow">
@@ -69,6 +85,8 @@
     <button id="musAddSeqBtn" class="musAddSeqBtn" disabled>+ add to progression</button>
    </div>
    <div id="musStaff" class="musStaff"></div>
+   <div class="musStaffLbl" style="margin-top:16px;">the whole piece as a piano roll — same measure data, a different layout</div>
+   <div id="musPianoRoll" class="musStaff"></div>
   </div>
  </div>
 </div>

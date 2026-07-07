@@ -60,16 +60,19 @@ in priority order (cheapest / most-reused-infrastructure first):
    name, ratio, and a ratio-simplicity consonance read — deliberately smaller in scope than
    the full physics-based 3D map, its own standalone `Surfaces` entry with two note pickers
    in Musical mode.
-3. **Chord "superstructure" / extensions view.** A stacked-thirds diagram (root → 3rd →
-   5th → 7th → 9th → 11th → 13th) showing how extended chords build on triads — a natural
-   companion to the chord-tone text label we already show above each measure.
-4. **Neighbouring-chords explorer.** Systematic "what else is one common tone / one
-   semitone away from this chord" — related to suggestions but framed as exploration
-   rather than "what's next in a progression."
-5. **A spatial/piano-roll view.** We have a keyboard surface already
-   (`89_surface_keyboard.js`); a piano-roll (time along one axis, pitch along the other) is
-   a distinct, useful layout for showing a whole passage at a glance — could share the
-   same measure data as the staff engine.
+3. **Chord "superstructure" / extensions view.** *(done — [89_surface_superstructure.js](src/js/89_surface_superstructure.js))*
+   A stacked-thirds diagram (root → 3rd → 5th → 7th → 9th → 11th → 13th), major or minor,
+   with a triad/7th/9th/11th/13th stepper lighting up how far the stack currently extends —
+   the "extensions build on triads" story, drawn instead of only described.
+4. **Neighbouring-chords explorer.** *(done — `neighboringChords()` in
+   [93_mode_musical.js](src/js/93_mode_musical.js))* Systematic "what else is one common tone
+   or one step away," excluding same-root variants (those decorate the same chord rather than
+   neighbour it) and tie-broken toward plain triads over altered/extended chords, so a
+   beginner sees Em before C#m7b5. Framed as exploration, not a ranked "where next" pick.
+5. **A spatial/piano-roll view.** *(done — [89_surface_pianoroll.js](src/js/89_surface_pianoroll.js))*
+   Time along x, pitch along y, reusing the exact same `{timeSig, voices}` measure data the
+   staff engine reads — the full 35-bar Bach piece renders as a piano roll from the same data
+   it plays through one bar at a time on the staff, proof the format really is shared.
 
 None of these need a new architectural seam — they're all new `Surfaces` entries or
 extensions of existing ones, which is exactly the point of that registry.

@@ -234,6 +234,18 @@
  .ivInfo{text-align:center;margin-top:2px;}
  .ivName{font-size:14px;font-weight:600;}
  .ivDetail{font-size:11px;color:var(--dim);margin-top:3px;}
+ .ssSvg{display:block;margin:10px auto 0;max-width:220px;width:100%;height:auto;}
+ .ssStem{stroke:#8a97bfaa;stroke-width:1.5;}
+ .ssStem-dim{stroke:#8a97bf44;stroke-dasharray:2 2;}
+ .ssNode{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .ssNode-dim{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
+ .ssDegree{fill:var(--dim);font-size:10px;}
+ .ssNoteName{fill:var(--ink);font-size:11px;font-weight:600;}
+ .rollSvg{display:block;margin:10px auto 0;height:auto;min-width:100%;}
+ .rollBarline{stroke:#8a97bfaa;stroke-width:1;}
+ .rollBarline.rollFinal{stroke-width:2;}
+ .rollNote{fill:var(--ink);}
+ body.staffColor .rollNote{fill:var(--pc);}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}

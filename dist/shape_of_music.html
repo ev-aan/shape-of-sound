@@ -240,6 +240,18 @@
  .ivInfo{text-align:center;margin-top:2px;}
  .ivName{font-size:14px;font-weight:600;}
  .ivDetail{font-size:11px;color:var(--dim);margin-top:3px;}
+ .ssSvg{display:block;margin:10px auto 0;max-width:220px;width:100%;height:auto;}
+ .ssStem{stroke:#8a97bfaa;stroke-width:1.5;}
+ .ssStem-dim{stroke:#8a97bf44;stroke-dasharray:2 2;}
+ .ssNode{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .ssNode-dim{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
+ .ssDegree{fill:var(--dim);font-size:10px;}
+ .ssNoteName{fill:var(--ink);font-size:11px;font-weight:600;}
+ .rollSvg{display:block;margin:10px auto 0;height:auto;min-width:100%;}
+ .rollBarline{stroke:#8a97bfaa;stroke-width:1;}
+ .rollBarline.rollFinal{stroke-width:2;}
+ .rollNote{fill:var(--ink);}
+ body.staffColor .rollNote{fill:var(--pc);}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
  .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
@@ -303,6 +315,22 @@
    </div>
    <div id="musInterval"></div>
   </div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">chord superstructure — how extensions stack in thirds above a root</div>
+   <div class="ivRow">
+    <select id="ssRootSel"></select>
+    <div class="pills" id="ssQualPills"><button data-k="major" class="on">Major</button><button data-k="minor">Minor</button></div>
+   </div>
+   <div class="pills" id="ssExtendPills" style="justify-content:center;margin-top:8px;">
+    <button data-k="3" class="on">Triad</button><button data-k="4">7th</button><button data-k="5">9th</button>
+    <button data-k="6">11th</button><button data-k="7">13th</button>
+   </div>
+   <div id="musSuperstructure"></div>
+  </div>
+  <div class="musStaffSection">
+   <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
+   <div id="musNeighbors" class="musSuggest"></div>
+  </div>
   <div class="musBachSection">
    <button id="musBachPlay" class="musBachBtn">▶ Bach: Prelude in C (BWV 846)</button>
    <div class="musChordRow">
@@ -310,6 +338,8 @@
     <button id="musAddSeqBtn" class="musAddSeqBtn" disabled>+ add to progression</button>
    </div>
    <div id="musStaff" class="musStaff"></div>
+   <div class="musStaffLbl" style="margin-top:16px;">the whole piece as a piano roll — same measure data, a different layout</div>
+   <div id="musPianoRoll" class="musStaff"></div>
   </div>
  </div>
 </div>
@@ -1354,6 +1384,55 @@ Surfaces.register('keyboard', {
   }
 });
 
+// ---- SURFACE: piano roll ----
+// Time along x, pitch along y — a whole passage at a glance, rather than one measure's worth of
+// staff at a time. Reads exactly the same measure data the staff engine does (durBeats and
+// measureBeats are its helpers, reused here), so any content already written for one renders in
+// the other for free.
+Surfaces.register('pianoroll', {
+  label: 'Piano roll',
+  render(container, measures){
+    if(!container) return null;
+    const beatW = 26, rowH = 6, padTop = 10, padBottom = 10, startX = 6;
+    const events = [], barStarts = [];
+    let cursor = 0;
+    measures.forEach(m => {
+      barStarts.push(cursor);
+      const totalBeats = measureBeats(m.timeSig);
+      ['treble', 'bass'].forEach(voice => {
+        let cum = 0;
+        ((m.voices && m.voices[voice]) || []).forEach(ev => {
+          if(!ev.rest){
+            (Array.isArray(ev.midi) ? ev.midi : [ev.midi]).forEach(midi => {
+              events.push({ midi, startBeat: cursor + cum, beats: durBeats(ev.dur) });
+            });
+          }
+          cum += durBeats(ev.dur);
+        });
+      });
+      cursor += totalBeats;
+    });
+    if(!events.length){ container.innerHTML = ''; return null; }
+    const minMidi = Math.min.apply(null, events.map(e => e.midi)) - 1;
+    const maxMidi = Math.max.apply(null, events.map(e => e.midi)) + 1;
+    const w = startX + cursor*beatW + 10, h = padTop + (maxMidi - minMidi)*rowH + padBottom;
+    const xFor = beat => startX + beat*beatW;
+    const yFor = midi => padTop + (maxMidi - midi)*rowH;
+    let svg = '<svg viewBox="0 0 '+w+' '+h+'" class="rollSvg">';
+    barStarts.forEach(b => { const x = xFor(b); svg += '<line x1="'+x+'" x2="'+x+'" y1="0" y2="'+h+'" class="rollBarline"></line>'; });
+    const lastX = xFor(cursor);
+    svg += '<line x1="'+lastX+'" x2="'+lastX+'" y1="0" y2="'+h+'" class="rollBarline rollFinal"></line>';
+    events.forEach(e => {
+      const x = xFor(e.startBeat), y = yFor(e.midi), width = Math.max(2, e.beats*beatW - 2);
+      const pc = ((e.midi % 12) + 12) % 12, col = Palette.noteCss(pc, .68, .62);
+      svg += '<rect x="'+x+'" y="'+(y - rowH/2 + 1)+'" width="'+width+'" height="'+(rowH - 2)+'" rx="1.5" style="--pc:'+col+'" class="rollNote"></rect>';
+    });
+    svg += '</svg>';
+    container.innerHTML = svg;
+    return {};
+  }
+});
+
 // ---- SURFACE: staff notation (measure/score engine) ----
 // Not full engraving (no beam/stem rules, no tuplets) — but genuinely general: any mix of
 // note durations and rests, one measure or many, one voice (a single staff) or two (a grand
@@ -1489,6 +1568,40 @@ Surfaces.register('staff', {
         if(sel[0] && sel[0].scrollIntoView) sel[0].scrollIntoView({ block:'nearest', inline:'center', behavior:'smooth' });
       }
     };
+  }
+});
+
+// ---- SURFACE: chord superstructure ----
+// How extended chords build on triads: a vertical stack of thirds (root, 3rd, 5th, 7th, 9th,
+// 11th, 13th) above a chosen root, major or minor. Notes up to opts.upTo are "built" (lit,
+// coloured); the rest are shown dim, as the next thirds still available to stack on — the same
+// story every harmony method tells, just drawn instead of only described.
+const SS_LABELS = ['Root','3rd','5th','7th','9th','11th','13th'];
+const SS_STACK = { major: [0,4,7,11,14,17,21], minor: [0,3,7,10,14,17,20] };
+Surfaces.register('superstructure', {
+  label: 'Superstructure',
+  render(container, opts){
+    if(!container) return null;
+    const root = ((opts.root % 12) + 12) % 12;
+    const quality = opts.quality === 'minor' ? 'minor' : 'major';
+    const upTo = Math.max(1, Math.min(7, opts.upTo || 3));
+    const steps = SS_STACK[quality];
+    const rowH = 34, w = 220, pad = 14;
+    const h = pad*2 + rowH*6;
+    function yFor(i){ return h - pad - i*rowH; } // root at the bottom, 13th at the top
+    let svg = '<svg viewBox="0 0 '+w+' '+h+'" class="ssSvg">';
+    for(let i=0;i<7;i++){
+      const y = yFor(i), built = i < upTo;
+      const midi = 60 + root + steps[i], pc = ((midi % 12) + 12) % 12;
+      const col = Palette.noteCss(pc, .68, .62);
+      if(i > 0) svg += '<line x1="'+(w/2)+'" x2="'+(w/2)+'" y1="'+(y+rowH)+'" y2="'+y+'" class="ssStem'+(built ? '' : ' ssStem-dim')+'"></line>';
+      svg += '<circle cx="'+(w/2)+'" cy="'+y+'" r="11" style="--pc:'+col+'" class="ssNode'+(built ? '' : ' ssNode-dim')+'"></circle>'+
+        '<text x="'+(w/2-22)+'" y="'+(y+4)+'" class="ssDegree" text-anchor="end">'+SS_LABELS[i]+'</text>'+
+        '<text x="'+(w/2+22)+'" y="'+(y+4)+'" class="ssNoteName" text-anchor="start">'+NOTE[pc]+'</text>';
+    }
+    svg += '</svg>';
+    container.innerHTML = svg;
+    return {};
   }
 });
 
@@ -1667,6 +1780,13 @@ function romanFor(deg, quality){
   if(quality==='aug') return base+'+';
   return base;
 }
+// how "basic" a chord quality is — plain triads first, then the common colour tones, then
+// everything else — used both to pick a key's representative chord per degree and to break
+// proximity ties in neighboringChords (a beginner should see Am before C#m7b5 as a neighbour).
+function chordSimplicity(q){
+  return ['maj','min','dim'].includes(q) ? 3 : (['aug','sus2','sus4'].includes(q) ? 2 :
+    (['7','maj7','min7','m7b5','dim7','mMaj7'].includes(q) ? 1 : 0));
+}
 // the best-fitting simple chord (prefer plain triads over 7ths/adds) rooted at this scale degree
 function repChordForDegree(scaleId, keyRoot, offset){
   const root = (keyRoot + offset) % 12;
@@ -1674,8 +1794,7 @@ function repChordForDegree(scaleId, keyRoot, offset){
   for(let i=0;i<N.length;i++){
     const n = N[i];
     if(n.root !== root || !chordInScale(n, scaleId, keyRoot)) continue;
-    const score = ['maj','min','dim'].includes(n.q) ? 3 : (['aug','sus2','sus4'].includes(n.q) ? 2 :
-      (['7','maj7','min7','m7b5','dim7','mMaj7'].includes(n.q) ? 1 : 0));
+    const score = chordSimplicity(n.q);
     if(score > bestScore){ bestScore = score; best = i; }
   }
   return best;
@@ -1750,6 +1869,43 @@ function renderSuggestions(){
   if(!list.length){ host.innerHTML = ''; return; }
   host.innerHTML = '<div class="fnLbl">where next from '+N[activeChordIdx].name+'?</div><div class="suggRow">'+list.map(suggChipHTML).join('')+'</div>';
 }
+// exploration, not recommendation: everything close to this chord by simple proximity (shared
+// tones or a single semitone of motion), not scored by function or "where next" — a systematic
+// browse rather than a top pick. Capped to keep the list readable, not because more don't exist.
+function neighboringChords(idx){
+  const pa = N[idx].ivs.map(iv => (N[idx].root+iv)%12);
+  const setA = new Set(pa);
+  const out = [];
+  for(let b=0;b<N.length;b++){
+    // same root, different quality (Cmaj -> Cmaj7 -> C6...) is a different relationship — decorating
+    // the same chord, not a neighbour — and would otherwise crowd out every different-root relative
+    // (the relative minor, a chromatic mediant) since there are so many same-root variants to match.
+    if(b === idx || N[b].root === N[idx].root) continue;
+    const pb = N[b].ivs.map(iv => (N[b].root+iv)%12);
+    const common = pb.filter(p => setA.has(p)).length;
+    const vl = vlDist(idx, b);
+    let tag = null;
+    if(common >= 2 && common >= Math.min(pa.length, pb.length) - 1) tag = 'shares '+common+' tones';
+    else if(vl <= 1) tag = 'one semitone away';
+    else if(vl <= 2) tag = 'two semitones away';
+    if(tag) out.push({ b, common, vl, tag });
+  }
+  out.sort((x,y) => (y.common - x.common) || (x.vl - y.vl) || (chordSimplicity(N[y.b].q) - chordSimplicity(N[x.b].q)));
+  return out.slice(0, 8);
+}
+function nbChipHTML(o){
+  const v = View.get(), fn = (v.key != null ? chordFn(N[o.b], v.scale, v.key) : null) || 'ext';
+  const col = Palette.FN[fn] || Palette.FN.ext;
+  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+
+    '<span class="suggTag">'+o.tag+'</span></button>';
+}
+function renderNeighbors(){
+  const host = document.getElementById('musNeighbors'); if(!host) return;
+  if(activeChordIdx == null){ host.innerHTML = ''; return; }
+  const list = neighboringChords(activeChordIdx);
+  if(!list.length){ host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
+}
 // the one path for "make this chord the one we're looking at" — used by the ring taps and the
 // "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
 // segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
@@ -1760,6 +1916,7 @@ function selectMusicalChord(idx){
   drawChordArc(idx);
   if(prevIdx != null) drawVoiceLeadingArrows(prevIdx, idx);
   renderSuggestions();
+  renderNeighbors();
 }
 function refreshMusicalScene(){
   const v = View.get();
@@ -1770,6 +1927,7 @@ function refreshMusicalScene(){
   paintMusicalCircle();
   drawChordArc(v.key != null ? activeChordIdx : null);
   renderSuggestions();
+  renderNeighbors();
   const leg = document.getElementById('mLegend');
   if(!leg) return;
   if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
@@ -1833,6 +1991,29 @@ function wireMusicalHome(){
     const b = e.target.closest('.suggChip'); if(!b) return;
     selectMusicalChord(+b.dataset.idx);
   });
+  document.getElementById('musNeighbors').addEventListener('click', e => {
+    const b = e.target.closest('.suggChip'); if(!b) return;
+    selectMusicalChord(+b.dataset.idx);
+  });
+  const ssRootSel = document.getElementById('ssRootSel');
+  ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  ssRootSel.value = 0;
+  let ssQuality = 'major', ssExtend = 3;
+  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
+  ssRootSel.onchange = renderSuperstructure;
+  document.getElementById('ssQualPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssQuality = b.dataset.k;
+    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  document.getElementById('ssExtendPills').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    ssExtend = +b.dataset.k;
+    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', x===b));
+    renderSuperstructure();
+  });
+  renderSuperstructure();
   document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
@@ -2234,6 +2415,9 @@ function startBach(){
 function wireBachPrelude(){
   const btn = document.getElementById('musBachPlay'); if(!btn) return;
   btn.onclick = () => { if(bachTimer) stopBach(); else startBach(); };
+  // same 35-bar measure data the staff view above plays through one bar at a time, laid out as
+  // a piano roll instead — the whole passage visible at once, for free, from the same data.
+  Surfaces.get('pianoroll').render(document.getElementById('musPianoRoll'), BACH_PRELUDE);
 }
 
 // ---- BOOT (runs last, after all modes are registered) ----
@@ -2273,6 +2457,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords }; } catch(e){}
 
 })();</script></body></html>

@@ -35,4 +35,4 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords }; } catch(e){}
