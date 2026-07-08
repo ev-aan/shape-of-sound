@@ -9,6 +9,10 @@ const LESSONS = [
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
 ];
 let activeLesson = LESSONS[0].id;
+// hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
+// assigned once, inside wireLessonsHome(), same lifetime as before, just a wider scope.
+let ivA, ivB, ivOrientation, renderIntervalViz;
+let ssRootSel, ssQuality, ssExtend, renderSuperstructure;
 
 Modes.register('lessons', {
   label: 'Lessons',
@@ -19,10 +23,33 @@ Modes.register('lessons', {
   onExit(){}
 });
 
-function selectLesson(id){
+// picking the interval to seed the Intervals lesson with when jumping in from a chord: most
+// chords have a plain perfect 5th (interval 7) above the root, but dim/dim7/m7b5 have a
+// tritone (6) instead and aug has a raised 5th (8) — falling back to interval 7 blindly would
+// silently show the wrong, nonexistent interval for those qualities.
+function bestFifthIv(n){
+  return [7,6,8].find(iv => n.ivs.includes(iv)) ?? n.ivs[n.ivs.length-1];
+}
+// id: which lesson to show. seed (optional): { a, b } for 'intervals' (pitch classes), or
+// { root, quality, upTo } for 'extensions' — used when arriving from a chord elsewhere in the
+// app (see the "intervals"/"extend" bridge buttons in 94_topbar.js) so the lesson opens on
+// that chord instead of always resetting to its own hardcoded example.
+function selectLesson(id, seed){
   activeLesson = id;
   document.querySelectorAll('#lessonsHome .lessonBody').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
   document.querySelectorAll('#lessonsHome .lessonCard').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
+  if(!seed) return;
+  if(id === 'intervals'){
+    ivA.value = seed.a; ivB.value = seed.b;
+    renderIntervalViz();
+  } else if(id === 'extensions'){
+    ssRootSel.value = seed.root;
+    ssQuality = seed.quality;
+    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x.dataset.k === seed.quality));
+    ssExtend = seed.upTo;
+    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', +x.dataset.k === seed.upTo));
+    renderSuperstructure();
+  }
 }
 function lessonCardHTML(l){
   return '<div class="lessonCard" data-lesson="'+l.id+'"><div class="lessonTitle">'+l.title+'</div>'+
@@ -65,11 +92,11 @@ function wireLessonsHome(){
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
   Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
-  const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
+  ivA = document.getElementById('ivNoteA'); ivB = document.getElementById('ivNoteB');
   ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
-  let ivOrientation = 'horizontal';
-  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value, orientation:ivOrientation });
+  ivOrientation = 'horizontal';
+  renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value, orientation:ivOrientation, level:View.get().level });
   ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
   document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
   document.getElementById('ivOrientPills').addEventListener('click', e => {
@@ -84,11 +111,11 @@ function wireLessonsHome(){
     document.body.classList.toggle('staffColor', b.dataset.k === 'color');
     document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
   });
-  const ssRootSel = document.getElementById('ssRootSel');
+  ssRootSel = document.getElementById('ssRootSel');
   ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ssRootSel.value = 0;
-  let ssQuality = 'major', ssExtend = 3;
-  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
+  ssQuality = 'major'; ssExtend = 3;
+  renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
   ssRootSel.onchange = renderSuperstructure;
   document.getElementById('ssQualPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
@@ -104,4 +131,6 @@ function wireLessonsHome(){
   });
   renderSuperstructure();
   selectLesson(activeLesson);
+  // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately
+  View.subscribe((state, prev) => { if(state.level !== prev.level) renderIntervalViz(); });
 }

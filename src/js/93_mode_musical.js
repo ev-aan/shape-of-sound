@@ -39,6 +39,10 @@ Modes.register('musical', {
       });
       musCofBuilt = true;
     }
+    // land on something interactive rather than a blank "tap a note" prompt — C major is a
+    // reasonable default a first-time visitor can immediately explore, not a forced choice
+    // (a chosen key/scale from earlier in the session, or a deep link, always wins over this)
+    if(View.get().key == null) View.set({ key: 0, scale: View.get().scale || 'major' });
     refreshMusicalScene();
   },
   onExit(){ stopBach(); }
@@ -57,6 +61,14 @@ function chordToneText(idx){
   const n = N[idx];
   return n.name+':  '+n.ivs.map(iv => NOTE[(n.root+iv)%12]+' ('+(IV_LABEL[iv]||iv)+')').join('  ·  ');
 }
+// two instances of the same chord-tone text exist: one prominent, right under the circle (so
+// selecting a chord is never invisible unless you happen to have scrolled to the Bach section),
+// and the original one above the Bach player — kept in sync from one place rather than duplicating
+// the write in both drawChordArc() branches below.
+function setChordLabels(text){
+  const top = document.getElementById('musChordLabelTop'); if(top) top.textContent = text;
+  const bottom = document.getElementById('musChordLabel'); if(bottom) bottom.textContent = text;
+}
 function drawChordArc(idx){
   activeChordIdx = idx;
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
@@ -65,10 +77,9 @@ function drawChordArc(idx){
   // immediately followed by drawVoiceLeadingArrows (key change, scale change, tap-mode
   // refresh) should clear them rather than leave a stale trail on screen.
   svg.querySelectorAll('.vlArrow').forEach(el => el.remove());
-  const label = document.getElementById('musChordLabel');
   const addBtn = document.getElementById('musAddSeqBtn');
   if(addBtn) addBtn.disabled = idx == null;
-  if(idx == null){ if(label) label.textContent = ''; return; }
+  if(idx == null){ setChordLabels(''); return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
   const pts = pcs.map(pc => { const p = cofNotePos(pc); return p.x+','+p.y; }).join(' ');
@@ -81,7 +92,7 @@ function drawChordArc(idx){
   poly.setAttribute('fill', col+'22');
   poly.setAttribute('stroke', col);
   svg.insertBefore(poly, svg.firstChild);
-  if(label) label.textContent = chordToneText(idx);
+  setChordLabels(chordToneText(idx));
 }
 
 // a one-time arrowhead marker for the voice-leading lines below — the circle's <svg> is built
@@ -250,16 +261,23 @@ function neighboringChords(idx){
 function nbChipHTML(o){
   const v = View.get(), fn = (v.key != null ? chordFn(N[o.b], v.scale, v.key) : null) || 'ext';
   const col = Palette.FN[fn] || Palette.FN.ext;
-  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+
-    '<span class="suggTag">'+o.tag+'</span></button>';
+  // "shares N tones" / "one semitone away" is exactly the kind of jargon Beginner mode hides —
+  // the suggestion chips' tags stay (they encode function, e.g. "resolves home", not proximity).
+  const tag = v.level === 'advanced' ? '<span class="suggTag">'+o.tag+'</span>' : '';
+  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+tag+'</button>';
 }
 function renderNeighbors(){
   const host = document.getElementById('musNeighbors'); if(!host) return;
   if(activeChordIdx == null){ host.innerHTML = ''; return; }
   const list = neighboringChords(activeChordIdx);
   if(!list.length){ host.innerHTML = ''; return; }
-  host.innerHTML = '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
+  // the header only exists once there's something to show underneath it — a heading over an
+  // empty section (which used to be static markup in shell.html) reads as a dead end.
+  host.innerHTML = '<div class="fnLbl">neighbouring chords — everything one common tone or one step away</div>'+
+    '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
 }
+// toggling Beginner/Advanced while neighbours are showing should update their tags immediately
+View.subscribe((state, prev) => { if(state.level !== prev.level) renderNeighbors(); });
 // the one path for "make this chord the one we're looking at" — used by the ring taps and the
 // "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
 // segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.

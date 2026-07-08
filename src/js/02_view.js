@@ -3,7 +3,10 @@
 // Every new feature that cares about state subscribes via View.subscribe(fn).
 // This is the seam future contributors will plug into.
 const View = (function(){
-  const state = { mode:'science', dim:'3d', key:null, scale:'major', tuning:'ET', selected:null };
+  // level: 'beginner' hides jargon (consonance scores, ratios, "shares N tones" tags, the
+  // diminished ring) without changing anything else — 'advanced' shows everything, as before
+  // this existed.
+  const state = { mode:'science', dim:'3d', key:null, scale:'major', tuning:'ET', selected:null, level:'beginner' };
   const subs = [];
   function subscribe(fn){ subs.push(fn); return fn; }
   function set(patch){
@@ -51,7 +54,10 @@ function showMode(mode){
   musicalHome.scrollTop = 0;
   lessonsHome.scrollTop = 0;
   document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
-  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  // #title carries Science-mode-specific copy ("127 chords · placed by shared overtones...")
+  // set once at boot — Play already has its own #topbarLabel text, so showing #title there too
+  // just stacks two unrelated captions on screen at once.
+  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons' || mode === 'play') ? 'none' : '';
   document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
@@ -59,4 +65,18 @@ function showMode(mode){
   // makes each mode feel less like its own distinct page.
   document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
   appVisible = (mode !== 'musical' && mode !== 'lessons');
+}
+
+// Beginner/Advanced: unlike tuning, this isn't hidden in any mode — it affects the shared
+// detail card (Science and Musical), the neighbouring-chords tags and diminished ring
+// (Musical), and the interval visualizer (Lessons), so it's relevant everywhere.
+function wireLevelToggle(){
+  const bar = document.getElementById('levelToggle'); if(!bar) return;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button[data-level]'); if(!b) return;
+    bar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b));
+    View.set({ level: b.dataset.level });
+  });
+  document.body.classList.toggle('levelBeginner', View.get().level === 'beginner');
+  View.subscribe(state => document.body.classList.toggle('levelBeginner', state.level === 'beginner'));
 }

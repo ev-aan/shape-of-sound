@@ -30,18 +30,20 @@
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
   <div id="musCof"></div>
-  <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
-  <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
-    <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
+  <div id="musChordLabelTop" class="musChordLabel musChordLabelTop"></div>
   <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">— tap a note on the circle to explore its key.</div>
   <div id="musSuggest" class="musSuggest"></div>
-  <div class="musLinks">
-   <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
-   <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+  <div class="musSecondaryControls">
+   <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
+   <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
+     <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
+   <div class="musLinks">
+    <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
+    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+   </div>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
   <div class="musStaffSection">
-   <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
    <div id="musNeighbors" class="musSuggest"></div>
   </div>
   <div class="musBachSection">
@@ -118,6 +120,9 @@
  </div>
  <div id="tuneToggle" class="pills">
    <button data-tune="ET" class="on">Equal</button><button data-tune="JI">Just</button>
+ </div>
+ <div id="levelToggle" class="pills">
+   <button data-level="beginner" class="on">Beginner</button><button data-level="advanced">Advanced</button>
  </div>
  <div id="topbarLabel">Science — physics from overtone overlap</div>
  <button id="shareBtn" class="sharebtn">⤴ share view</button>

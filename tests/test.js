@@ -66,6 +66,7 @@ try {
   frames(5);
   if (__api.View.get().mode !== 'play') throw new Error('Play tab did not activate');
   if (!C['compose'].classList.contains('show')) throw new Error('entering Play should open the sequencer drawer');
+  if (C['title'].style.display !== 'none') throw new Error('Play mode should hide #title (Science-specific copy bleeding into Play\'s own UI)');
   const pressKey = pc => fire(C['playKeyboard'], 'click', { target: { closest: () => ({ dataset: { pc: String(pc) }, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } } }) } });
   pressKey(0); pressKey(4); pressKey(7); // C E G
   if (C['playAddBtn'].disabled) throw new Error('C+E+G should be recognised as a chord ready to add');
@@ -90,11 +91,23 @@ try {
   if (typeof __api === 'undefined' || __api.View.get().mode !== 'musical') throw new Error('mode toggle failed');
   if (C['scene'].style.display !== 'none') throw new Error('Musical mode should hide the 3D map');
   if (C['panel'].style.display !== 'none') throw new Error('Musical mode should hide the small side panel');
-  // tap a note on Musical's own circle of fifths to set the key
-  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
-  if (__api.View.get().key !== 0) throw new Error('tapping a note on the Musical circle should set the key');
+  // cold start: land straight in C major with a chord already selected, not a blank "tap a
+  // note" prompt — no tap needed for any of this
+  if (__api.View.get().key !== 0) throw new Error('Musical mode should default to C major on entry, got key ' + __api.View.get().key);
+  if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('Musical mode should default to showing the C major tonic triad on entry');
+  // a second, prominent copy of the chord-tone label lives right under the circle now (the
+  // original stayed above the Bach player, easy to miss unless scrolled all the way down) —
+  // both should always agree, kept in sync from one place (setChordLabels)
+  if (C['musChordLabelTop'].textContent !== C['musChordLabel'].textContent) throw new Error('the prominent top chord label should mirror the original one');
+  // the neighbours header now lives inside renderNeighbors()'s own output (like renderSuggestions
+  // already did) instead of being static markup that showed even with nothing underneath it —
+  // since the cold-start default above already selects a chord, it should show right away
+  if (!/neighbouring chords/.test(C['musNeighbors'].innerHTML)) throw new Error('neighbours header should appear once a chord is active (here, from the cold-start default)');
+  // tap a different note on Musical's own circle of fifths to move the key away from the default
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '7' } } : null } });
+  if (__api.View.get().key !== 7) throw new Error('tapping a note on the Musical circle should set the key');
   if (!/cofRing-minor/.test(C['musCof'].innerHTML) || !/cofRing-dim/.test(C['musCof'].innerHTML)) throw new Error('minor/diminished rings did not render on the circle');
-  if (!/^Cmaj:\s+C \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('chord-tone label should spell out root/3rd/5th for the tonic triad');
+  if (!/^Gmaj:\s+G \(root\)/.test(C['musChordLabel'].textContent)) throw new Error('chord-tone label should spell out root/3rd/5th for the tonic triad');
   // tap plays: Chord (default) should sound all 3 notes of the tonic triad, Note should sound just the one
   let oscCount = 0;
   const origCreateOsc = global.window.AudioContext.prototype.createOscillator;
@@ -230,6 +243,23 @@ try {
   if (nbList.length > 8) throw new Error('neighboringChords should cap its list at 8, got ' + nbList.length);
   if (nbList.some(o => !o.tag)) throw new Error('every neighbouring-chord entry should carry an explanatory tag');
   if (!C['musNeighbors'].innerHTML) throw new Error('the neighbours panel should be populated once a chord is active');
+  // context-aware cross-links: jumping from a chord's detail card into the Lessons tools should
+  // seed them with THIS chord instead of always resetting to the tools' own hardcoded example —
+  // Bdim (root B, quality 'dim') has no plain perfect 5th (its "5th" is a tritone), proving
+  // bestFifthIv() actually picks the interval that's really in the chord, not just interval 7
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofRing' ? { dataset: { ring: 'dim', pc: '11' } } : null } });
+  fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'intervals-link' } }) } });
+  if (__api.View.get().mode !== 'lessons') throw new Error('the "intervals" cross-link should switch to Lessons mode');
+  if (!/Tritone/.test(C['musInterval'].innerHTML)) throw new Error('Bdim should seed the interval visualizer with B -> F, a Tritone (not a nonexistent perfect 5th), got: ' + C['musInterval'].innerHTML);
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofRing' ? { dataset: { ring: 'dim', pc: '11' } } : null } });
+  fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'extend-link' } }) } });
+  if (__api.View.get().mode !== 'lessons') throw new Error('the "extend" cross-link should switch to Lessons mode');
+  if (+C['ssRootSel'].value !== 11) throw new Error('extend-link should seed the superstructure root to B (11), got ' + C['ssRootSel'].value);
+  if ((C['musSuperstructure'].innerHTML.match(/class="ssNode"/g) || []).length !== 3) throw new Error('Bdim is a triad (3 notes) — extend-link should seed upTo:3');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
   // piano roll: one rect per note event, reusing exactly the staff engine's measure data shape
   const rollTest = document.createElement('div');
   __api.Surfaces.get('pianoroll').render(rollTest, [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:'q' }, { midi:64, dur:'q' }], bass:[{ midi:48, dur:'h' }] } }]);
@@ -287,6 +317,28 @@ try {
   if (!__api.chordInScale(cmaj, 'major', 0)) throw new Error('Cmaj should be in C major');
   if (__api.chordInScale({root:1, ivs:[0,4,7]}, 'major', 0)) throw new Error('C#maj should NOT be in C major');
   if (__api.chordFn(cmaj, 'major', 0) !== 'T') throw new Error('Cmaj should be tonic in C major');
+  // level toggle: Beginner (default) hides jargon — consonance/ratios in the detail card and
+  // "shares N tones"/"one semitone away" tags in neighbours — Advanced shows everything, exactly
+  // as before this existed. The bridge-button click just above switched back to Musical mode
+  // with Bdim (from the earlier cross-link test) still the open chord.
+  if (__api.View.get().level !== 'beginner') throw new Error('level should default to beginner');
+  if (!document.body.classList.contains('levelBeginner')) throw new Error('document.body should carry the levelBeginner class by default');
+  if (/consonance/.test(C['detail'].innerHTML)) throw new Error('Beginner mode should hide the consonance section in the detail card');
+  if (/suggTag/.test(C['musNeighbors'].innerHTML)) throw new Error('Beginner mode should hide the neighbour-chord tags ("shares N tones", etc.)');
+  fire(C['levelToggle'], 'click', { target: { closest: () => ({ dataset: { level: 'advanced' }, classList: { toggle(){} } }) } });
+  if (__api.View.get().level !== 'advanced') throw new Error('level toggle did not switch to advanced');
+  if (document.body.classList.contains('levelBeginner')) throw new Error('document.body should drop levelBeginner once switched to advanced');
+  if (!/consonance/.test(C['detail'].innerHTML)) throw new Error('Advanced mode should show the consonance section (re-rendered live on toggle)');
+  if (!/suggTag/.test(C['musNeighbors'].innerHTML)) throw new Error('Advanced mode should show the neighbour-chord tags (re-rendered live on toggle)');
+  // same toggle, checked against the Lessons-mode interval visualizer (a different render path)
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
+  fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
+  if (!/ratio/.test(C['musInterval'].innerHTML)) throw new Error('Advanced mode should show the ratio/consonance line in the interval visualizer');
+  fire(C['levelToggle'], 'click', { target: { closest: () => ({ dataset: { level: 'beginner' }, classList: { toggle(){} } }) } });
+  if (/ratio/.test(C['musInterval'].innerHTML)) throw new Error('Beginner mode should hide the ratio/consonance line in the interval visualizer (re-rendered live on toggle)');
+  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  frames(5);
   // tuning: swapping to JI should change played frequencies and node positions
   const N0 = __api.N || (typeof N !== 'undefined' ? N : null);
   fire(C['tuneToggle'], 'click', { target: { closest: () => ({ dataset: { tune: 'JI' } }) } });

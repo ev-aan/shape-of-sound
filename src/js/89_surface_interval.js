@@ -56,11 +56,15 @@ Surfaces.register('interval', {
     const iv = ((b - a) % 12 + 12) % 12;
     const colA = Palette.noteCss(a, .68, .62), colB = Palette.noteCss(b, .68, .62);
     const svg = opts.orientation === 'vertical' ? intervalSvgVertical(a, b, iv, colA, colB) : intervalSvgHorizontal(a, b, iv, colA, colB);
+    // an explicit opts.level, not a View.get() read — this surface stays stateless like cof and
+    // superstructure, and callers that never pass level (direct-render call sites) keep seeing
+    // everything, unaffected by whatever the app's Beginner/Advanced setting happens to be.
+    const advanced = opts.level !== 'beginner';
     const cons = intervalConsonance(iv);
     container.innerHTML = svg +
       '<div class="ivInfo">'+
         '<div class="ivName">'+INTERVAL_NAME[iv]+'</div>'+
-        '<div class="ivDetail">ratio '+(RATIO[iv]||'1:1')+' &nbsp;·&nbsp; consonance '+cons+'/100 <span class="r">(simple ratio = smoother)</span></div>'+
+        (advanced ? '<div class="ivDetail">ratio '+(RATIO[iv]||'1:1')+' &nbsp;·&nbsp; consonance '+cons+'/100 <span class="r">(simple ratio = smoother)</span></div>' : '')+
       '</div>';
     return {};
   }

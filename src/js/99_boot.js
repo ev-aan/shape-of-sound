@@ -14,6 +14,7 @@ function wireMoreToggle(btnId, wrapId){
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
+wireLevelToggle();
 wireMusicalHome();
 wireLessonsHome();
 wireBachPrelude();

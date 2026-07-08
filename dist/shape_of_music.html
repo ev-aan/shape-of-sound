@@ -50,7 +50,7 @@
    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px;backdrop-filter:blur(10px);
    transform:translateX(120%);transition:transform .28s;z-index:5;}
  #detail.show{transform:none;}
- .dhead{display:flex;align-items:baseline;gap:9px;}
+ .dhead{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;row-gap:6px;}
  .dhead .nm{font-size:26px;font-weight:600;}
  .dhead .fn{font-size:11px;color:var(--dim);} .dhead .x{margin-left:10px;cursor:pointer;font-size:18px;color:var(--dim);}
  .addseq{margin-left:auto;cursor:pointer;font-size:11px;color:#9ad1f0;border:1px solid var(--line);border-radius:7px;padding:3px 8px;}
@@ -163,6 +163,9 @@
  .cofRing.dim circle{opacity:.25;}
  .cofRing.active circle{opacity:1;stroke:#fff;stroke-width:1.5;}
  .cofRingLabel{fill:#e8eefb;font:600 9px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+ /* the diminished (vii°) ring is baked once into the circle's SVG at mode-entry, not re-rendered
+    on state change, so hiding it per level has to be a CSS switch rather than a re-render. */
+ body.levelBeginner .cofRing-dim{display:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
  .simpleCols{display:flex;gap:18px;justify-content:center;margin:0;flex-wrap:wrap;align-items:stretch;}
  .simpleCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:16px;width:210px;
@@ -191,6 +194,11 @@
  .cofNote.playing circle{transform:scale(1.22);filter:brightness(1.35);}
  .musChordRow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:14px;}
  .musChordLabel{font-size:12px;color:var(--ink);min-height:1.4em;}
+ .musChordLabelTop{font-size:16px;font-weight:600;min-height:1.6em;margin-top:14px;}
+ .musSecondaryControls{opacity:.72;font-size:12px;margin-top:22px;padding-top:14px;border-top:1px solid var(--line);}
+ .musSecondaryControls .musScaleRow{margin-top:8px;}
+ .musSecondaryControls .musScaleRow:first-child{margin-top:0;}
+ .musSecondaryControls .musLinks{margin-top:14px;}
  .musAddSeqBtn{font:600 11px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);
    background:#ffffff10;border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;}
  .musAddSeqBtn:hover:not(:disabled){background:#ffffff1c;}
@@ -301,18 +309,20 @@
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
   <div id="musCof"></div>
-  <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
-  <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
-    <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
+  <div id="musChordLabelTop" class="musChordLabel musChordLabelTop"></div>
   <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">— tap a note on the circle to explore its key.</div>
   <div id="musSuggest" class="musSuggest"></div>
-  <div class="musLinks">
-   <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
-   <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+  <div class="musSecondaryControls">
+   <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
+   <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
+     <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
+   <div class="musLinks">
+    <button id="mScalesChartBtn" class="simpleFullLink">▤ scales reference chart</button>
+    <button id="mInfoBtn" class="simpleFullLink">ⓘ music theory notes</button>
+   </div>
   </div>
   <div class="hint" style="text-align:center;margin-top:16px;">Tap a chord to hear it. Use the <b>♪ how</b> / <b>⚛ why</b> button on its card to swap modes for the same chord.</div>
   <div class="musStaffSection">
-   <div class="musStaffLbl">neighbouring chords — everything one common tone or one step away from the selected chord</div>
    <div id="musNeighbors" class="musSuggest"></div>
   </div>
   <div class="musBachSection">
@@ -389,6 +399,9 @@
  </div>
  <div id="tuneToggle" class="pills">
    <button data-tune="ET" class="on">Equal</button><button data-tune="JI">Just</button>
+ </div>
+ <div id="levelToggle" class="pills">
+   <button data-level="beginner" class="on">Beginner</button><button data-level="advanced">Advanced</button>
  </div>
  <div id="topbarLabel">Science — physics from overtone overlap</div>
  <button id="shareBtn" class="sharebtn">⤴ share view</button>
@@ -591,7 +604,10 @@ const Palette = (function(){
 // Every new feature that cares about state subscribes via View.subscribe(fn).
 // This is the seam future contributors will plug into.
 const View = (function(){
-  const state = { mode:'science', dim:'3d', key:null, scale:'major', tuning:'ET', selected:null };
+  // level: 'beginner' hides jargon (consonance scores, ratios, "shares N tones" tags, the
+  // diminished ring) without changing anything else — 'advanced' shows everything, as before
+  // this existed.
+  const state = { mode:'science', dim:'3d', key:null, scale:'major', tuning:'ET', selected:null, level:'beginner' };
   const subs = [];
   function subscribe(fn){ subs.push(fn); return fn; }
   function set(patch){
@@ -639,7 +655,10 @@ function showMode(mode){
   musicalHome.scrollTop = 0;
   lessonsHome.scrollTop = 0;
   document.getElementById('scene').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
-  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
+  // #title carries Science-mode-specific copy ("127 chords · placed by shared overtones...")
+  // set once at boot — Play already has its own #topbarLabel text, so showing #title there too
+  // just stacks two unrelated captions on screen at once.
+  document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons' || mode === 'play') ? 'none' : '';
   document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
   // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
@@ -647,6 +666,20 @@ function showMode(mode){
   // makes each mode feel less like its own distinct page.
   document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
   appVisible = (mode !== 'musical' && mode !== 'lessons');
+}
+
+// Beginner/Advanced: unlike tuning, this isn't hidden in any mode — it affects the shared
+// detail card (Science and Musical), the neighbouring-chords tags and diminished ring
+// (Musical), and the interval visualizer (Lessons), so it's relevant everywhere.
+function wireLevelToggle(){
+  const bar = document.getElementById('levelToggle'); if(!bar) return;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button[data-level]'); if(!b) return;
+    bar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b));
+    View.set({ level: b.dataset.level });
+  });
+  document.body.classList.toggle('levelBeginner', View.get().level === 'beginner');
+  View.subscribe(state => document.body.classList.toggle('levelBeginner', state.level === 'beginner'));
 }
 
 // ---- SCALES: pitch-class sets sourced from standard music theory ----
@@ -842,14 +875,16 @@ function relatedRows(i){const row=W[i],order=row.map((w,j)=>[w,j]).filter(x=>x[1
       '<span class="nm">'+N[j].name+'</span><span class="r">shares '+sh+'</span><span class="pct">'+Math.round(w*100)+'%</span>'+
       '<span class="cmp" data-act="cmp" data-idx="'+j+'">🔬</span></div>';}).join('');}
 function renderDetail(i){detailIdx=i;const n=N[i];const invs=inversions(n);
+  const advanced=View.get().level==='advanced';
   let fnline=n.family;if(keyRoot!=null){const d=diatonic(n);fnline=d?(FNNAME[d.fn]+' · '+d.num+' of '+NOTE[keyRoot]):'not in '+NOTE[keyRoot]+' major';}
-  const ratios=n.ivs.map(iv=>'<span>'+NOTE[(n.root+iv)%12]+' <span class="r">'+(RATIO[iv]||'')+'</span></span>').join(' · ');
+  // beginners still see which notes make up the chord — just not the ratio jargon next to them
+  const ratios=n.ivs.map(iv=>'<span>'+NOTE[(n.root+iv)%12]+(advanced?' <span class="r">'+(RATIO[iv]||'')+'</span>':'')+'</span>').join(' · ');
   const invRows=invs.map((v,k)=>'<div class="inv" data-act="inv" data-inv="'+k+'"><span class="play">▶</span>'+
     '<span class="nm">'+v.notes.join(' – ')+'</span><span class="sub">'+['root pos','1st inv','2nd inv','3rd inv'][k]+'</span></div>').join('');
   detailEl.innerHTML='<div class="dhead"><span class="nm serif">'+n.name+'</span><span class="fn">'+fnline+'</span>'+
     '<span class="addseq" data-act="add">＋ seq</span><span class="addseq" data-act="wave">〜 wave</span><span class="addseq" data-act="cym">◉ cym</span><span class="x" data-act="close">✕</span></div>'+
-    '<div class="dsec"><div class="lbl">notes &amp; ratios to root</div><div class="kv">'+ratios+'</div></div>'+
-    '<div class="dsec"><div class="lbl">consonance</div><div class="kv">'+(n.cons*100).toFixed(0)+' / 100 &nbsp;<span class="r">(higher = smoother)</span></div></div>'+
+    '<div class="dsec"><div class="lbl">notes'+(advanced?' &amp; ratios':'')+' to root</div><div class="kv">'+ratios+'</div></div>'+
+    (advanced?'<div class="dsec"><div class="lbl">consonance</div><div class="kv">'+(n.cons*100).toFixed(0)+' / 100 &nbsp;<span class="r">(higher = smoother)</span></div></div>':'')+
     '<div class="dsec"><div class="lbl">inversions — tap to hear</div>'+invRows+'</div>'+
     '<div class="dsec"><div class="lbl">most harmonically related</div>'+relatedRows(i)+'</div>';
   detailEl.classList.add('show');}
@@ -861,6 +896,9 @@ detailEl.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   if(act==='add'){addToSeq(detailIdx);}
   if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}
   if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});
+// toggling Beginner/Advanced while a chord's detail card is already open should update it
+// immediately, not just on the next selection
+View.subscribe((state,prev)=>{ if(state.level!==prev.level && detailIdx>=0) renderDetail(detailIdx); });
 
 // readout (progression)
 const roWrap=document.getElementById('axiscap');
@@ -1405,11 +1443,15 @@ Surfaces.register('interval', {
     const iv = ((b - a) % 12 + 12) % 12;
     const colA = Palette.noteCss(a, .68, .62), colB = Palette.noteCss(b, .68, .62);
     const svg = opts.orientation === 'vertical' ? intervalSvgVertical(a, b, iv, colA, colB) : intervalSvgHorizontal(a, b, iv, colA, colB);
+    // an explicit opts.level, not a View.get() read — this surface stays stateless like cof and
+    // superstructure, and callers that never pass level (direct-render call sites) keep seeing
+    // everything, unaffected by whatever the app's Beginner/Advanced setting happens to be.
+    const advanced = opts.level !== 'beginner';
     const cons = intervalConsonance(iv);
     container.innerHTML = svg +
       '<div class="ivInfo">'+
         '<div class="ivName">'+INTERVAL_NAME[iv]+'</div>'+
-        '<div class="ivDetail">ratio '+(RATIO[iv]||'1:1')+' &nbsp;·&nbsp; consonance '+cons+'/100 <span class="r">(simple ratio = smoother)</span></div>'+
+        (advanced ? '<div class="ivDetail">ratio '+(RATIO[iv]||'1:1')+' &nbsp;·&nbsp; consonance '+cons+'/100 <span class="r">(simple ratio = smoother)</span></div>' : '')+
       '</div>';
     return {};
   }
@@ -1722,6 +1764,10 @@ const LESSONS = [
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
 ];
 let activeLesson = LESSONS[0].id;
+// hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
+// assigned once, inside wireLessonsHome(), same lifetime as before, just a wider scope.
+let ivA, ivB, ivOrientation, renderIntervalViz;
+let ssRootSel, ssQuality, ssExtend, renderSuperstructure;
 
 Modes.register('lessons', {
   label: 'Lessons',
@@ -1732,10 +1778,33 @@ Modes.register('lessons', {
   onExit(){}
 });
 
-function selectLesson(id){
+// picking the interval to seed the Intervals lesson with when jumping in from a chord: most
+// chords have a plain perfect 5th (interval 7) above the root, but dim/dim7/m7b5 have a
+// tritone (6) instead and aug has a raised 5th (8) — falling back to interval 7 blindly would
+// silently show the wrong, nonexistent interval for those qualities.
+function bestFifthIv(n){
+  return [7,6,8].find(iv => n.ivs.includes(iv)) ?? n.ivs[n.ivs.length-1];
+}
+// id: which lesson to show. seed (optional): { a, b } for 'intervals' (pitch classes), or
+// { root, quality, upTo } for 'extensions' — used when arriving from a chord elsewhere in the
+// app (see the "intervals"/"extend" bridge buttons in 94_topbar.js) so the lesson opens on
+// that chord instead of always resetting to its own hardcoded example.
+function selectLesson(id, seed){
   activeLesson = id;
   document.querySelectorAll('#lessonsHome .lessonBody').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
   document.querySelectorAll('#lessonsHome .lessonCard').forEach(el => el.classList.toggle('on', el.dataset.lesson === id));
+  if(!seed) return;
+  if(id === 'intervals'){
+    ivA.value = seed.a; ivB.value = seed.b;
+    renderIntervalViz();
+  } else if(id === 'extensions'){
+    ssRootSel.value = seed.root;
+    ssQuality = seed.quality;
+    document.querySelectorAll('#ssQualPills button').forEach(x => x.classList.toggle('on', x.dataset.k === seed.quality));
+    ssExtend = seed.upTo;
+    document.querySelectorAll('#ssExtendPills button').forEach(x => x.classList.toggle('on', +x.dataset.k === seed.upTo));
+    renderSuperstructure();
+  }
 }
 function lessonCardHTML(l){
   return '<div class="lessonCard" data-lesson="'+l.id+'"><div class="lessonTitle">'+l.title+'</div>'+
@@ -1778,11 +1847,11 @@ function wireLessonsHome(){
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
   Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
-  const ivA = document.getElementById('ivNoteA'), ivB = document.getElementById('ivNoteB');
+  ivA = document.getElementById('ivNoteA'); ivB = document.getElementById('ivNoteB');
   ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
-  let ivOrientation = 'horizontal';
-  const renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value, orientation:ivOrientation });
+  ivOrientation = 'horizontal';
+  renderIntervalViz = () => Surfaces.get('interval').render(document.getElementById('musInterval'), { a:+ivA.value, b:+ivB.value, orientation:ivOrientation, level:View.get().level });
   ivA.onchange = renderIntervalViz; ivB.onchange = renderIntervalViz;
   document.getElementById('ivPlayBtn').onclick = () => playFreqs([m2f(60+ +ivA.value), m2f(60+ +ivB.value)]);
   document.getElementById('ivOrientPills').addEventListener('click', e => {
@@ -1797,11 +1866,11 @@ function wireLessonsHome(){
     document.body.classList.toggle('staffColor', b.dataset.k === 'color');
     document.querySelectorAll('#staffColorPills button').forEach(x => x.classList.toggle('on', x===b));
   });
-  const ssRootSel = document.getElementById('ssRootSel');
+  ssRootSel = document.getElementById('ssRootSel');
   ssRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ssRootSel.value = 0;
-  let ssQuality = 'major', ssExtend = 3;
-  const renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
+  ssQuality = 'major'; ssExtend = 3;
+  renderSuperstructure = () => Surfaces.get('superstructure').render(document.getElementById('musSuperstructure'), { root:+ssRootSel.value, quality:ssQuality, upTo:ssExtend });
   ssRootSel.onchange = renderSuperstructure;
   document.getElementById('ssQualPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
@@ -1817,6 +1886,8 @@ function wireLessonsHome(){
   });
   renderSuperstructure();
   selectLesson(activeLesson);
+  // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately
+  View.subscribe((state, prev) => { if(state.level !== prev.level) renderIntervalViz(); });
 }
 
 // ---- MODE: MUSICAL (theory view) ----
@@ -1860,6 +1931,10 @@ Modes.register('musical', {
       });
       musCofBuilt = true;
     }
+    // land on something interactive rather than a blank "tap a note" prompt — C major is a
+    // reasonable default a first-time visitor can immediately explore, not a forced choice
+    // (a chosen key/scale from earlier in the session, or a deep link, always wins over this)
+    if(View.get().key == null) View.set({ key: 0, scale: View.get().scale || 'major' });
     refreshMusicalScene();
   },
   onExit(){ stopBach(); }
@@ -1878,6 +1953,14 @@ function chordToneText(idx){
   const n = N[idx];
   return n.name+':  '+n.ivs.map(iv => NOTE[(n.root+iv)%12]+' ('+(IV_LABEL[iv]||iv)+')').join('  ·  ');
 }
+// two instances of the same chord-tone text exist: one prominent, right under the circle (so
+// selecting a chord is never invisible unless you happen to have scrolled to the Bach section),
+// and the original one above the Bach player — kept in sync from one place rather than duplicating
+// the write in both drawChordArc() branches below.
+function setChordLabels(text){
+  const top = document.getElementById('musChordLabelTop'); if(top) top.textContent = text;
+  const bottom = document.getElementById('musChordLabel'); if(bottom) bottom.textContent = text;
+}
 function drawChordArc(idx){
   activeChordIdx = idx;
   const svg = document.querySelector('#musCof svg'); if(!svg) return;
@@ -1886,10 +1969,9 @@ function drawChordArc(idx){
   // immediately followed by drawVoiceLeadingArrows (key change, scale change, tap-mode
   // refresh) should clear them rather than leave a stale trail on screen.
   svg.querySelectorAll('.vlArrow').forEach(el => el.remove());
-  const label = document.getElementById('musChordLabel');
   const addBtn = document.getElementById('musAddSeqBtn');
   if(addBtn) addBtn.disabled = idx == null;
-  if(idx == null){ if(label) label.textContent = ''; return; }
+  if(idx == null){ setChordLabels(''); return; }
   const n = N[idx];
   const pcs = n.ivs.map(iv => (n.root+iv)%12);
   const pts = pcs.map(pc => { const p = cofNotePos(pc); return p.x+','+p.y; }).join(' ');
@@ -1902,7 +1984,7 @@ function drawChordArc(idx){
   poly.setAttribute('fill', col+'22');
   poly.setAttribute('stroke', col);
   svg.insertBefore(poly, svg.firstChild);
-  if(label) label.textContent = chordToneText(idx);
+  setChordLabels(chordToneText(idx));
 }
 
 // a one-time arrowhead marker for the voice-leading lines below — the circle's <svg> is built
@@ -2071,16 +2153,23 @@ function neighboringChords(idx){
 function nbChipHTML(o){
   const v = View.get(), fn = (v.key != null ? chordFn(N[o.b], v.scale, v.key) : null) || 'ext';
   const col = Palette.FN[fn] || Palette.FN.ext;
-  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+
-    '<span class="suggTag">'+o.tag+'</span></button>';
+  // "shares N tones" / "one semitone away" is exactly the kind of jargon Beginner mode hides —
+  // the suggestion chips' tags stay (they encode function, e.g. "resolves home", not proximity).
+  const tag = v.level === 'advanced' ? '<span class="suggTag">'+o.tag+'</span>' : '';
+  return '<button class="suggChip" data-idx="'+o.b+'" style="--pc:'+col+'">'+N[o.b].name+tag+'</button>';
 }
 function renderNeighbors(){
   const host = document.getElementById('musNeighbors'); if(!host) return;
   if(activeChordIdx == null){ host.innerHTML = ''; return; }
   const list = neighboringChords(activeChordIdx);
   if(!list.length){ host.innerHTML = ''; return; }
-  host.innerHTML = '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
+  // the header only exists once there's something to show underneath it — a heading over an
+  // empty section (which used to be static markup in shell.html) reads as a dead end.
+  host.innerHTML = '<div class="fnLbl">neighbouring chords — everything one common tone or one step away</div>'+
+    '<div class="suggRow">'+list.map(nbChipHTML).join('')+'</div>';
 }
+// toggling Beginner/Advanced while neighbours are showing should update their tags immediately
+View.subscribe((state, prev) => { if(state.level !== prev.level) renderNeighbors(); });
 // the one path for "make this chord the one we're looking at" — used by the ring taps and the
 // "where next?" suggestion chips, so clicking a suggestion behaves exactly like tapping its ring
 // segment would: hear it, see its detail card, see its shape, and get its own suggestions in turn.
@@ -2216,30 +2305,65 @@ function installBridgeButton(){
     // insert after the last addseq, before the close
     const close = head.querySelector('.x');
     if(close) head.insertBefore(bt, close); else head.appendChild(bt);
+    // two more jumps from whatever chord is open: straight into the Lessons tools that used to
+    // only ever show a hardcoded C example, now seeded with this actual chord — the fix for
+    // "the tools don't know what I was just looking at."
+    if(!head.querySelector('[data-act="intervals-link"]')){
+      const iv = document.createElement('span');
+      iv.className = 'addseq'; iv.setAttribute('data-act','intervals-link');
+      iv.textContent = '↔ intervals'; iv.title = 'See this chord\'s interval in the Lessons tool';
+      if(close) head.insertBefore(iv, close); else head.appendChild(iv);
+    }
+    if(!head.querySelector('[data-act="extend-link"]')){
+      const ex = document.createElement('span');
+      ex.className = 'addseq'; ex.setAttribute('data-act','extend-link');
+      ex.textContent = '▲ extend'; ex.title = 'See how this chord extends in the Lessons tool';
+      if(close) head.insertBefore(ex, close); else head.appendChild(ex);
+    }
   });
   mo.observe(detailEl, { childList:true, subtree:false });
   detailEl.addEventListener('click', e=>{
-    const t = e.target.closest('[data-act="bridge"]'); if(!t) return;
-    const v = View.get();
-    const target = v.mode === 'science' ? 'musical' : 'science';
-    switchMode(target);
-    // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
-    if(target === 'musical'){
-      const idx = detailIdx;
-      if(idx != null){
-        const n = N[idx];
-        const cur = View.get();
-        if(cur.key == null){
-          const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
-          View.set({ key: n.root, scale });
-          const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
-          const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
-          refreshMusicalScene();
+    const t = e.target.closest('[data-act]'); if(!t) return;
+    const act = t.dataset.act;
+    if(act === 'bridge'){
+      const v = View.get();
+      const target = v.mode === 'science' ? 'musical' : 'science';
+      switchMode(target);
+      // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
+      if(target === 'musical'){
+        const idx = detailIdx;
+        if(idx != null){
+          const n = N[idx];
+          const cur = View.get();
+          if(cur.key == null){
+            const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+            View.set({ key: n.root, scale });
+            const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
+            const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
+            refreshMusicalScene();
+          }
         }
       }
+      // re-open the detail so the user's selection stays visible in the new mode
+      if(detailIdx != null) selectNode(detailIdx);
+      return;
     }
-    // re-open the detail so the user's selection stays visible in the new mode
-    if(detailIdx != null) selectNode(detailIdx);
+    if(act === 'intervals-link' && detailIdx != null){
+      const n = N[detailIdx], otherIv = bestFifthIv(n);
+      switchMode('lessons');
+      selectLesson('intervals', { a: n.root, b: (n.root+otherIv)%12 });
+      return;
+    }
+    if(act === 'extend-link' && detailIdx != null){
+      const n = N[detailIdx];
+      // same "is this chord minor-ish" heuristic the bridge button above already uses to guess
+      // a scale — the superstructure surface only has two stacks (major/minor), so it's the
+      // right approximation here too, not a new rule to invent.
+      const quality = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+      switchMode('lessons');
+      selectLesson('extensions', { root: n.root, quality, upTo: n.ivs.length });
+      return;
+    }
   });
 }
 
@@ -2549,6 +2673,7 @@ function wireMoreToggle(btnId, wrapId){
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
+wireLevelToggle();
 wireMusicalHome();
 wireLessonsHome();
 wireBachPrelude();

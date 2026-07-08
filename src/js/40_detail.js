@@ -12,14 +12,16 @@ function relatedRows(i){const row=W[i],order=row.map((w,j)=>[w,j]).filter(x=>x[1
       '<span class="nm">'+N[j].name+'</span><span class="r">shares '+sh+'</span><span class="pct">'+Math.round(w*100)+'%</span>'+
       '<span class="cmp" data-act="cmp" data-idx="'+j+'">🔬</span></div>';}).join('');}
 function renderDetail(i){detailIdx=i;const n=N[i];const invs=inversions(n);
+  const advanced=View.get().level==='advanced';
   let fnline=n.family;if(keyRoot!=null){const d=diatonic(n);fnline=d?(FNNAME[d.fn]+' · '+d.num+' of '+NOTE[keyRoot]):'not in '+NOTE[keyRoot]+' major';}
-  const ratios=n.ivs.map(iv=>'<span>'+NOTE[(n.root+iv)%12]+' <span class="r">'+(RATIO[iv]||'')+'</span></span>').join(' · ');
+  // beginners still see which notes make up the chord — just not the ratio jargon next to them
+  const ratios=n.ivs.map(iv=>'<span>'+NOTE[(n.root+iv)%12]+(advanced?' <span class="r">'+(RATIO[iv]||'')+'</span>':'')+'</span>').join(' · ');
   const invRows=invs.map((v,k)=>'<div class="inv" data-act="inv" data-inv="'+k+'"><span class="play">▶</span>'+
     '<span class="nm">'+v.notes.join(' – ')+'</span><span class="sub">'+['root pos','1st inv','2nd inv','3rd inv'][k]+'</span></div>').join('');
   detailEl.innerHTML='<div class="dhead"><span class="nm serif">'+n.name+'</span><span class="fn">'+fnline+'</span>'+
     '<span class="addseq" data-act="add">＋ seq</span><span class="addseq" data-act="wave">〜 wave</span><span class="addseq" data-act="cym">◉ cym</span><span class="x" data-act="close">✕</span></div>'+
-    '<div class="dsec"><div class="lbl">notes &amp; ratios to root</div><div class="kv">'+ratios+'</div></div>'+
-    '<div class="dsec"><div class="lbl">consonance</div><div class="kv">'+(n.cons*100).toFixed(0)+' / 100 &nbsp;<span class="r">(higher = smoother)</span></div></div>'+
+    '<div class="dsec"><div class="lbl">notes'+(advanced?' &amp; ratios':'')+' to root</div><div class="kv">'+ratios+'</div></div>'+
+    (advanced?'<div class="dsec"><div class="lbl">consonance</div><div class="kv">'+(n.cons*100).toFixed(0)+' / 100 &nbsp;<span class="r">(higher = smoother)</span></div></div>':'')+
     '<div class="dsec"><div class="lbl">inversions — tap to hear</div>'+invRows+'</div>'+
     '<div class="dsec"><div class="lbl">most harmonically related</div>'+relatedRows(i)+'</div>';
   detailEl.classList.add('show');}
@@ -31,3 +33,6 @@ detailEl.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   if(act==='add'){addToSeq(detailIdx);}
   if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}
   if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});
+// toggling Beginner/Advanced while a chord's detail card is already open should update it
+// immediately, not just on the next selection
+View.subscribe((state,prev)=>{ if(state.level!==prev.level && detailIdx>=0) renderDetail(detailIdx); });

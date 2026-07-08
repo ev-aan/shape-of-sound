@@ -32,29 +32,64 @@ function installBridgeButton(){
     // insert after the last addseq, before the close
     const close = head.querySelector('.x');
     if(close) head.insertBefore(bt, close); else head.appendChild(bt);
+    // two more jumps from whatever chord is open: straight into the Lessons tools that used to
+    // only ever show a hardcoded C example, now seeded with this actual chord — the fix for
+    // "the tools don't know what I was just looking at."
+    if(!head.querySelector('[data-act="intervals-link"]')){
+      const iv = document.createElement('span');
+      iv.className = 'addseq'; iv.setAttribute('data-act','intervals-link');
+      iv.textContent = '↔ intervals'; iv.title = 'See this chord\'s interval in the Lessons tool';
+      if(close) head.insertBefore(iv, close); else head.appendChild(iv);
+    }
+    if(!head.querySelector('[data-act="extend-link"]')){
+      const ex = document.createElement('span');
+      ex.className = 'addseq'; ex.setAttribute('data-act','extend-link');
+      ex.textContent = '▲ extend'; ex.title = 'See how this chord extends in the Lessons tool';
+      if(close) head.insertBefore(ex, close); else head.appendChild(ex);
+    }
   });
   mo.observe(detailEl, { childList:true, subtree:false });
   detailEl.addEventListener('click', e=>{
-    const t = e.target.closest('[data-act="bridge"]'); if(!t) return;
-    const v = View.get();
-    const target = v.mode === 'science' ? 'musical' : 'science';
-    switchMode(target);
-    // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
-    if(target === 'musical'){
-      const idx = detailIdx;
-      if(idx != null){
-        const n = N[idx];
-        const cur = View.get();
-        if(cur.key == null){
-          const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
-          View.set({ key: n.root, scale });
-          const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
-          const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
-          refreshMusicalScene();
+    const t = e.target.closest('[data-act]'); if(!t) return;
+    const act = t.dataset.act;
+    if(act === 'bridge'){
+      const v = View.get();
+      const target = v.mode === 'science' ? 'musical' : 'science';
+      switchMode(target);
+      // if switching TO musical and no key is chosen yet, pre-seed with this chord's root and a sensible scale
+      if(target === 'musical'){
+        const idx = detailIdx;
+        if(idx != null){
+          const n = N[idx];
+          const cur = View.get();
+          if(cur.key == null){
+            const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+            View.set({ key: n.root, scale });
+            const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
+            const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
+            refreshMusicalScene();
+          }
         }
       }
+      // re-open the detail so the user's selection stays visible in the new mode
+      if(detailIdx != null) selectNode(detailIdx);
+      return;
     }
-    // re-open the detail so the user's selection stays visible in the new mode
-    if(detailIdx != null) selectNode(detailIdx);
+    if(act === 'intervals-link' && detailIdx != null){
+      const n = N[detailIdx], otherIv = bestFifthIv(n);
+      switchMode('lessons');
+      selectLesson('intervals', { a: n.root, b: (n.root+otherIv)%12 });
+      return;
+    }
+    if(act === 'extend-link' && detailIdx != null){
+      const n = N[detailIdx];
+      // same "is this chord minor-ish" heuristic the bridge button above already uses to guess
+      // a scale — the superstructure surface only has two stacks (major/minor), so it's the
+      // right approximation here too, not a new rule to invent.
+      const quality = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+      switchMode('lessons');
+      selectLesson('extensions', { root: n.root, quality, upTo: n.ivs.length });
+      return;
+    }
   });
 }
