@@ -201,6 +201,13 @@ try {
   // just their signature glyphs, no inline accidentals, since every note in them is diatonic
   if ((C['musKeySigSharpStaff'].innerHTML.match(/♯/g) || []).length !== 2) throw new Error('D major demo should show exactly 2 sharp glyphs');
   if ((C['musKeySigFlatStaff'].innerHTML.match(/♭/g) || []).length !== 1) throw new Error('F major demo should show exactly 1 flat glyph');
+  // "from the Prelude" examples reuse BACH_PRELUDE[0] verbatim, not a copy — bar 1 is a plain
+  // Cmaj triad broken into 8 running eighths (no rest, no stacked chord event) plus 2 bass notes
+  if (!/staffChordName[^<]*>Cmaj</.test(C['musPreludeBar1Staff'].innerHTML)) throw new Error('the measure-basics Prelude example should label bar 1 as Cmaj');
+  if (/staffRest/.test(C['musPreludeBar1Staff'].innerHTML)) throw new Error('bar 1 of the Prelude has no rests — the hand-built example above it is what demonstrates rests');
+  const preludeBar1Notes = (C['musPreludeBar1Staff'].innerHTML.match(/class="staffNote"/g) || []).length;
+  if (preludeBar1Notes !== 10) throw new Error('bar 1 should render 10 noteheads (8 running treble eighths + 2 bass halves), got ' + preludeBar1Notes);
+  if ((C['musKeySigNaturalStaff'].innerHTML.match(/[♯♭]/g) || []).length !== 0) throw new Error('the Prelude-in-C key-signature example should show no sharps or flats at all — that\'s its whole point');
   // interval visualizer: a fresh render for a known pair should name the interval and show its ratio
   const p5 = document.createElement('div');
   __api.Surfaces.get('interval').render(p5, { a:0, b:7 });
@@ -235,6 +242,12 @@ try {
   C['ivPlayBtn'].onclick();
   global.window.AudioContext.prototype.createOscillator = origIvCreateOsc;
   if (ivOscCount !== 2) throw new Error('"hear it" should play both notes of the interval, played ' + ivOscCount);
+  // "from the Prelude" interval quick-picks reuse selectLesson()'s existing seed branch — clicking
+  // one should seed the same a/b select boxes and re-render, exactly like the cross-link buttons do
+  fire(C['ivPreludePicks'], 'click', { target: { closest: () => ({ dataset: { a: '11', b: '5' } }) } });
+  if (+C['ivNoteA'].value !== 11 || +C['ivNoteB'].value !== 5) throw new Error('the tritone quick-pick should seed B (11) -> F (5)');
+  if (!/Tritone/.test(C['musInterval'].innerHTML)) throw new Error('B -> F should render as a Tritone, the interval hiding inside the Prelude\'s bar-3 G7');
+  C['ivNoteA'].value = '0'; C['ivNoteB'].value = '7'; C['ivNoteB'].onchange(); // restore the default pairing for anything downstream
   // chord superstructure: a triad (upTo:3) lights exactly 3 nodes and leaves the rest dim
   const ssMajor = document.createElement('div');
   __api.Surfaces.get('superstructure').render(ssMajor, { root:0, quality:'major', upTo:3 });
@@ -253,6 +266,13 @@ try {
   fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '7' }, classList: { toggle(){} } }) } });
   if ((C['musSuperstructure'].innerHTML.match(/ssNode-dim/g) || []).length !== 0) throw new Error('selecting 13th should light every node in the stack');
   fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '3' }, classList: { toggle(){} } }) } }); // restore the default for anything downstream
+  // "from the Prelude" extension quick-picks, same seed reuse: bar 2 (Dm7, ii7) is a minor stack
+  // upTo:4, not a triad — proves the pick actually drives quality and upTo, not just the root
+  fire(C['ssPreludePicks'], 'click', { target: { closest: () => ({ dataset: { root: '2', q: 'minor', upto: '4' } }) } });
+  if (+C['ssRootSel'].value !== 2) throw new Error('the "bar 2: Dm7" quick-pick should seed the superstructure root to D (2)');
+  if (!/>F</.test(C['musSuperstructure'].innerHTML)) throw new Error('Dm7 is a minor stack — should include F (D\'s minor 3rd), not F#');
+  if ((C['musSuperstructure'].innerHTML.match(/ssNode-dim/g) || []).length !== 3) throw new Error('the "bar 2: Dm7" quick-pick should seed upTo:4 (7th), leaving the 9th/11th/13th dim');
+  fire(C['ssPreludePicks'], 'click', { target: { closest: () => ({ dataset: { root: '0', q: 'major', upto: '3' } }) } }); // restore the default for anything downstream
   // triad quality comparison: major/sus2/sus4/dim/aug on the same root, each row a triad (3 dots)
   const tq = document.createElement('div');
   __api.Surfaces.get('triadquality').render(tq, { root:0 });

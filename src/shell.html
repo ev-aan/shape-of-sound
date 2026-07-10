@@ -69,6 +69,10 @@
     <div class="musStaffLbl">a single measure — quarter, two eighths, a rest, a chord</div>
     <div id="musExampleStaff" class="musStaff"></div>
    </div>
+   <div class="musStaffSection">
+    <div class="musStaffLbl">from the Prelude in C — bar 1, the same C major triad, broken into running eighths</div>
+    <div id="musPreludeBar1Staff" class="musStaff"></div>
+   </div>
   </div>
   <div class="lessonBody" data-lesson="key-signatures">
    <div class="musStaffSection">
@@ -78,6 +82,10 @@
    <div class="musStaffSection">
     <div class="musStaffLbl">F major (1 flat) — same idea, spelled with a flat</div>
     <div id="musKeySigFlatStaff" class="musStaff"></div>
+   </div>
+   <div class="musStaffSection">
+    <div class="musStaffLbl">from the Prelude in C — bar 1 again, and the reason it's the control case: no signature at all</div>
+    <div id="musKeySigNaturalStaff" class="musStaff"></div>
    </div>
   </div>
   <div class="lessonBody" data-lesson="intervals">
@@ -91,6 +99,13 @@
      <button data-k="horizontal" class="on">Horizontal (piano)</button><button data-k="vertical">Vertical (staff)</button>
     </div>
     <div id="musInterval"></div>
+    <div class="musStaffLbl" style="margin-top:14px;">from the Prelude in C</div>
+    <div class="pills" id="ivPreludePicks" style="justify-content:center;">
+     <button data-a="0" data-b="4">bar 1, C→E: Major 3rd</button>
+     <button data-a="0" data-b="7">bar 1, C→G: Perfect 5th</button>
+     <button data-a="11" data-b="5">bar 3, B→F: Tritone (inside the G7)</button>
+     <button data-a="2" data-b="0">bar 2, D→C: minor 7th (the ii7's 7th)</button>
+    </div>
    </div>
   </div>
   <div class="lessonBody" data-lesson="extensions">
@@ -105,6 +120,12 @@
      <button data-k="6">11th</button><button data-k="7">13th</button>
     </div>
     <div id="musSuperstructure"></div>
+    <div class="musStaffLbl" style="margin-top:14px;">from the Prelude in C</div>
+    <div class="pills" id="ssPreludePicks" style="justify-content:center;">
+     <button data-root="0" data-q="major" data-upto="3">bar 1: C (I)</button>
+     <button data-root="2" data-q="minor" data-upto="4">bar 2: Dm7 (ii7)</button>
+     <button data-root="0" data-q="major" data-upto="4">bar 8: Cmaj7 (I7)</button>
+    </div>
    </div>
   </div>
   <div class="lessonBody" data-lesson="triad-qualities">
@@ -115,6 +136,7 @@
     </div>
     <div id="musTriadQuality"></div>
     <p class="hint" style="text-align:center;">Tap any row to hear it. The faint ghost circle shows where that note sits in a major triad.</p>
+    <p class="hint" style="text-align:center;">The Prelude in C never uses any of these three — its harmony stays inside major, minor, and diminished chords. Here's what the road not taken sounds like.</p>
    </div>
   </div>
  </div>

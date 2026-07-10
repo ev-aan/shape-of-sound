@@ -93,6 +93,10 @@ function wireLessonsHome(){
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
   Surfaces.get('staff').render(document.getElementById('musKeySigFlatStaff'), STAFF_KEYSIG_FLAT_MEASURE, { keySig:-1 });
+  // bar 1 of the Prelude in C — the same measure data Musical mode plays back in full, reused
+  // here (not copied) so every "from the Prelude" example in this file stays truthful to BACH_CHORDS.
+  Surfaces.get('staff').render(document.getElementById('musPreludeBar1Staff'), [BACH_PRELUDE[0]]);
+  Surfaces.get('staff').render(document.getElementById('musKeySigNaturalStaff'), [BACH_PRELUDE[0]], { keySig:0 });
   ivA = document.getElementById('ivNoteA'); ivB = document.getElementById('ivNoteB');
   ivA.innerHTML = ivB.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   ivA.value = 0; ivB.value = 7; // C -> G, a perfect 5th, by default
@@ -107,6 +111,12 @@ function wireLessonsHome(){
     renderIntervalViz();
   });
   renderIntervalViz();
+  // seeding from a real bar rather than a hand-picked pair reuses selectLesson()'s existing
+  // seed branch (see the "intervals"/"extend" bridge buttons in 94_topbar.js for the other caller)
+  document.getElementById('ivPreludePicks').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    selectLesson('intervals', { a:+b.dataset.a, b:+b.dataset.b });
+  });
   document.getElementById('staffColorPills').addEventListener('click', e => {
     const b = e.target.closest('button'); if(!b) return;
     document.body.classList.toggle('staffColor', b.dataset.k === 'color');
@@ -131,6 +141,10 @@ function wireLessonsHome(){
     renderSuperstructure();
   });
   renderSuperstructure();
+  document.getElementById('ssPreludePicks').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    selectLesson('extensions', { root:+b.dataset.root, quality:b.dataset.q, upTo:+b.dataset.upto });
+  });
   const tqRootSel = document.getElementById('tqRootSel');
   tqRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
   tqRootSel.value = 0;
