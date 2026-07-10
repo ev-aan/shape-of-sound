@@ -143,11 +143,91 @@
  @media(max-width:640px){.sc-hdr,.sc-row{grid-template-columns:80px repeat(12,1fr);}.sc-name{font-size:10px;padding:5px 4px;}.sc-cell{font-size:9px;}}
  #topbar .sharebtn{pointer-events:auto;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:600 10.5px ui-sans-serif,-apple-system,sans-serif;padding:5px 10px;border-radius:7px;cursor:pointer;backdrop-filter:blur(8px);letter-spacing:.02em;}
  #topbar .sharebtn:hover{background:rgba(205,217,245,.14);}
- #simpleFront{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;
-   background:radial-gradient(ellipse at 50% 20%,#131a3a,var(--field) 70%);}
- .simpleWrap{max-width:520px;text-align:center;}
- .simpleWrap h1{margin:0 0 12px;font-weight:600;font-size:28px;}
- .simpleLede{margin:0 0 22px;font-size:13px;line-height:1.55;color:var(--dim);}
+ #simpleFront{position:fixed;inset:0;overflow:auto;background:var(--field);color:var(--ink);cursor:none;
+   --ink-dim:#8a97bf;--ink-faint:#57536b;--accent:#ff5a3c;
+   font-family:-apple-system,"Helvetica Neue",Arial,ui-sans-serif,sans-serif;}
+ #simpleFront ::selection{background:#ff5a3c66;color:var(--ink);}
+ #simpleFront a{color:inherit;text-decoration:none;}
+ @media(hover:none){ #simpleFront{cursor:auto;} #cursor,#cursorRing{display:none;} }
+ #cursor{position:fixed;top:0;left:0;width:14px;height:14px;border-radius:50%;background:var(--ink);
+   pointer-events:none;z-index:999;mix-blend-mode:difference;transform:translate(-50%,-50%);will-change:transform;}
+ #cursorRing{position:fixed;top:0;left:0;width:42px;height:42px;border-radius:50%;border:1px solid var(--ink);
+   pointer-events:none;z-index:998;transform:translate(-50%,-50%);will-change:transform;
+   transition:width .25s ease,height .25s ease,border-color .25s ease,opacity .25s ease;}
+ #cursorRing.big{width:96px;height:96px;border-color:var(--accent);}
+ .heroHero{position:relative;height:100vh;min-height:640px;overflow:hidden;}
+ #heroField{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+ .heroScrim{position:absolute;inset:0;pointer-events:none;
+   background:radial-gradient(ellipse 70% 60% at 50% 100%,var(--field) 15%,transparent 70%),
+     linear-gradient(180deg,transparent 60%,var(--field) 100%);}
+ .heroMark{position:absolute;top:32px;left:32px;z-index:2;font:600 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+   letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);}
+ .heroMark b{color:var(--ink);font-weight:600;}
+ .heroMarkTag{position:absolute;top:32px;right:32px;z-index:2;text-align:right;
+   font:400 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
+ .heroHeadline{position:absolute;left:32px;right:32px;bottom:120px;z-index:2;
+   font-family:-apple-system,"Helvetica Neue","Arial Black",Arial,ui-sans-serif,sans-serif;font-weight:800;
+   font-size:clamp(40px,9vw,118px);line-height:.94;letter-spacing:-.02em;text-transform:uppercase;color:var(--ink);
+   text-wrap:balance;max-width:1180px;margin:0;}
+ .heroHeadline .row{display:block;overflow:hidden;}
+ .heroHeadline .row span{display:inline-block;transform:translateY(110%);opacity:0;
+   animation:heroRiseIn .9s cubic-bezier(.16,1,.3,1) forwards;}
+ .heroHeadline .row:nth-child(1) span{animation-delay:.05s;}
+ .heroHeadline .row:nth-child(2) span{animation-delay:.16s;}
+ .heroHeadline .row:nth-child(3) span{animation-delay:.27s;color:var(--accent);}
+ @keyframes heroRiseIn{to{transform:translateY(0);opacity:1;}}
+ .heroSubWrap{position:absolute;left:32px;right:32px;bottom:56px;z-index:2;
+   opacity:0;animation:heroFadeUp .8s ease forwards;animation-delay:.7s;}
+ .heroSub{margin:0 0 18px;font-size:13px;line-height:1.6;color:var(--ink-dim);max-width:46ch;}
+ @keyframes heroFadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+ .heroCta{display:inline-flex;align-items:center;gap:8px;font:600 11.5px ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+   letter-spacing:.1em;text-transform:uppercase;color:var(--field);background:var(--ink);padding:13px 22px;
+   border-radius:999px;border:0;cursor:pointer;transition:background .25s ease,color .25s ease,transform .25s ease;}
+ .heroCta:hover{background:var(--accent);color:var(--ink);transform:translateX(4px);}
+ .heroScrollcue{position:absolute;right:32px;bottom:56px;z-index:2;display:flex;align-items:center;gap:10px;
+   font:500 10.5px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;
+   color:var(--ink-faint);opacity:0;animation:heroFadeUp .8s ease forwards;animation-delay:1s;}
+ .heroScrollcue .line{width:1px;height:34px;background:linear-gradient(var(--ink-faint),transparent);
+   animation:heroDrop 1.8s ease-in-out infinite;}
+ @keyframes heroDrop{0%{transform:scaleY(0);transform-origin:top;}50%{transform:scaleY(1);transform-origin:top;}
+   50.001%{transform-origin:bottom;}100%{transform:scaleY(0);transform-origin:bottom;}}
+ .heroWheel{position:absolute;z-index:2;}
+ .heroWheel .cofSvg{max-width:none;width:100%;height:100%;display:block;margin:0;}
+ .heroWheel .cofLabel{opacity:0;transition:opacity .15s ease;}
+ .heroWheel .cofNote:hover .cofLabel{opacity:1;}
+ .heroWheel .cofCaption{display:none;}
+ @media(max-width:640px){
+   .heroHeadline{bottom:150px;}
+   .heroSubWrap{max-width:80vw;}
+   .heroScrollcue{display:none;}
+ }
+ .heroRows{position:relative;background:var(--field);padding:8px 32px 40px;}
+ .heroRow{display:grid;grid-template-columns:64px 1fr auto;align-items:baseline;gap:24px;
+   padding:44px 0;border-top:1px solid var(--line);cursor:pointer;
+   opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease;}
+ .heroRow.in{opacity:1;transform:translateY(0);}
+ .heroRow:last-child{border-bottom:1px solid var(--line);}
+ .heroRowNum{font:500 13px ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink-faint);font-variant-numeric:tabular-nums;}
+ .heroRowMain{min-width:0;}
+ .heroRowTitle{font-family:-apple-system,"Helvetica Neue","Arial Black",Arial,ui-sans-serif,sans-serif;font-weight:800;
+   text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(30px,6vw,68px);line-height:1;color:var(--ink);
+   transition:color .3s ease,transform .4s cubic-bezier(.16,1,.3,1);display:inline-block;}
+ .heroRow:hover .heroRowTitle{transform:translateX(18px);color:var(--row-accent,var(--accent));}
+ .heroRowDesc{margin-top:8px;font-size:13.5px;color:var(--ink-dim);max-width:52ch;}
+ .heroRowArrow{font-family:-apple-system,"Helvetica Neue","Arial Black",Arial,ui-sans-serif,sans-serif;
+   font-size:clamp(20px,3vw,34px);color:var(--ink-faint);transition:transform .35s cubic-bezier(.16,1,.3,1),color .3s ease;}
+ .heroRow:hover .heroRowArrow{transform:translateX(10px);color:var(--row-accent,var(--accent));}
+ .heroFooter{padding:64px 32px 48px;background:var(--field);border-top:1px solid var(--line);
+   display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px;}
+ .heroFmark{font:600 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);}
+ .heroFnote{font-size:11.5px;color:var(--ink-faint);max-width:44ch;line-height:1.6;}
+ @media(prefers-reduced-motion:reduce){
+   .heroHeadline .row span{animation:none;opacity:1;transform:none;}
+   .heroSubWrap,.heroScrollcue{animation:none;opacity:1;}
+   .heroScrollcue .line{animation:none;}
+   .heroRow{transition:none;opacity:1;transform:none;}
+ }
+ @media(max-width:480px){.heroMark,.heroMarkTag{font-size:9.5px;}}
  .cofSvg{width:100%;max-width:300px;height:auto;display:block;margin:0 auto;}
  .cofNote circle{stroke:#00000030;stroke-width:1;cursor:pointer;transition:transform .15s;transform-origin:center;transform-box:fill-box;}
  .cofNote:hover circle,.cofNote.sel circle{transform:scale(1.12);}
@@ -161,18 +241,6 @@
     on state change, so hiding it per level has to be a CSS switch rather than a re-render. */
  body.levelBeginner .cofRing-dim{display:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
- .simpleCols{display:flex;gap:18px;justify-content:center;margin:0;flex-wrap:wrap;align-items:stretch;}
- .simpleCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:16px;padding:16px;width:210px;
-   display:flex;flex-direction:column;transition:background .15s,transform .15s;}
- .simpleCard:hover{background:#ffffff14;transform:translateY(-2px);}
- #simpleSciPreview{width:100%;aspect-ratio:1;display:block;border-radius:10px;}
- .simpleCardLabel{margin-top:12px;font:600 13px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);}
- .simpleCardSub{font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.4;}
- .simpleFullLink{display:inline-block;margin-top:20px;font:600 11.5px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-   color:var(--dim);background:transparent;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
- .simpleFullLink:hover{color:var(--ink);}
- @media(max-width:480px){.simpleWrap h1{font-size:22px;}}
- @media(max-width:560px){.simpleCols{flex-direction:column;align-items:center;}}
  /* align-items:flex-start (not center) + enough top padding to clear the fixed #topbar's full
     stack (mode pills, tune toggle, label, share button — ~150-160px tall) — centering this
     content vertically let it get pushed up underneath that chrome on short/desktop viewports. */

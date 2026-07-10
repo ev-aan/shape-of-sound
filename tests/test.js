@@ -14,30 +14,50 @@ const C = global.__cache, fire = global.__fire, raf = () => global.__raf();
 const frames = n => { for (let i = 0; i < n && raf(); i++) raf()(); };
 const clk = (el, k) => fire(el, 'click', { target: { closest: () => ({ dataset: k, disabled: false }) } });
 try {
-  // Simple mode: default front door with no shared URL
+  // Simple mode: the Elorah hero front door, shown by default with no shared URL
   if (C['simpleFront'].style.display === 'none') throw new Error('Simple front door should show by default (no hash)');
   if (C['advancedApp'].style.display !== 'none') throw new Error('Advanced app should stay hidden until entered');
   if (!__api.Surfaces || !__api.Surfaces.get('cof')) throw new Error('circle-of-fifths surface not registered');
   if (!__api.Surfaces.get('keyboard')) throw new Error('keyboard surface not registered');
-  if (!/cofNote/.test(C['simpleCof'].innerHTML)) throw new Error('circle-of-fifths surface did not render into simpleFront');
-  // tapping a circle-of-fifths note on the Musical card should explore locally, not navigate away
-  fire(C['simpleMusicalCard'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
-  if (C['advancedApp'].style.display === '') throw new Error('tapping a circle-of-fifths note should not leave the Simple front door');
-  // clicking elsewhere on the Musical card enters Musical mode
-  fire(C['simpleMusicalCard'], 'click', { target: { closest: () => null } });
-  if (C['advancedApp'].style.display === 'none') throw new Error('Musical card should open Advanced');
-  if (__api.View.get().mode !== 'musical') throw new Error('Musical card should enter Musical mode');
+  if (!/cofNote/.test(C['heroWheel'].innerHTML)) throw new Error('circle-of-fifths surface did not render into the hero wheel');
+  // the noteRadius option (added for the hero's "slightly larger" dots) is additive: omitting it
+  // still defaults to the original r=22 every other cof caller (Musical mode's own wheel) relies on
+  const cofDefault = document.createElement('div');
+  __api.Surfaces.get('cof').render(cofDefault, {});
+  if (!/r="22"/.test(cofDefault.innerHTML)) throw new Error('cof surface should default to noteRadius 22 when omitted, for backward compatibility');
+  const cofBig = document.createElement('div');
+  __api.Surfaces.get('cof').render(cofBig, { noteRadius: 28 });
+  if (!/r="28"/.test(cofBig.innerHTML)) throw new Error('cof surface should honour an explicit noteRadius');
+  // tapping a wheel note plays it, and does not navigate away from the front door
+  let heroOscCount = 0;
+  const origHeroCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ heroOscCount++; return origHeroCreateOsc.apply(this, arguments); };
+  fire(C['heroWheel'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '0' } } : null } });
+  global.window.AudioContext.prototype.createOscillator = origHeroCreateOsc;
+  if (heroOscCount !== 1) throw new Error('tapping a wheel note should play it, played ' + heroOscCount);
+  if (C['advancedApp'].style.display === '') throw new Error('tapping a wheel note should not leave the Simple front door');
+  // each of the 4 statement rows enters its own mode via one delegated listener (same convention
+  // as wireTopbar's switchMode), and the Science row additionally forces 3D, matching the old
+  // Science card's behaviour
+  fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'musical' } } : null } });
+  if (C['advancedApp'].style.display === 'none') throw new Error('the Musical row should open Advanced');
+  if (__api.View.get().mode !== 'musical') throw new Error('the Musical row should enter Musical mode');
   C['backToSimpleBtn'].onclick();
-  // the Science card enters Science mode and builds the mini 3D preview from the real scene
-  fire(C['simpleScienceCard'], 'click', {});
-  if (__api.View.get().mode !== 'science') throw new Error('Science card should enter Science mode');
-  if (__api.View.get().dim !== '3d') throw new Error('Science card should switch to 3D');
+  fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'science' } } : null } });
+  if (__api.View.get().mode !== 'science') throw new Error('the Science row should enter Science mode');
+  if (__api.View.get().dim !== '3d') throw new Error('the Science row should switch to 3D');
+  C['backToSimpleBtn'].onclick();
+  fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'play' } } : null } });
+  if (__api.View.get().mode !== 'play') throw new Error('the Play row should enter Play mode');
+  C['backToSimpleBtn'].onclick();
+  fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'lessons' } } : null } });
+  if (__api.View.get().mode !== 'lessons') throw new Error('the Lessons row should enter Lessons mode');
   C['backToSimpleBtn'].onclick();
   if (C['simpleFront'].style.display === 'none') throw new Error('back-to-Simple button should restore the front door');
-  // fallback "open the full tool" link, used to enter Advanced for the rest of this test
-  C['simpleAdvanced'].onclick();
+  // the CTA button, used to enter Advanced (defaulting to Science, no forced 3D) for the rest of this test
+  C['heroCta'].onclick();
   if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
-  if (__api.View.get().mode !== 'science') throw new Error('the fallback link should default to Science mode');
+  if (__api.View.get().mode !== 'science') throw new Error('the CTA should default to Science mode');
 
   fire(document, 'pointerdown', {}); global.__hit = true;
   clk(C['layoutPills'], { k: 'axes' }); frames(40);

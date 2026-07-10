@@ -2,27 +2,67 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>The Shape of Music</title>
+<title>Elorah — the shape of music</title>
 <style>
 %%CSS%%
 </style></head><body>
 <div id="simpleFront">
- <div class="simpleWrap">
-  <h1 class="serif">The Shape of Music</h1>
-  <p class="simpleLede">Every chord lives in two worlds — how it's named, and why it happens. Pick one to start.</p>
-  <div class="simpleCols">
-   <div class="simpleCard" id="simpleMusicalCard">
-    <div id="simpleCof"></div>
-    <div class="simpleCardLabel">Musical</div>
-    <div class="simpleCardSub">how theory names what you're hearing</div>
-   </div>
-   <div class="simpleCard" id="simpleScienceCard">
-    <canvas id="simpleSciPreview"></canvas>
-    <div class="simpleCardLabel">Science</div>
-    <div class="simpleCardSub">why chords relate — real overtone physics</div>
-   </div>
+ <div id="cursor"></div>
+ <div id="cursorRing"></div>
+ <div class="heroHero">
+  <canvas id="heroField"></canvas>
+  <div class="heroScrim"></div>
+  <div class="heroMark"><b>ELORAH</b> — the shape of music</div>
+  <div class="heroMarkTag">www.elorah.ca<br/>127 chords, one wheel</div>
+  <h1 class="heroHeadline">
+   <span class="row"><span>WHY THIS</span></span>
+   <span class="row"><span>CHORD SOUNDS</span></span>
+   <span class="row"><span>LIKE THAT.</span></span>
+  </h1>
+  <div class="heroSubWrap">
+   <p class="heroSub">How sound becomes music. Play with the wheel below — it's wired to the same physics and theory as the full app, and there's nothing to learn first.</p>
+   <button id="heroCta" class="heroCta">Start exploring →</button>
   </div>
-  <button id="simpleAdvanced" class="simpleFullLink">or open the full tool →</button>
+  <div class="heroScrollcue"><span class="line"></span>SCROLL</div>
+  <div id="heroWheel" class="heroWheel"></div>
+ </div>
+ <div class="heroRows" id="heroRows">
+  <div class="heroRow" data-mode="musical" data-accent="#ff5a3c">
+   <span class="heroRowNum">01</span>
+   <div class="heroRowMain">
+    <span class="heroRowTitle">Musical</span>
+    <p class="heroRowDesc">Curious what key you're in? Tap any note and watch its whole world of chords light up around the wheel.</p>
+   </div>
+   <span class="heroRowArrow">→</span>
+  </div>
+  <div class="heroRow" data-mode="science" data-accent="#5ad1ff">
+   <span class="heroRowNum">02</span>
+   <div class="heroRowMain">
+    <span class="heroRowTitle">Science</span>
+    <p class="heroRowDesc">Ever wonder why some chords just click? 127 real chords, mapped by how much their overtones actually overlap.</p>
+   </div>
+   <span class="heroRowArrow">→</span>
+  </div>
+  <div class="heroRow" data-mode="play" data-accent="#8bff6a">
+   <span class="heroRowNum">03</span>
+   <div class="heroRowMain">
+    <span class="heroRowTitle">Play</span>
+    <p class="heroRowDesc">Got a progression stuck in your head? Build it on the keyboard or the map, hear it resolve, loop it till it's yours.</p>
+   </div>
+   <span class="heroRowArrow">→</span>
+  </div>
+  <div class="heroRow" data-mode="lessons" data-accent="#ffd75a">
+   <span class="heroRowNum">04</span>
+   <div class="heroRowMain">
+    <span class="heroRowTitle">Lessons</span>
+    <p class="heroRowDesc">New to theory? Start small — intervals, key signatures, chord extensions, one idea at a time.</p>
+   </div>
+   <span class="heroRowArrow">→</span>
+  </div>
+ </div>
+ <div class="heroFooter">
+  <div class="heroFmark">ELORAH — WWW.ELORAH.CA</div>
+  <div class="heroFnote">Free to explore, nothing to install.</div>
  </div>
 </div>
 <div id="advancedApp" style="display:none;">
