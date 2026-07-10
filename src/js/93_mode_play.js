@@ -23,7 +23,7 @@ function matchChord(pcs){
 }
 function onPlayNotesChange(pcs){
   const readout = document.getElementById('playReadout'), addBtn = document.getElementById('playAddBtn');
-  if(!pcs.size){ readout.textContent = 'Tap keys to build a chord.'; addBtn.disabled = true; addBtn.dataset.match = ''; return; }
+  if(!pcs.size){ readout.textContent = 'What chord do you want to hear?'; addBtn.disabled = true; addBtn.dataset.match = ''; return; }
   const names = [...pcs].sort((a,b)=>a-b).map(pc=>NOTE[pc]).join(' + ');
   const match = matchChord(pcs);
   if(match != null){ readout.textContent = names+' — that\'s '+N[match].name+'.'; addBtn.disabled = false; addBtn.dataset.match = match; }

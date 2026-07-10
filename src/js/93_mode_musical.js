@@ -302,7 +302,7 @@ function refreshMusicalScene(){
   renderNeighbors();
   const leg = document.getElementById('mLegend');
   if(!leg) return;
-  if(v.key == null){ leg.textContent = 'Tap a note on the circle to explore its key.'; return; }
+  if(v.key == null){ leg.textContent = 'Tap any note — what key do you want to try?'; return; }
   const s = SCALES[v.scale], count = N.filter(n => chordInScale(n, v.scale, v.key)).length;
   leg.textContent = 'Key of '+NOTE[v.key]+' '+s.name+' — '+count+' chords fit this scale. Minor ring: ii & vi. Outer ring: vii° (diminished). Tap any of them to hear it.';
 }
@@ -327,12 +327,21 @@ function wireMusicalHome(){
   document.getElementById('musAddSeqBtn').onclick = () => { if(activeChordIdx != null) addToSeq(activeChordIdx); };
   const sc = document.getElementById('mScalesChartBtn'); if(sc) sc.onclick = openScalesChart;
   const scClose = document.getElementById('scalesClose'); if(scClose) scClose.onclick = closeScalesChart;
-  const ib = document.getElementById('mInfoBtn'); if(ib) ib.onclick = ()=>alert(
-    'Tap a note on the circle to make it your key. "Tap plays" decides what you hear: Chord plays the '+
-    'key\'s tonic chord, Note plays just that one note.\n\n'+
-    'The circle itself shows this key\'s diatonic chords as rings: the outer ring is minor (ii and vi), '+
-    'further out is diminished (vii°) — tap either to hear that chord.\n\n'+
-    '"+ add to progression" (by the Bach player) sends whichever chord is currently shown into Play\'s '+
-    'sequencer — click your way through a set of chords and it builds a real progression, one tap at a time.\n\n'+
-    'Try C, then switch the scale from Major to Dorian and see how the rings change.');
+  // a real panel (the one Science mode's axis explanation already uses), not a blocking native
+  // alert() — and broken into short beats ending on an invitation, instead of one four-paragraph
+  // lecture with no way in.
+  const ib = document.getElementById('mInfoBtn');
+  if(ib) ib.onclick = () => {
+    document.getElementById('info').innerHTML =
+      '<h3>How to use the circle</h3>'+
+      '<p>Tap any note to make it your key. <b>Tap plays</b> decides what you hear next: <b>Chord</b> plays that '+
+      'key\'s tonic triad, <b>Note</b> plays just the one note.</p>'+
+      '<p>The rings around the main circle are that key\'s other chords — the inner ring is <b>minor</b> (ii and vi), '+
+      'the outer ring is <b>diminished</b> (vii°). Tap either to hear it.</p>'+
+      '<p>Found one you like? <b>"+ add to progression"</b> sends it straight into Play\'s sequencer, so you can '+
+      'build on it one chord at a time.</p>'+
+      '<p class="r">Try it now: pick C, then switch the scale from Major to Dorian — watch what happens to the rings.</p>'+
+      '<div class="scopebtns"><span class="x" id="infoClose">close</span></div>';
+    document.getElementById('info').classList.add('show');
+  };
 }

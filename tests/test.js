@@ -67,6 +67,12 @@ try {
   if (__api.View.get().mode !== 'play') throw new Error('Play tab did not activate');
   if (!C['compose'].classList.contains('show')) throw new Error('entering Play should open the sequencer drawer');
   if (C['title'].style.display !== 'none') throw new Error('Play mode should hide #title (Science-specific copy bleeding into Play\'s own UI)');
+  // the empty-state readout invites a choice ("what chord do you want to hear?") rather than
+  // just instructing — checked against the source, in both the static markup and the JS reset
+  // path (onPlayNotesChange with an empty set), since the harness's DOM stubs start blank and
+  // don't reflect real static HTML content the way a browser would.
+  const playReadoutCopies = (html.match(/what chord do you want to hear/ig) || []).length;
+  if (playReadoutCopies !== 2) throw new Error('expected the empty-state readout text in both the static markup and onPlayNotesChange, found ' + playReadoutCopies);
   const pressKey = pc => fire(C['playKeyboard'], 'click', { target: { closest: () => ({ dataset: { pc: String(pc) }, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } } }) } });
   pressKey(0); pressKey(4); pressKey(7); // C E G
   if (C['playAddBtn'].disabled) throw new Error('C+E+G should be recognised as a chord ready to add');
@@ -103,6 +109,20 @@ try {
   // already did) instead of being static markup that showed even with nothing underneath it —
   // since the cold-start default above already selects a chord, it should show right away
   if (!/neighbouring chords/.test(C['musNeighbors'].innerHTML)) throw new Error('neighbours header should appear once a chord is active (here, from the cold-start default)');
+  // the cold-start legend invites a choice ("what key do you want to try?") rather than issuing a
+  // bare instruction — checked against the static markup itself, since by this point in a real
+  // session the cold-start default above has already moved the legend into its warm-state text.
+  // Checked twice: the static shell.html copy and the JS re-render branch used to drift apart
+  // (one had a leading em-dash, one didn't) — both copies must carry the same new wording now.
+  const coldStartCopies = (html.match(/what key do you want to try/ig) || []).length;
+  if (coldStartCopies !== 2) throw new Error('expected the cold-start legend text in both the static markup and the JS re-render branch, found ' + coldStartCopies);
+  // the info button opens the shared #info panel (already used by Science mode's axis
+  // explanation) instead of a blocking native alert()
+  C['mInfoBtn'].onclick();
+  if (!C['info'].classList.contains('show')) throw new Error('the info button should open the shared #info panel, not call alert()');
+  if (!/How to use the circle/.test(C['info'].innerHTML)) throw new Error('the info panel should contain the rewritten, chunked explanation');
+  fire(C['info'], 'click', { target: { id: 'infoClose' } });
+  if (C['info'].classList.contains('show')) throw new Error('the existing infoClose delegated handler should close the panel regardless of which content is loaded');
   // tap a different note on Musical's own circle of fifths to move the key away from the default
   fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '7' } } : null } });
   if (__api.View.get().key !== 7) throw new Error('tapping a note on the Musical circle should set the key');
