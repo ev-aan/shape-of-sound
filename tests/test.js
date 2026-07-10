@@ -253,6 +253,19 @@ try {
   fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '7' }, classList: { toggle(){} } }) } });
   if ((C['musSuperstructure'].innerHTML.match(/ssNode-dim/g) || []).length !== 0) throw new Error('selecting 13th should light every node in the stack');
   fire(C['ssExtendPills'], 'click', { target: { closest: () => ({ dataset: { k: '3' }, classList: { toggle(){} } }) } }); // restore the default for anything downstream
+  // triad quality comparison: major/sus2/sus4/dim/aug on the same root, each row a triad (3 dots)
+  const tq = document.createElement('div');
+  __api.Surfaces.get('triadquality').render(tq, { root:0 });
+  if ((tq.innerHTML.match(/class="tqRow"/g) || []).length !== 5) throw new Error('triad quality surface should draw 5 rows (major, sus2, sus4, dim, aug)');
+  if ((tq.innerHTML.match(/class="tqDot"/g) || []).length !== 15) throw new Error('5 triads of 3 notes each should draw 15 dots, got ' + (tq.innerHTML.match(/class="tqDot"/g) || []).length);
+  if (!/>D#</.test(tq.innerHTML)) throw new Error('diminished on C should include D# (its minor 3rd)');
+  if (!/>F#</.test(tq.innerHTML)) throw new Error('diminished on C should include F# (its flat 5th, spelled as the tritone)');
+  if (!/>G#</.test(tq.innerHTML)) throw new Error('augmented on C should include G# (its sharp 5th)');
+  if (!/>D</.test(tq.innerHTML)) throw new Error('sus2 on C should include D (a major 2nd, standing in for the 3rd)');
+  if (!/>F</.test(tq.innerHTML)) throw new Error('sus4 on C should include F (a perfect 4th, standing in for the 3rd)');
+  // ghost markers show where the major triad's 3rd/5th sit, on every row that replaces one of them —
+  // major itself has none; sus2/sus4/aug each swap one tone (1 ghost each); dim swaps both (2 ghosts)
+  if ((tq.innerHTML.match(/class="tqGhost"/g) || []).length !== 5) throw new Error('sus2+sus4+aug (1 ghost each) plus dim (2 ghosts) should total 5, got ' + (tq.innerHTML.match(/class="tqGhost"/g) || []).length);
   // neighbouring chords: systematic proximity, not a ranked recommendation — Am (shares C and E
   // with Cmaj) should show up, the chord itself never should, and the list stays capped/tagged
   const nbList = __api.neighboringChords(cIdx);
@@ -313,6 +326,17 @@ try {
   if (!/lessonCard/.test(C['lessonNav'].innerHTML)) throw new Error('lesson nav should render lesson cards');
   fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
   if (!C['musInterval'].innerHTML) throw new Error('selecting the intervals lesson should still have its mount point populated (wired at boot)');
+  fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'triad-qualities' } } : null } });
+  if ((C['musTriadQuality'].innerHTML.match(/class="tqRow"/g) || []).length !== 5) throw new Error('the triad-qualities lesson mount point should be wired at boot with all 5 rows');
+  C['tqRootSel'].value = '2'; C['tqRootSel'].onchange(); // D
+  if (!/>F#</.test(C['musTriadQuality'].innerHTML)) throw new Error('changing the root select should re-render the diagram for the new root (D major should show F#)');
+  C['tqRootSel'].value = '0'; C['tqRootSel'].onchange(); // restore the default for anything downstream
+  let tqOscCount = 0;
+  const origTqCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ tqOscCount++; return origTqCreateOsc.apply(this, arguments); };
+  fire(C['musTriadQuality'], 'click', { target: { closest: sel => sel === '.tqRow' ? { dataset: { q: 'dim' } } : null } });
+  global.window.AudioContext.prototype.createOscillator = origTqCreateOsc;
+  if (tqOscCount !== 3) throw new Error('tapping a row should play all 3 notes of that triad, played ' + tqOscCount);
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
   // fixed equal temperament) — showing it there would be chrome bleeding across pages
   if (C['tuneToggle'].style.display === '') throw new Error('Lessons mode should hide the tune toggle, which has no effect on its demos');

@@ -264,6 +264,16 @@
  .ssNode-dim{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
  .ssDegree{fill:var(--dim);font-size:10px;}
  .ssNoteName{fill:var(--ink);font-size:11px;font-weight:600;}
+ .tqRow{cursor:pointer;padding:6px 0;border-radius:8px;}
+ .tqRow:hover{background:#ffffff0a;}
+ .tqRowLbl{font-size:11px;color:var(--dim);text-align:center;}
+ .tqSvg{display:block;margin:2px auto 0;max-width:320px;width:100%;height:auto;}
+ .tqLine{stroke:#8a97bfaa;stroke-width:1;}
+ .tqTick{stroke:#8a97bf66;stroke-width:1;}
+ .tqGhost{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
+ .tqDot{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .tqToneLabel{fill:var(--dim);font-size:9px;text-anchor:middle;}
+ .tqNoteLabel{fill:var(--ink);font-size:10.5px;font-weight:600;text-anchor:middle;}
  .rollSvg{display:block;margin:10px auto 0;height:auto;min-width:100%;}
  .rollBarline{stroke:#8a97bfaa;stroke-width:1;}
  .rollBarline.rollFinal{stroke-width:2;}
@@ -384,6 +394,16 @@
      <button data-k="6">11th</button><button data-k="7">13th</button>
     </div>
     <div id="musSuperstructure"></div>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="triad-qualities">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">same root, four ways to bend the middle and top note away from major</div>
+    <div class="ivRow">
+     <select id="tqRootSel"></select>
+    </div>
+    <div id="musTriadQuality"></div>
+    <p class="hint" style="text-align:center;">Tap any row to hear it. The faint ghost circle shows where that note sits in a major triad.</p>
    </div>
   </div>
  </div>
@@ -1714,6 +1734,62 @@ Surfaces.register('superstructure', {
   }
 });
 
+// ---- SURFACE: triad quality comparison ----
+// Suspended, diminished and augmented triads are usually taught as separate one-off rules.
+// Drawn on the same semitone axis, against a ghost outline of the major triad they're each one
+// step away from, the shared pattern shows through: sus chords swap out the 3rd only (for a
+// 2nd or a 4th), diminished flattens both the 3rd and the 5th, augmented raises just the 5th.
+const TQ_ROWS = [
+  { q:'major', label:'Major',         ivs:[0,4,7], tones:['R','3rd','5th'] },
+  { q:'sus2',  label:'Suspended 2nd', ivs:[0,2,7], tones:['R','2nd','5th'] },
+  { q:'sus4',  label:'Suspended 4th', ivs:[0,5,7], tones:['R','4th','5th'] },
+  { q:'dim',   label:'Diminished',    ivs:[0,3,6], tones:['R','♭3rd','♭5th'] },
+  { q:'aug',   label:'Augmented',     ivs:[0,4,8], tones:['R','3rd','♯5th'] },
+];
+const TQ_MAJOR_IVS = TQ_ROWS[0].ivs; // [0,4,7] — the reference every other row is drawn against
+
+function tqRowSvg(root, row){
+  const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 30;
+  const xFor = semis => pad + semis*step;
+  let ticks = '';
+  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="tqTick"></line>'; }
+  // ghost outlines: major-triad tone positions this row replaces (root is always shared, skip it)
+  let ghosts = '';
+  TQ_MAJOR_IVS.forEach(iv => {
+    if(iv !== 0 && row.ivs.indexOf(iv) < 0) ghosts += '<circle cx="'+xFor(iv)+'" cy="'+y+'" r="8" class="tqGhost"></circle>';
+  });
+  let dots = '';
+  row.ivs.forEach((iv, i) => {
+    const pc = ((root+iv) % 12 + 12) % 12, col = Palette.noteCss(pc, .68, .62);
+    dots += '<circle cx="'+xFor(iv)+'" cy="'+y+'" r="8" style="--pc:'+col+'" class="tqDot"></circle>'+
+      '<text x="'+xFor(iv)+'" y="'+(y-13)+'" class="tqToneLabel">'+row.tones[i]+'</text>'+
+      '<text x="'+xFor(iv)+'" y="'+(y+23)+'" class="tqNoteLabel">'+NOTE[pc]+'</text>';
+  });
+  return '<svg viewBox="0 0 '+w+' 58" class="tqSvg">'+
+    '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="tqLine"></line>'+
+    ticks+ghosts+dots+
+    '</svg>';
+}
+
+// click-to-play is wired once by the caller via event delegation (see wireLessonsHome in
+// 93_mode_lessons.js), the same pattern every pill row in this app uses — not per-row
+// querySelectorAll+onclick here, which would re-wire (and stack) a new listener on every
+// re-render since this surface fully replaces container.innerHTML each time it draws.
+Surfaces.register('triadquality', {
+  label: 'Triad quality',
+  render(container, opts){
+    if(!container) return null;
+    const root = ((opts.root % 12) + 12) % 12;
+    container.innerHTML = TQ_ROWS.map(row =>
+      '<div class="tqRow" data-q="'+row.q+'" title="tap to hear it">'+
+        '<div class="tqRowLbl">'+row.label+'</div>'+
+        tqRowSvg(root, row)+
+      '</div>'
+    ).join('');
+    return {};
+  }
+});
+
 // init
 posFrom=posDisc.map(p=>p.clone());posTo=posDisc.map(p=>p.clone());mt=1;
 applyColors('family');setLegend('family');updatePositions();updateCloud();applyThr();axiscap.textContent=CAP_DISC;
@@ -1762,6 +1838,7 @@ const LESSONS = [
   { id:'key-signatures', title:'Key signatures', blurb:'why a scale in D major or F major needs no inline accidentals' },
   { id:'intervals',      title:'Intervals',        blurb:'the distance between two notes, named and measured' },
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
+  { id:'triad-qualities', title:'Suspended, diminished, augmented', blurb:'how each one bends just the 3rd and/or 5th away from a major triad' },
 ];
 let activeLesson = LESSONS[0].id;
 // hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
@@ -1885,6 +1962,17 @@ function wireLessonsHome(){
     renderSuperstructure();
   });
   renderSuperstructure();
+  const tqRootSel = document.getElementById('tqRootSel');
+  tqRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  tqRootSel.value = 0;
+  const renderTriadQuality = () => Surfaces.get('triadquality').render(document.getElementById('musTriadQuality'), { root:+tqRootSel.value });
+  tqRootSel.onchange = renderTriadQuality;
+  renderTriadQuality();
+  document.getElementById('musTriadQuality').addEventListener('click', e => {
+    const row = e.target.closest('.tqRow'); if(!row) return;
+    const def = TQ_ROWS.find(r => r.q === row.dataset.q);
+    playFreqs(def.ivs.map(iv => m2f(60 + +tqRootSel.value + iv)));
+  });
   selectLesson(activeLesson);
   // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately
   View.subscribe((state, prev) => { if(state.level !== prev.level) renderIntervalViz(); });

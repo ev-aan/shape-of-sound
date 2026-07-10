@@ -7,6 +7,7 @@ const LESSONS = [
   { id:'key-signatures', title:'Key signatures', blurb:'why a scale in D major or F major needs no inline accidentals' },
   { id:'intervals',      title:'Intervals',        blurb:'the distance between two notes, named and measured' },
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
+  { id:'triad-qualities', title:'Suspended, diminished, augmented', blurb:'how each one bends just the 3rd and/or 5th away from a major triad' },
 ];
 let activeLesson = LESSONS[0].id;
 // hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
@@ -130,6 +131,17 @@ function wireLessonsHome(){
     renderSuperstructure();
   });
   renderSuperstructure();
+  const tqRootSel = document.getElementById('tqRootSel');
+  tqRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  tqRootSel.value = 0;
+  const renderTriadQuality = () => Surfaces.get('triadquality').render(document.getElementById('musTriadQuality'), { root:+tqRootSel.value });
+  tqRootSel.onchange = renderTriadQuality;
+  renderTriadQuality();
+  document.getElementById('musTriadQuality').addEventListener('click', e => {
+    const row = e.target.closest('.tqRow'); if(!row) return;
+    const def = TQ_ROWS.find(r => r.q === row.dataset.q);
+    playFreqs(def.ivs.map(iv => m2f(60 + +tqRootSel.value + iv)));
+  });
   selectLesson(activeLesson);
   // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately
   View.subscribe((state, prev) => { if(state.level !== prev.level) renderIntervalViz(); });

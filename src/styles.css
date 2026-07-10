@@ -258,6 +258,16 @@
  .ssNode-dim{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
  .ssDegree{fill:var(--dim);font-size:10px;}
  .ssNoteName{fill:var(--ink);font-size:11px;font-weight:600;}
+ .tqRow{cursor:pointer;padding:6px 0;border-radius:8px;}
+ .tqRow:hover{background:#ffffff0a;}
+ .tqRowLbl{font-size:11px;color:var(--dim);text-align:center;}
+ .tqSvg{display:block;margin:2px auto 0;max-width:320px;width:100%;height:auto;}
+ .tqLine{stroke:#8a97bfaa;stroke-width:1;}
+ .tqTick{stroke:#8a97bf66;stroke-width:1;}
+ .tqGhost{fill:#00000000;stroke:#8a97bf66;stroke-dasharray:2 2;}
+ .tqDot{stroke:var(--ink);stroke-width:1.2;fill:var(--pc);}
+ .tqToneLabel{fill:var(--dim);font-size:9px;text-anchor:middle;}
+ .tqNoteLabel{fill:var(--ink);font-size:10.5px;font-weight:600;text-anchor:middle;}
  .rollSvg{display:block;margin:10px auto 0;height:auto;min-width:100%;}
  .rollBarline{stroke:#8a97bfaa;stroke-width:1;}
  .rollBarline.rollFinal{stroke-width:2;}
