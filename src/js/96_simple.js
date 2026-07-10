@@ -65,8 +65,12 @@ function heroBuildParticles(){
     });
   }
 }
-// called once per real frame from 90_init.js's frame() while the front door is showing
+// called once per real frame from 90_init.js's frame() whenever !appVisible — which is also true
+// in Musical/Lessons mode (they hide the 3D scene too), not only while the front door is showing.
+// Skip the work entirely unless #simpleFront is the thing actually on screen.
 function heroFrameStep(dt){
+  const front = document.getElementById('simpleFront');
+  if(!front || front.style.display === 'none') return;
   heroCursorTick();
   if(!heroCanvas) return;
   const reduced = heroReduced();
