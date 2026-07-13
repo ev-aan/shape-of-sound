@@ -8,6 +8,28 @@
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
  #axiscap{margin-top:6px;font-size:10.5px;color:#bcd0ff;}
+ /* the spectrum banner is Science-only, pinned above everything else on that page — #title and
+    #topbar shift down to clear it rather than being covered, via a body class showMode() toggles
+    alongside the rest of its per-mode visibility (see 02_view.js). */
+ #sciSpectrum{display:none;position:fixed;top:0;left:0;right:0;z-index:6;background:var(--panel);
+   border-bottom:1px solid var(--line);backdrop-filter:blur(8px);padding:10px 16px 8px;}
+ body.sciMode #sciSpectrum{display:block;}
+ body.sciMode #title{top:150px;}
+ body.sciMode #topbar{top:149px;}
+ #sciSpectrumChart{max-width:900px;margin:0 auto;}
+ .specSvg{width:100%;height:auto;max-height:90px;display:block;}
+ .specRect{fill:var(--dim);opacity:.16;cursor:pointer;transition:opacity .15s;}
+ .specBand:hover .specRect{opacity:.4;}
+ .specBand-sense .specRect{opacity:.34;}
+ .specBand-sense:hover .specRect{opacity:.6;}
+ .specBand[data-band="hear"] .specRect{fill:#9ad1f0;}
+ .specBand[data-band="feel"] .specRect{fill:#f0c36b;}
+ .specBand[data-band="see"] .specRect{fill:#f17a6e;}
+ .specLabel{fill:var(--dim);font-size:9px;text-anchor:middle;pointer-events:none;}
+ .specBand-sense .specLabel{fill:var(--ink);font-weight:600;font-size:10.5px;}
+ .specWave{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.75;}
+ .specCaption{max-width:900px;margin:4px auto 0;text-align:center;min-height:auto;font-size:10.5px;}
+ @media(max-width:640px){ body.sciMode #title{top:168px;} body.sciMode #topbar{top:167px;} }
  #panel{position:fixed;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
    border-radius:12px;padding:11px 12px;backdrop-filter:blur(8px);
    width:min(330px,calc(100vw - 24px));max-height:72vh;overflow:auto;}
