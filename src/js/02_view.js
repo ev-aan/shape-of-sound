@@ -64,6 +64,9 @@ function showMode(mode){
   // effect there — showing it anyway is exactly the kind of chrome bleeding across pages that
   // makes each mode feel less like its own distinct page.
   document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
+  // the spectrum banner (#sciSpectrum, styled in styles.css) is Science-only; this class also
+  // shifts #title/#topbar down in CSS to clear it rather than being covered by it.
+  document.body.classList.toggle('sciMode', mode === 'science');
   appVisible = (mode !== 'musical' && mode !== 'lessons');
 }
 
