@@ -8,6 +8,7 @@ const LESSONS = [
   { id:'intervals',      title:'Intervals',        blurb:'the distance between two notes, named and measured' },
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
   { id:'triad-qualities', title:'Suspended, diminished, augmented', blurb:'how each one bends just the 3rd and/or 5th away from a major triad' },
+  { id:'ratio-wheel', title:'Ratio wheel', blurb:'the circle of fifths reshaped so distance from the centre is consonance with your root' },
 ];
 let activeLesson = LESSONS[0].id;
 // hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
@@ -155,6 +156,20 @@ function wireLessonsHome(){
     const row = e.target.closest('.tqRow'); if(!row) return;
     const def = TQ_ROWS.find(r => r.q === row.dataset.q);
     playFreqs(def.ivs.map(iv => m2f(60 + +tqRootSel.value + iv)));
+  });
+  const rwRootSel = document.getElementById('rwRootSel');
+  rwRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  rwRootSel.value = 0;
+  // onSelect is NOT passed through opts here — renderRatioWheel() re-runs on every root change,
+  // and the surface attaches a fresh listener whenever opts.onSelect is set, so re-rendering with
+  // it set each time would stack duplicate listeners (the same reason the triad-quality lesson's
+  // click handling is wired separately, once, rather than passed into its own re-run render call).
+  const renderRatioWheel = () => Surfaces.get('ratiowheel').render(document.getElementById('musRatioWheel'), { root:+rwRootSel.value });
+  rwRootSel.onchange = renderRatioWheel;
+  renderRatioWheel();
+  document.getElementById('musRatioWheel').addEventListener('click', e => {
+    const g = e.target.closest('.cofNote'); if(!g) return;
+    playFreqs([m2f(60 + +g.dataset.pc)]);
   });
   selectLesson(activeLesson);
   // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately

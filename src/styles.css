@@ -165,7 +165,7 @@
  .heroMark b{color:var(--ink);font-weight:600;}
  .heroMarkTag{position:absolute;top:32px;right:32px;z-index:2;text-align:right;
    font:400 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
- .heroHeadline{position:absolute;left:32px;right:32px;bottom:120px;z-index:2;
+ .heroHeadline{position:absolute;left:32px;right:32px;bottom:210px;z-index:2;
    font-family:-apple-system,"Helvetica Neue","Arial Black",Arial,ui-sans-serif,sans-serif;font-weight:800;
    font-size:clamp(40px,9vw,118px);line-height:.94;letter-spacing:-.02em;text-transform:uppercase;color:var(--ink);
    text-wrap:balance;max-width:1180px;margin:0;}
@@ -197,7 +197,7 @@
  .heroWheel .cofNote:hover .cofLabel{opacity:1;}
  .heroWheel .cofCaption{display:none;}
  @media(max-width:640px){
-   .heroHeadline{bottom:150px;}
+   .heroHeadline{bottom:240px;}
    .heroSubWrap{max-width:80vw;}
    .heroScrollcue{display:none;}
  }
@@ -241,6 +241,7 @@
     on state change, so hiding it per level has to be a CSS switch rather than a re-render. */
  body.levelBeginner .cofRing-dim{display:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
+ .ratioSpoke{stroke:#ffffff1c;stroke-width:1;}
  /* align-items:flex-start (not center) + enough top padding to clear the fixed #topbar's full
     stack (mode pills, tune toggle, label, share button — ~150-160px tall) — centering this
     content vertically let it get pushed up underneath that chrome on short/desktop viewports. */

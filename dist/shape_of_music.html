@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Elorah — the shape of music</title>
+<title>Elorah — The Shape of Music</title>
 <style>
  :root{--field:#060812;--ink:#e8eefb;--dim:#8a97bf;--line:#ffffff14;--panel:#0b1026e6;}
  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -171,7 +171,7 @@
  .heroMark b{color:var(--ink);font-weight:600;}
  .heroMarkTag{position:absolute;top:32px;right:32px;z-index:2;text-align:right;
    font:400 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
- .heroHeadline{position:absolute;left:32px;right:32px;bottom:120px;z-index:2;
+ .heroHeadline{position:absolute;left:32px;right:32px;bottom:210px;z-index:2;
    font-family:-apple-system,"Helvetica Neue","Arial Black",Arial,ui-sans-serif,sans-serif;font-weight:800;
    font-size:clamp(40px,9vw,118px);line-height:.94;letter-spacing:-.02em;text-transform:uppercase;color:var(--ink);
    text-wrap:balance;max-width:1180px;margin:0;}
@@ -203,7 +203,7 @@
  .heroWheel .cofNote:hover .cofLabel{opacity:1;}
  .heroWheel .cofCaption{display:none;}
  @media(max-width:640px){
-   .heroHeadline{bottom:150px;}
+   .heroHeadline{bottom:240px;}
    .heroSubWrap{max-width:80vw;}
    .heroScrollcue{display:none;}
  }
@@ -247,6 +247,7 @@
     on state change, so hiding it per level has to be a CSS switch rather than a re-render. */
  body.levelBeginner .cofRing-dim{display:none;}
  .cofCaption{margin-top:10px;font-size:11px;color:var(--dim);line-height:1.4;min-height:2.8em;}
+ .ratioSpoke{stroke:#ffffff1c;stroke-width:1;}
  /* align-items:flex-start (not center) + enough top padding to clear the fixed #topbar's full
     stack (mode pills, tune toggle, label, share button — ~150-160px tall) — centering this
     content vertically let it get pushed up underneath that chrome on short/desktop viewports. */
@@ -372,12 +373,12 @@
   <div class="heroMark"><b>ELORAH</b> — the shape of music</div>
   <div class="heroMarkTag">www.elorah.ca<br/>127 chords, one wheel</div>
   <h1 class="heroHeadline">
-   <span class="row"><span>WHY THIS</span></span>
-   <span class="row"><span>CHORD SOUNDS</span></span>
-   <span class="row"><span>LIKE THAT.</span></span>
+   <span class="row"><span>HOW SOUND</span></span>
+   <span class="row"><span>BECOMES</span></span>
+   <span class="row"><span>MUSIC</span></span>
   </h1>
   <div class="heroSubWrap">
-   <p class="heroSub">How sound becomes music. Play with the wheel below — it's wired to the same physics and theory as the full app, and there's nothing to learn first.</p>
+   <p class="heroSub">Play with the wheel below — it's wired to the same physics and theory as the full app, and there's nothing to learn first.</p>
    <button id="heroCta" class="heroCta">Start exploring →</button>
   </div>
   <div class="heroScrollcue"><span class="line"></span>SCROLL</div>
@@ -534,6 +535,16 @@
     <div id="musTriadQuality"></div>
     <p class="hint" style="text-align:center;">Tap any row to hear it. The faint ghost circle shows where that note sits in a major triad.</p>
     <p class="hint" style="text-align:center;">The Prelude in C never uses any of these three — its harmony stays inside major, minor, and diminished chords. Here's what the road not taken sounds like.</p>
+   </div>
+  </div>
+  <div class="lessonBody" data-lesson="ratio-wheel">
+   <div class="musStaffSection">
+    <div class="musStaffLbl">the circle of fifths, redrawn by ratio — distance from the centre is consonance with your root</div>
+    <div class="ivRow">
+     <select id="rwRootSel"></select>
+    </div>
+    <div id="musRatioWheel"></div>
+    <p class="hint" style="text-align:center;">Tap any note to hear it against the root. Same angles as the familiar circle of fifths — only the distance from the centre has changed.</p>
    </div>
   </div>
  </div>
@@ -1692,6 +1703,54 @@ Surfaces.register('pianoroll', {
   }
 });
 
+// ---- SURFACE: ratio wheel (circle of fifths, reshaped by ratio-distance from a root) ----
+// Same angular layout and note colours as the plain 'cof' surface (so it stays recognizable),
+// but each note's DISTANCE FROM THE CENTRE is driven by intervalConsonance() — the same
+// ratio-simplicity read the interval visualizer already uses (RATIO's two-integer sum, smaller
+// sum = simpler ratio). The chosen root sits nearest the centre; the note with the most complex
+// ratio against it sits at the rim. Root is the only thing that changes per render — like 'cof',
+// this surface owns no state and hands taps to whoever asked for them via opts.onSelect.
+Surfaces.register('ratiowheel', {
+  label: 'Ratio wheel',
+  render(container, opts){
+    if(!container) return;
+    opts = opts || {};
+    const root = ((opts.root||0) % 12 + 12) % 12;
+    const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
+    const size = 300, cx = size/2, cy = size/2, Rmax = cx-40, noteR = opts.noteRadius || 20;
+    function radiusFor(pc){
+      const iv = (pc - root + 12) % 12;
+      const t = (100 - intervalConsonance(iv)) / 100; // 0 = root itself, 1 = the least consonant note here
+      return noteR + t * (Rmax - noteR);
+    }
+    let svg = '<svg viewBox="0 0 '+size+' '+size+'" class="cofSvg ratioWheelSvg">';
+    order.forEach(pc => {
+      const i = (pc*7)%12, ang = -Math.PI/2 + i*(2*Math.PI/12);
+      const r = radiusFor(pc);
+      const x = (cx+r*Math.cos(ang)).toFixed(1), y = (cy+r*Math.sin(ang)).toFixed(1);
+      svg += '<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" class="ratioSpoke"></line>';
+    });
+    order.forEach(pc => {
+      const i = (pc*7)%12, ang = -Math.PI/2 + i*(2*Math.PI/12);
+      const r = radiusFor(pc);
+      const x = (cx+r*Math.cos(ang)).toFixed(1), y = (cy+r*Math.sin(ang)).toFixed(1);
+      const col = Palette.noteCss(pc, .62, .58);
+      const iv = (pc - root + 12) % 12;
+      svg += '<g class="cofNote ratioNote" data-pc="'+pc+'" data-iv="'+iv+'"><circle cx="'+x+'" cy="'+y+'" r="'+noteR+'" fill="'+col+'"></circle>'+
+        '<text x="'+x+'" y="'+y+'" class="cofLabel">'+NOTE[pc]+'</text></g>';
+    });
+    svg += '</svg>';
+    container.innerHTML = svg + (opts.caption === false ? '' :
+      '<div class="cofCaption">'+(opts.initialCaption || (NOTE[root]+' at the centre — the closer a note sits, the simpler its ratio against '+NOTE[root]+'.'))+'</div>');
+    if(opts.onSelect){
+      container.addEventListener('click', e => {
+        const g = e.target.closest && e.target.closest('.cofNote');
+        if(g) opts.onSelect(+g.dataset.pc, container);
+      });
+    }
+  }
+});
+
 // ---- SURFACE: staff notation (measure/score engine) ----
 // Not full engraving (no beam/stem rules, no tuplets) — but genuinely general: any mix of
 // note durations and rests, one measure or many, one voice (a single staff) or two (a grand
@@ -1968,6 +2027,7 @@ const LESSONS = [
   { id:'intervals',      title:'Intervals',        blurb:'the distance between two notes, named and measured' },
   { id:'extensions',     title:'Chord extensions',  blurb:'how 7ths, 9ths, 11ths, 13ths stack in thirds above a root' },
   { id:'triad-qualities', title:'Suspended, diminished, augmented', blurb:'how each one bends just the 3rd and/or 5th away from a major triad' },
+  { id:'ratio-wheel', title:'Ratio wheel', blurb:'the circle of fifths reshaped so distance from the centre is consonance with your root' },
 ];
 let activeLesson = LESSONS[0].id;
 // hoisted out of wireLessonsHome() so selectLesson()'s seed handling (below) can reach them —
@@ -2115,6 +2175,20 @@ function wireLessonsHome(){
     const row = e.target.closest('.tqRow'); if(!row) return;
     const def = TQ_ROWS.find(r => r.q === row.dataset.q);
     playFreqs(def.ivs.map(iv => m2f(60 + +tqRootSel.value + iv)));
+  });
+  const rwRootSel = document.getElementById('rwRootSel');
+  rwRootSel.innerHTML = NOTE.map((nm, pc) => '<option value="'+pc+'">'+nm+'</option>').join('');
+  rwRootSel.value = 0;
+  // onSelect is NOT passed through opts here — renderRatioWheel() re-runs on every root change,
+  // and the surface attaches a fresh listener whenever opts.onSelect is set, so re-rendering with
+  // it set each time would stack duplicate listeners (the same reason the triad-quality lesson's
+  // click handling is wired separately, once, rather than passed into its own re-run render call).
+  const renderRatioWheel = () => Surfaces.get('ratiowheel').render(document.getElementById('musRatioWheel'), { root:+rwRootSel.value });
+  rwRootSel.onchange = renderRatioWheel;
+  renderRatioWheel();
+  document.getElementById('musRatioWheel').addEventListener('click', e => {
+    const g = e.target.closest('.cofNote'); if(!g) return;
+    playFreqs([m2f(60 + +g.dataset.pc)]);
   });
   selectLesson(activeLesson);
   // toggling Beginner/Advanced while the Intervals lesson is open should update it immediately

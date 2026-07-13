@@ -306,6 +306,23 @@ try {
   // ghost markers show where the major triad's 3rd/5th sit, on every row that replaces one of them —
   // major itself has none; sus2/sus4/aug each swap one tone (1 ghost each); dim swaps both (2 ghosts)
   if ((tq.innerHTML.match(/class="tqGhost"/g) || []).length !== 5) throw new Error('sus2+sus4+aug (1 ghost each) plus dim (2 ghosts) should total 5, got ' + (tq.innerHTML.match(/class="tqGhost"/g) || []).length);
+  // ratio wheel: the circle of fifths reshaped so distance from the centre is consonance with a
+  // chosen root (reusing intervalConsonance — the same ratio-simplicity read the interval
+  // visualizer already uses). The root itself should sit nearest the centre; C# (a minor 2nd away,
+  // the least consonant interval in RATIO) should sit out near the rim.
+  const rw = document.createElement('div');
+  __api.Surfaces.get('ratiowheel').render(rw, { root: 0 });
+  if ((rw.innerHTML.match(/class="cofNote ratioNote"/g) || []).length !== 12) throw new Error('ratio wheel should draw all 12 notes');
+  if ((rw.innerHTML.match(/class="ratioSpoke"/g) || []).length !== 12) throw new Error('ratio wheel should draw 12 spokes, one per note');
+  function rwDist(html, pc){
+    const m = html.match(new RegExp('data-pc="'+pc+'"[^>]*><circle cx="([\\d.]+)" cy="([\\d.]+)"'));
+    if (!m) throw new Error('could not find note ' + pc + ' in the ratio wheel output');
+    return Math.hypot(+m[1]-150, +m[2]-150);
+  }
+  const rwRootDist = rwDist(rw.innerHTML, 0), rwFarDist = rwDist(rw.innerHTML, 1);
+  if (rwRootDist > 25) throw new Error('the root note should sit close to the centre, got a distance of ' + rwRootDist);
+  if (rwFarDist < 100) throw new Error('C# (a minor 2nd from C) should sit near the rim, got a distance of ' + rwFarDist);
+  if (rwRootDist >= rwFarDist) throw new Error('the root should sit closer to the centre than a dissonant note, got root=' + rwRootDist + ' far=' + rwFarDist);
   // neighbouring chords: systematic proximity, not a ranked recommendation — Am (shares C and E
   // with Cmaj) should show up, the chord itself never should, and the list stays capped/tagged
   const nbList = __api.neighboringChords(cIdx);
@@ -377,6 +394,17 @@ try {
   fire(C['musTriadQuality'], 'click', { target: { closest: sel => sel === '.tqRow' ? { dataset: { q: 'dim' } } : null } });
   global.window.AudioContext.prototype.createOscillator = origTqCreateOsc;
   if (tqOscCount !== 3) throw new Error('tapping a row should play all 3 notes of that triad, played ' + tqOscCount);
+  fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'ratio-wheel' } } : null } });
+  if ((C['musRatioWheel'].innerHTML.match(/class="cofNote ratioNote"/g) || []).length !== 12) throw new Error('the ratio-wheel lesson mount point should be wired at boot with all 12 notes');
+  C['rwRootSel'].value = '7'; C['rwRootSel'].onchange(); // G
+  if (rwDist(C['musRatioWheel'].innerHTML, 7) > 25) throw new Error('changing the root select should re-render the wheel so the new root (G) sits near the centre');
+  C['rwRootSel'].value = '0'; C['rwRootSel'].onchange(); // restore the default for anything downstream
+  let rwOscCount = 0;
+  const origRwCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ rwOscCount++; return origRwCreateOsc.apply(this, arguments); };
+  fire(C['musRatioWheel'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '7' } } : null } });
+  global.window.AudioContext.prototype.createOscillator = origRwCreateOsc;
+  if (rwOscCount !== 1) throw new Error('tapping a note should play it, played ' + rwOscCount);
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
   // fixed equal temperament) — showing it there would be chrome bleeding across pages
   if (C['tuneToggle'].style.display === '') throw new Error('Lessons mode should hide the tune toggle, which has no effect on its demos');
