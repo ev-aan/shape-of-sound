@@ -54,6 +54,29 @@ try {
   if (__api.View.get().mode !== 'lessons') throw new Error('the Lessons row should enter Lessons mode');
   C['backToSimpleBtn'].onclick();
   if (C['simpleFront'].style.display === 'none') throw new Error('back-to-Simple button should restore the front door');
+  // magnetic hover: the CTA and the wheel's notes nudge toward the cursor on pointermove, and
+  // release (clear their transform) on pointerleave
+  fire(C['heroCta'], 'pointermove', { clientX: 450, clientY: 310 });
+  if (!C['heroCta'].style.transform) throw new Error('the CTA should set a magnetic transform on pointermove');
+  fire(C['heroCta'], 'pointerleave', {});
+  if (C['heroCta'].style.transform) throw new Error('the CTA should clear its transform on pointerleave');
+  const wheelNote = document.createElement('div');
+  fire(C['heroWheel'], 'pointermove', { clientX: 450, clientY: 310, target: { closest: sel => sel === '.cofNote' ? wheelNote : null } });
+  if (!wheelNote.style.transform) throw new Error('hovering a wheel note should set a magnetic transform on it');
+  fire(C['heroWheel'], 'pointerleave', {});
+  if (wheelNote.style.transform) throw new Error('leaving the wheel should release the active note\'s transform');
+  // same idea for a row's arrow, seeded via a mock row that exposes just enough (querySelector)
+  // for the delegated handler to find its arrow — mirrors how every other delegated-click test
+  // in this file mocks e.target.closest rather than needing a real DOM tree
+  const rowArrow = document.createElement('div');
+  fire(C['heroRows'], 'pointermove', { clientX: 450, clientY: 310, target: { closest: sel => sel === '.heroRow' ? { querySelector: s => s === '.heroRowArrow' ? rowArrow : null } : null } });
+  if (!rowArrow.style.transform) throw new Error('hovering a row should set a magnetic transform on its arrow');
+  // scroll parallax: the wheel should pick up a translateY as #simpleFront scrolls
+  C['simpleFront'].scrollTop = 500;
+  fire(C['simpleFront'], 'scroll', {});
+  if (!/translateY/.test(C['heroWheel'].style.transform)) throw new Error('scrolling the front door should apply a parallax transform to the wheel');
+  C['simpleFront'].scrollTop = 0;
+  fire(C['simpleFront'], 'scroll', {});
   // the CTA button, used to enter Advanced (defaulting to Science, no forced 3D) for the rest of this test
   C['heroCta'].onclick();
   if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');

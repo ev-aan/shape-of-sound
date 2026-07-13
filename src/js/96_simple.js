@@ -163,6 +163,77 @@ function renderHeroWheel(){
   });
 }
 
+// ---- magnetic hover: small DOM targets (button/arrow) nudge toward the cursor as it nears ----
+// One delegated listener per container rather than one per target — cheap, and immune to targets
+// being replaced by a re-render (nothing here currently re-renders, but it's the same reasoning
+// behind every other delegated listener in this file).
+function wireMagnetic(el, opts){
+  if(!el) return;
+  const strength = (opts && opts.strength) ?? 0.35, max = (opts && opts.max) ?? 10, baseX = (opts && opts.baseX) || 0;
+  el.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect();
+    let dx = (e.clientX - (r.left+r.width/2)) * strength;
+    let dy = (e.clientY - (r.top+r.height/2)) * strength;
+    dx = Math.max(-max, Math.min(max, dx)); dy = Math.max(-max, Math.min(max, dy));
+    el.style.transform = 'translate('+(dx+baseX).toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+  });
+  el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+}
+// the row arrow already slid 10px right on :hover via CSS — folded that baseline shift in here
+// (baseX) instead of leaving it in CSS, since the inline style this sets on every pointermove
+// would otherwise fight the CSS rule for the same transform property.
+function wireHeroRowMagnetic(){
+  const rows = document.getElementById('heroRows');
+  if(!rows) return;
+  rows.addEventListener('pointermove', e => {
+    const row = e.target.closest('.heroRow'); if(!row) return;
+    const arrow = row.querySelector('.heroRowArrow'); if(!arrow) return;
+    const r = arrow.getBoundingClientRect();
+    let dx = (e.clientX - (r.left+r.width/2)) * 0.3, dy = (e.clientY - (r.top+r.height/2)) * 0.3;
+    dx = Math.max(-8, Math.min(8, dx)); dy = Math.max(-8, Math.min(8, dy));
+    arrow.style.transform = 'translate('+(dx+10).toFixed(1)+'px,'+dy.toFixed(1)+'px)';
+  });
+  rows.addEventListener('pointerleave', () => {
+    rows.querySelectorAll('.heroRowArrow').forEach(a => { a.style.transform = ''; });
+  });
+}
+// same delegation idea for the wheel's notes — magnetism applies to the <g> wrapper, leaving the
+// existing CSS hover-scale on the child <circle> alone (they compose, one transform each).
+// Screen-space offsets are converted into the SVG's own user-space units (viewBox is always
+// 0 0 300 300 for every cof-family surface) so the pull looks the same size regardless of how
+// large this particular wheel is rendered.
+function wireWheelMagnetic(container){
+  if(!container) return;
+  let activeNote = null;
+  container.addEventListener('pointermove', e => {
+    const g = e.target.closest && e.target.closest('.cofNote');
+    if(activeNote && activeNote !== g) activeNote.style.transform = '';
+    if(!g){ activeNote = null; return; }
+    activeNote = g;
+    const svg = g.closest('svg'); if(!svg) return;
+    const svgRect = svg.getBoundingClientRect();
+    const scale = svgRect.width ? 300/svgRect.width : 1;
+    const r = g.getBoundingClientRect();
+    let dx = (e.clientX - (r.left+r.width/2)) * 0.35, dy = (e.clientY - (r.top+r.height/2)) * 0.35;
+    dx = Math.max(-8, Math.min(8, dx)); dy = Math.max(-8, Math.min(8, dy));
+    g.style.transform = 'translate('+(dx*scale).toFixed(1)+'px,'+(dy*scale).toFixed(1)+'px)';
+  });
+  container.addEventListener('pointerleave', () => {
+    if(activeNote){ activeNote.style.transform = ''; activeNote = null; }
+  });
+}
+
+// ---- scroll parallax: the wheel lags behind the natural scroll speed, reading as "further back"
+// as the hero scrolls past — a direct 1:1 scroll->transform mapping, deliberately with no CSS
+// transition (a lagged transition here would fight the scroll instead of tracking it).
+function wireHeroParallax(){
+  const front = document.getElementById('simpleFront'), wheel = document.getElementById('heroWheel');
+  if(!front || !wheel) return;
+  front.addEventListener('scroll', () => {
+    wheel.style.transform = 'translateY('+(front.scrollTop*0.3).toFixed(1)+'px)';
+  }, { passive: true });
+}
+
 // ---- the 4 statement rows: one delegated listener, same convention as wireTopbar/switchMode ----
 function wireHeroRows(){
   const rows = document.getElementById('heroRows');
@@ -190,6 +261,10 @@ function wireSimpleFront(){
   renderHeroWheel();
   wireHeroCursorHover();
   wireHeroRows();
+  wireHeroRowMagnetic();
+  wireWheelMagnetic(document.getElementById('heroWheel'));
+  wireHeroParallax();
+  wireMagnetic(document.getElementById('heroCta'), { baseX: 4, max: 12 });
   document.getElementById('heroCta').onclick = () => { showAdvanced(); switchMode('science'); };
   document.getElementById('backToSimpleBtn').onclick = () => showSimple();
 }
