@@ -30,15 +30,18 @@ Surfaces.register('spectrum', {
   render(container, opts){
     if(!container) return;
     opts = opts || {};
-    const w = 900, h = 96, bandY = 30, bandH = 34, pad = 4;
+    const w = 900, h = 108, bandY = 30, bandH = 34, pad = 4;
     const xFor = log10 => pad + (log10 - SPECTRUM_LOG_MIN) / (SPECTRUM_LOG_MAX - SPECTRUM_LOG_MIN) * (w - 2*pad);
 
     let svg = '<svg viewBox="0 0 '+w+' '+h+'" class="specSvg" preserveAspectRatio="none">';
-    SPECTRUM_BANDS.forEach(b => {
+    SPECTRUM_BANDS.forEach((b, i) => {
       const x0 = xFor(b.log10Start), x1 = xFor(b.log10End);
+      // some bands (visible light especially) are only a couple of pixels wide at this scale —
+      // staggering alternating labels onto a second row keeps neighbours from running together
+      const labelY = bandY + bandH + (i % 2 === 0 ? 14 : 26);
       svg += '<g class="specBand specBand-'+b.tier+'" data-band="'+b.id+'">'+
         '<rect x="'+x0.toFixed(1)+'" y="'+bandY+'" width="'+(x1-x0).toFixed(1)+'" height="'+bandH+'" class="specRect"></rect>'+
-        '<text x="'+((x0+x1)/2).toFixed(1)+'" y="'+(bandY+bandH+14)+'" class="specLabel">'+b.label+'</text>'+
+        '<text x="'+((x0+x1)/2).toFixed(1)+'" y="'+labelY+'" class="specLabel">'+b.label+'</text>'+
         '</g>';
     });
     // one stylised wave, its visual wavelength decaying smoothly left-to-right — a picture of

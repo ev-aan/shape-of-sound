@@ -14,10 +14,10 @@
  #sciSpectrum{display:none;position:fixed;top:0;left:0;right:0;z-index:6;background:var(--panel);
    border-bottom:1px solid var(--line);backdrop-filter:blur(8px);padding:10px 16px 8px;}
  body.sciMode #sciSpectrum{display:block;}
- body.sciMode #title{top:150px;}
- body.sciMode #topbar{top:149px;}
+ body.sciMode #title{top:164px;}
+ body.sciMode #topbar{top:163px;}
  #sciSpectrumChart{max-width:900px;margin:0 auto;}
- .specSvg{width:100%;height:auto;max-height:90px;display:block;}
+ .specSvg{width:100%;height:auto;max-height:104px;display:block;}
  .specRect{fill:var(--dim);opacity:.16;cursor:pointer;transition:opacity .15s;}
  .specBand:hover .specRect{opacity:.4;}
  .specBand-sense .specRect{opacity:.34;}
@@ -29,7 +29,7 @@
  .specBand-sense .specLabel{fill:var(--ink);font-weight:600;font-size:10.5px;}
  .specWave{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.75;}
  .specCaption{max-width:900px;margin:4px auto 0;text-align:center;min-height:auto;font-size:10.5px;}
- @media(max-width:640px){ body.sciMode #title{top:168px;} body.sciMode #topbar{top:167px;} }
+ @media(max-width:640px){ body.sciMode #title{top:182px;} body.sciMode #topbar{top:181px;} }
  #panel{position:fixed;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
    border-radius:12px;padding:11px 12px;backdrop-filter:blur(8px);
    width:min(330px,calc(100vw - 24px));max-height:72vh;overflow:auto;}

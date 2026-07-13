@@ -58,6 +58,23 @@ try {
   C['heroCta'].onclick();
   if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
   if (__api.View.get().mode !== 'science') throw new Error('the CTA should default to Science mode');
+  // spectrum banner: sound ("Hear") in context of the wider wave spectrum, wired at boot when
+  // Science mode is first entered — a direct-render check first, then the live mount point
+  const spec = document.createElement('div');
+  __api.Surfaces.get('spectrum').render(spec, {});
+  if ((spec.innerHTML.match(/class="specBand /g) || []).length !== __api.Surfaces.get('spectrum').bands.length) throw new Error('spectrum surface should draw one band per entry in SPECTRUM_BANDS');
+  if (!/data-band="feel"/.test(spec.innerHTML) || !/data-band="hear"/.test(spec.innerHTML) || !/data-band="see"/.test(spec.innerHTML)) throw new Error('spectrum surface should include the feel/hear/see bands the user can directly sense');
+  if (!/class="specWave"/.test(spec.innerHTML)) throw new Error('spectrum surface should draw the compressing wave path');
+  if (!/class="specBand /.test(C['sciSpectrumChart'].innerHTML)) throw new Error('the spectrum banner should be wired into the live Science page at boot');
+  let specOscCount = 0;
+  const origSpecCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ specOscCount++; return origSpecCreateOsc.apply(this, arguments); };
+  fire(C['sciSpectrumChart'], 'click', { target: { closest: sel => sel === '.specBand' ? { dataset: { band: 'hear' } } : null } });
+  global.window.AudioContext.prototype.createOscillator = origSpecCreateOsc;
+  if (specOscCount !== 1) throw new Error('tapping the "Hear" band should play a reference tone, played ' + specOscCount);
+  if (!/Hear/.test(C['sciSpectrumChart'].innerHTML)) throw new Error('tapping a band should re-render with a caption describing it');
+  fire(C['sciSpectrumChart'], 'click', { target: { closest: sel => sel === '.specBand' ? { dataset: { band: 'radio' } } : null } });
+  if (!/Radio/.test(C['sciSpectrumChart'].innerHTML)) throw new Error('tapping an unperceived band should still update the caption, without playing anything');
 
   fire(document, 'pointerdown', {}); global.__hit = true;
   clk(C['layoutPills'], { k: 'axes' }); frames(40);
