@@ -1,0 +1,10 @@
+# This app is one static file (rename shape_of_music.html to index.html on upload). It gives
+# each section a clean URL client-side (elorah.org/musical, /science, /play, /lessons) via
+# history.replaceState (see src/js/95_deeplink.js) — there's no real page per path on the server,
+# so every path that isn't an actual file/directory here needs to fall through to index.html and
+# let that JS read location.pathname and show the right section itself.
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

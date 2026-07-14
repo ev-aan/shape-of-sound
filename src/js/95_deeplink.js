@@ -1,7 +1,29 @@
 // ---- DEEP LINKS: shareable URLs like #mode=musical&key=9&scale=dorian&dim=3d&tune=JI ----
 // Enables sharing a specific view (the seed for community/Discord embedding).
+//
+// Each major section also gets a clean, bookmarkable path (elorah.org/musical, /science, /play,
+// /lessons) via history.replaceState — still one single-file app underneath (no real page load
+// happens), but a visitor or a search engine sees a real distinct URL per section. Deliberately
+// replaceState, never pushState: the "‹ Simple" button already gives an explicit way back home,
+// so mode switches don't need to stack up separate browser-back entries, and replaceState is the
+// one this app's test harness actually stubs (pushState isn't, and doesn't need to be).
+const PATH_MODE = { '/musical':'musical', '/science':'science', '/play':'play', '/lessons':'lessons' };
+const MODE_PATH = { musical:'/musical', science:'/science', play:'/play', lessons:'/lessons' };
 const Link = (function(){
   let restoring = false;
+  function modeFromPath(){
+    const path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    return PATH_MODE[path] || null;
+  }
+  function writeModePath(mode){
+    if(restoring) return;
+    const path = MODE_PATH[mode]; if(!path) return;
+    try { history.replaceState(null, '', path + location.hash); } catch(e){}
+  }
+  function writeHomePath(){
+    if(restoring) return;
+    try { history.replaceState(null, '', '/' + location.hash); } catch(e){}
+  }
   function serialize(){
     const v = View.get();
     const p = new URLSearchParams();
@@ -45,5 +67,5 @@ const Link = (function(){
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
     return url;
   }
-  return { applyFromHash, copyLink, serialize };
+  return { applyFromHash, copyLink, serialize, modeFromPath, writeModePath, writeHomePath };
 })();

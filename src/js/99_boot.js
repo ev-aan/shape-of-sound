@@ -22,12 +22,16 @@ wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
 installBridgeButton();
 wireSimpleFront();
-// Simple front door by default; Advanced only if the URL already carries a shared view
+// Simple front door by default; Advanced (in the right mode) if the URL already names one — via
+// an older #hash-only share link, or a clean path like /musical (see 95_deeplink.js). A clean
+// path wins over whatever mode the hash names, if they ever disagree.
+const pathMode = Link.modeFromPath();
 const hadHash = !!(location.hash && location.hash.length > 1);
-if(hadHash){
+if(hadHash || pathMode){
   // applyFromHash enters whatever mode the hash names; read it before anything else can overwrite location.hash
   try { Link.applyFromHash(); } catch(e){}
-  if(!Modes.currentId()) Modes.enter('science');
+  if(pathMode && Modes.currentId() !== pathMode) switchMode(pathMode);
+  else if(!Modes.currentId()) switchMode('science');
   showAdvanced();
 } else {
   showSimple();

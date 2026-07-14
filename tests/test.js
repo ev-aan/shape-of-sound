@@ -506,5 +506,26 @@ try {
   __api.Link.applyFromHash(); frames(5);
   if (__api.View.get().scale !== 'lydian' || __api.View.get().key !== 9) throw new Error('deep-link restore failed');
   if (!C['musChordLabel'].textContent) throw new Error('deep-link restore should re-render the chord-tone label');
+  // clean per-section paths (elorah.org/musical, /science, /play, /lessons): modeFromPath() reads
+  // location.pathname; writeModePath()/writeHomePath() update it via history.replaceState (spied
+  // on here, since the harness's replaceState is a no-op stub that doesn't reflect back into
+  // location.pathname the way a real browser would)
+  global.location.pathname = '/musical';
+  if (__api.Link.modeFromPath() !== 'musical') throw new Error('modeFromPath should map /musical to the musical mode');
+  global.location.pathname = '/nonsense';
+  if (__api.Link.modeFromPath() !== null) throw new Error('modeFromPath should return null for an unrecognised path');
+  global.location.pathname = '/';
+  if (__api.Link.modeFromPath() !== null) throw new Error('modeFromPath should return null at the root path \u2014 that\'s home, not a mode');
+  let lastReplacedUrl = null;
+  const origReplaceState = global.history.replaceState;
+  global.history.replaceState = function(state, title, url){ lastReplacedUrl = url; return origReplaceState.apply(this, arguments); };
+  __api.Link.writeModePath('play');
+  if (!lastReplacedUrl.startsWith('/play')) throw new Error('writeModePath should replace the URL with /play, got ' + lastReplacedUrl);
+  __api.Link.writeHomePath();
+  if (!/^\/(#|$)/.test(lastReplacedUrl)) throw new Error('writeHomePath should replace the URL with a bare "/", got ' + lastReplacedUrl);
+  lastReplacedUrl = null;
+  __api.Link.writeModePath('bogus');
+  if (lastReplacedUrl !== null) throw new Error('writeModePath should ignore an unrecognised mode rather than writing a garbage URL');
+  global.history.replaceState = origReplaceState;
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }

@@ -6,6 +6,7 @@ function switchMode(id){
   const bar = document.getElementById('modeToggle');
   if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   Modes.enter(id);
+  Link.writeModePath(id);
 }
 function wireTopbar(){
   const bar = document.getElementById('modeToggle');

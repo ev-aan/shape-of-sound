@@ -13,6 +13,7 @@ function showSimple(){
   document.getElementById('simpleFront').style.display = '';
   document.getElementById('advancedApp').style.display = 'none';
   ensureHeroField();
+  Link.writeHomePath();
 }
 function showAdvanced(){
   appVisible = true;

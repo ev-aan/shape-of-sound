@@ -2716,6 +2716,7 @@ function switchMode(id){
   const bar = document.getElementById('modeToggle');
   if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   Modes.enter(id);
+  Link.writeModePath(id);
 }
 function wireTopbar(){
   const bar = document.getElementById('modeToggle');
@@ -2806,8 +2807,30 @@ function installBridgeButton(){
 
 // ---- DEEP LINKS: shareable URLs like #mode=musical&key=9&scale=dorian&dim=3d&tune=JI ----
 // Enables sharing a specific view (the seed for community/Discord embedding).
+//
+// Each major section also gets a clean, bookmarkable path (elorah.org/musical, /science, /play,
+// /lessons) via history.replaceState — still one single-file app underneath (no real page load
+// happens), but a visitor or a search engine sees a real distinct URL per section. Deliberately
+// replaceState, never pushState: the "‹ Simple" button already gives an explicit way back home,
+// so mode switches don't need to stack up separate browser-back entries, and replaceState is the
+// one this app's test harness actually stubs (pushState isn't, and doesn't need to be).
+const PATH_MODE = { '/musical':'musical', '/science':'science', '/play':'play', '/lessons':'lessons' };
+const MODE_PATH = { musical:'/musical', science:'/science', play:'/play', lessons:'/lessons' };
 const Link = (function(){
   let restoring = false;
+  function modeFromPath(){
+    const path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    return PATH_MODE[path] || null;
+  }
+  function writeModePath(mode){
+    if(restoring) return;
+    const path = MODE_PATH[mode]; if(!path) return;
+    try { history.replaceState(null, '', path + location.hash); } catch(e){}
+  }
+  function writeHomePath(){
+    if(restoring) return;
+    try { history.replaceState(null, '', '/' + location.hash); } catch(e){}
+  }
   function serialize(){
     const v = View.get();
     const p = new URLSearchParams();
@@ -2851,7 +2874,7 @@ const Link = (function(){
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
     return url;
   }
-  return { applyFromHash, copyLink, serialize };
+  return { applyFromHash, copyLink, serialize, modeFromPath, writeModePath, writeHomePath };
 })();
 
 // ---- SIMPLE MODE: the Elorah hero front door ----
@@ -2869,6 +2892,7 @@ function showSimple(){
   document.getElementById('simpleFront').style.display = '';
   document.getElementById('advancedApp').style.display = 'none';
   ensureHeroField();
+  Link.writeHomePath();
 }
 function showAdvanced(){
   appVisible = true;
@@ -3329,12 +3353,16 @@ wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
 installBridgeButton();
 wireSimpleFront();
-// Simple front door by default; Advanced only if the URL already carries a shared view
+// Simple front door by default; Advanced (in the right mode) if the URL already names one — via
+// an older #hash-only share link, or a clean path like /musical (see 95_deeplink.js). A clean
+// path wins over whatever mode the hash names, if they ever disagree.
+const pathMode = Link.modeFromPath();
 const hadHash = !!(location.hash && location.hash.length > 1);
-if(hadHash){
+if(hadHash || pathMode){
   // applyFromHash enters whatever mode the hash names; read it before anything else can overwrite location.hash
   try { Link.applyFromHash(); } catch(e){}
-  if(!Modes.currentId()) Modes.enter('science');
+  if(pathMode && Modes.currentId() !== pathMode) switchMode(pathMode);
+  else if(!Modes.currentId()) switchMode('science');
   showAdvanced();
 } else {
   showSimple();
