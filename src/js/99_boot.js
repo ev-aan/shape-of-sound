@@ -11,6 +11,11 @@ function wireMoreToggle(btnId, wrapId){
     btn.textContent = open ? '▾ more options' : '▴ fewer options';
   };
 }
+// the same logo, once — the hero's own mark and the persistent advanced-app header both just
+// mount this one generated string, so there's exactly one source of the spiral's geometry
+const elorahLogoMarkup = elorahLogoSvg(22);
+const heroLogoSlot = document.getElementById('heroLogoSlot'); if(heroLogoSlot) heroLogoSlot.innerHTML = elorahLogoMarkup;
+const siteHeaderLogoSlot = document.getElementById('siteHeaderLogoSlot'); if(siteHeaderLogoSlot) siteHeaderLogoSlot.innerHTML = elorahLogoMarkup;
 wireTopbar();
 wireDimToggle();
 wireTuneToggle();
@@ -41,4 +46,4 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA }; } catch(e){}

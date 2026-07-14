@@ -17,6 +17,22 @@ try {
   // Simple mode: the Elorah hero front door, shown by default with no shared URL
   if (C['simpleFront'].style.display === 'none') throw new Error('Simple front door should show by default (no hash)');
   if (C['advancedApp'].style.display !== 'none') throw new Error('Advanced app should stay hidden until entered');
+  // the Elorah logo: the circle of fifths drawn as the spiral it actually is — real fifths order
+  // (i*7)%12, real note colours, and a radius that compounds by the genuine Pythagorean comma
+  // each step (not an arbitrary decorative curve), so it should read as strictly increasing
+  const logoSvg = __api.elorahLogoSvg(22); // 22 — matches the size 99_boot.js actually mounts both slots with
+  const radii = [...logoSvg.matchAll(/cx="([\d.]+)" cy="([\d.]+)"/g)].map(m => Math.hypot(+m[1]-60, +m[2]-60));
+  if (radii.length !== 30) throw new Error('logo should place 30 dots (2.5 loops of the 12 fifths), got ' + radii.length);
+  for (let i = 1; i < radii.length; i++) {
+    if (radii[i] <= radii[i-1] + 1e-6) throw new Error('logo radius should strictly increase step to step (the comma compounding), broke at dot ' + i);
+  }
+  // coordinates in the SVG string are rounded to 1 decimal place, so re-deriving radius via
+  // hypot from them (rather than reading the surface's own unrounded numbers) needs a tolerance
+  // for that rounding, not exact equality
+  const totalGrowth = radii[radii.length-1] / radii[0], expectedGrowth = Math.pow(__api.ELORAH_COMMA, 29);
+  if (Math.abs(totalGrowth - expectedGrowth) / expectedGrowth > 0.01) throw new Error('logo\'s total radius growth should equal the Pythagorean comma compounded over 29 steps (~' + expectedGrowth.toFixed(4) + '), got ' + totalGrowth.toFixed(4));
+  if (C['heroLogoSlot'].innerHTML !== logoSvg) throw new Error('the hero mark should be wired up with the logo at boot');
+  if (C['siteHeaderLogoSlot'].innerHTML !== logoSvg) throw new Error('the persistent advanced-app header should be wired up with the same logo at boot');
   if (!__api.Surfaces || !__api.Surfaces.get('cof')) throw new Error('circle-of-fifths surface not registered');
   if (!__api.Surfaces.get('keyboard')) throw new Error('keyboard surface not registered');
   if (!/cofNote/.test(C['heroWheel'].innerHTML)) throw new Error('circle-of-fifths surface did not render into the hero wheel');
