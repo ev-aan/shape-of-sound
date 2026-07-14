@@ -24,14 +24,19 @@
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
  #axiscap{margin-top:6px;font-size:10.5px;color:#bcd0ff;}
- /* the spectrum banner is Science-only, pinned above everything else on that page — #title and
-    #topbar shift down to clear it rather than being covered, via a body class showMode() toggles
-    alongside the rest of its per-mode visibility (see 02_view.js). */
- #sciSpectrum{display:none;position:fixed;top:0;left:0;right:0;z-index:6;background:var(--panel);
-   border-bottom:1px solid var(--line);backdrop-filter:blur(8px);padding:10px 16px 8px;}
- body.sciMode #sciSpectrum{display:block;}
- body.sciMode #title{top:204px;}
- body.sciMode #topbar{top:203px;}
+ /* the Science concept page: a scrollable landing (same family as #musicalHome/#lessonsHome)
+    that opens with the wave demo, then the frequency-spectrum banner below it, then a CTA into
+    the full 3D map — shown/hidden entirely by 92_mode_science.js's own concept/explore stage,
+    independent of showMode()'s per-mode visibility. */
+ #scienceHome{position:fixed;inset:0;overflow:auto;}
+ .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
+ .sciWaveDemo{height:120px;margin:24px auto;cursor:crosshair;}
+ .sciWaveSvg{width:100%;height:100%;display:block;}
+ .sciWaveCaption{margin-top:8px;font-size:11px;color:var(--dim);}
+ /* the spectrum banner now lives inside #scienceHome, in normal flow — no longer a fixed
+    overlay pinned throughout all of Science mode (it's concept-only, gone once exploring). */
+ #sciSpectrum{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+   margin:24px 0;backdrop-filter:blur(8px);padding:10px 16px 8px;}
  #sciSpectrumChart{max-width:900px;margin:0 auto;}
  .specSvg{width:100%;height:auto;max-height:104px;display:block;}
  .specRect{fill:var(--dim);opacity:.16;cursor:pointer;transition:opacity .15s;}
@@ -45,7 +50,6 @@
  .specBand-sense .specLabel{fill:var(--ink);font-weight:600;font-size:10.5px;}
  .specWave{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.75;}
  .specCaption{max-width:900px;margin:4px auto 0;text-align:center;min-height:auto;font-size:10.5px;}
- @media(max-width:640px){ body.sciMode #title{top:222px;} body.sciMode #topbar{top:221px;} }
  #panel{position:fixed;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
    border-radius:12px;padding:11px 12px;backdrop-filter:blur(8px);
    width:min(330px,calc(100vw - 24px));max-height:72vh;overflow:auto;}

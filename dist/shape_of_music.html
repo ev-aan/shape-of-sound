@@ -30,14 +30,19 @@
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
  #axiscap{margin-top:6px;font-size:10.5px;color:#bcd0ff;}
- /* the spectrum banner is Science-only, pinned above everything else on that page — #title and
-    #topbar shift down to clear it rather than being covered, via a body class showMode() toggles
-    alongside the rest of its per-mode visibility (see 02_view.js). */
- #sciSpectrum{display:none;position:fixed;top:0;left:0;right:0;z-index:6;background:var(--panel);
-   border-bottom:1px solid var(--line);backdrop-filter:blur(8px);padding:10px 16px 8px;}
- body.sciMode #sciSpectrum{display:block;}
- body.sciMode #title{top:204px;}
- body.sciMode #topbar{top:203px;}
+ /* the Science concept page: a scrollable landing (same family as #musicalHome/#lessonsHome)
+    that opens with the wave demo, then the frequency-spectrum banner below it, then a CTA into
+    the full 3D map — shown/hidden entirely by 92_mode_science.js's own concept/explore stage,
+    independent of showMode()'s per-mode visibility. */
+ #scienceHome{position:fixed;inset:0;overflow:auto;}
+ .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
+ .sciWaveDemo{height:120px;margin:24px auto;cursor:crosshair;}
+ .sciWaveSvg{width:100%;height:100%;display:block;}
+ .sciWaveCaption{margin-top:8px;font-size:11px;color:var(--dim);}
+ /* the spectrum banner now lives inside #scienceHome, in normal flow — no longer a fixed
+    overlay pinned throughout all of Science mode (it's concept-only, gone once exploring). */
+ #sciSpectrum{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+   margin:24px 0;backdrop-filter:blur(8px);padding:10px 16px 8px;}
  #sciSpectrumChart{max-width:900px;margin:0 auto;}
  .specSvg{width:100%;height:auto;max-height:104px;display:block;}
  .specRect{fill:var(--dim);opacity:.16;cursor:pointer;transition:opacity .15s;}
@@ -51,7 +56,6 @@
  .specBand-sense .specLabel{fill:var(--ink);font-weight:600;font-size:10.5px;}
  .specWave{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.75;}
  .specCaption{max-width:900px;margin:4px auto 0;text-align:center;min-height:auto;font-size:10.5px;}
- @media(max-width:640px){ body.sciMode #title{top:222px;} body.sciMode #topbar{top:221px;} }
  #panel{position:fixed;left:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);
    border-radius:12px;padding:11px 12px;backdrop-filter:blur(8px);
    width:min(330px,calc(100vw - 24px));max-height:72vh;overflow:auto;}
@@ -602,8 +606,15 @@
   </div>
  </div>
 </div>
-<div id="sciSpectrum">
- <div id="sciSpectrumChart"></div>
+<div id="scienceHome" style="display:none;">
+ <div class="musWrap sciConceptWrap">
+  <h1 class="serif">How sound happens</h1>
+  <div id="sciWaveDemo" class="sciWaveDemo"></div>
+  <p class="heroSub">Sound is just something vibrating back and forth. Move your mouse across
+  the line above — the faster it vibrates, the higher the note. Frequency is just how fast.</p>
+  <div id="sciSpectrum"><div id="sciSpectrumChart"></div></div>
+  <button id="sciExploreCta" class="heroCta">Start exploring the chord map →</button>
+ </div>
 </div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
 <div id="topbar">
@@ -674,6 +685,7 @@
 </div>
 <div id="panel">
  <div id="scienceControls">
+ <div class="grp"><button id="sciBackConceptBtn" class="simpleFullLink">‹ back to concept</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
    <select id="keySel"></select>
    <div class="pills" style="margin-top:7px;"><button id="keyFocusBtn">focus: isolate this key</button></div></div>
@@ -695,6 +707,7 @@
    <div class="row"><input id="wslider" type="range" min="0" max="1000" value="450"><span id="wval"></span></div></div>
  </div>
  <div class="hint">Tap a star: hear it, see its notes, inversions &amp; closest harmonic relatives. Drag to orbit, pinch to zoom.</div>
+ <div class="grp"><button id="sciToLessonsBtn" class="simpleFullLink">continue to Lessons →</button></div>
  </div>
  <div id="playControls" style="display:none;">
  <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
@@ -2176,6 +2189,59 @@ function selectSpectrumBand(bandId){
   renderSciSpectrum();
   if(bandId === 'hear') playFreqs([m2f(69)]); // A4, a familiar reference pitch — the only band here you can actually hear
 }
+// ---- CONCEPT STAGE: "how sound happens" wave demo ----
+// A flat, silent line until the mouse moves across it — then it becomes a sine wave whose
+// tightness tracks mouse position (further right = more cycles = higher pitch), sounding a real
+// note per semitone crossed. Rendered as SVG-in-innerHTML (not raw canvas) so it's directly
+// testable the same way every other Surfaces.* component in this app already is.
+let sciWaveLastPc = null;
+function renderSciWaveDemo(container, opts){
+  opts = opts || {};
+  const W = 600, H = 120, midY = H/2;
+  const freqT = opts.freqT; // null/undefined = at rest (silence)
+  let d, cycles = 0, pc = null;
+  if(freqT == null){
+    d = 'M0,' + midY + ' L' + W + ',' + midY;
+  } else {
+    cycles = Math.round(2 + freqT*16);
+    pc = Math.min(11, Math.floor(freqT*12));
+    const pts = [];
+    for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+40*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
+    d = pts.join(' ');
+  }
+  const caption = freqT == null ? 'move your mouse — nothing is vibrating yet'
+    : pcName(pc,0) + ' — the faster it vibrates, the higher the pitch you hear';
+  container.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" class="sciWaveSvg" data-cycles="'+cycles+'" data-pc="'+(pc==null?'':pc)+'"><path d="'+d+'" class="specWave"></path></svg>'+
+    '<p class="sciWaveCaption">'+caption+'</p>';
+}
+function wireSciWaveDemo(){
+  const el = document.getElementById('sciWaveDemo'); if(!el) return;
+  el.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect();
+    const freqT = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    renderSciWaveDemo(el, { freqT });
+    const pc = Math.min(11, Math.floor(freqT*12));
+    if(pc !== sciWaveLastPc){ sciWaveLastPc = pc; playFreqs([m2f(60+pc)], 0.3); }
+  });
+  el.addEventListener('pointerleave', () => { sciWaveLastPc = null; renderSciWaveDemo(el, {}); });
+  renderSciWaveDemo(el, {});
+}
+// ---- CONCEPT / EXPLORE STAGE: not everything needs to be on screen at once ----
+// A fresh entry into Science always lands on the concept page first (nav click, deep link, the
+// hero's CTA/row, the bridge button from Musical); "Start exploring" reveals the existing 3D map
+// unchanged. Kept as a plain local flag (mirrors how Lessons tracks activeLesson locally, not in
+// View) rather than global state — this staging is Science-only and easy to unwind later.
+let sciStage = 'concept', sciStageWired = false;
+function applySciStage(){
+  const concept = sciStage === 'concept';
+  document.getElementById('scienceHome').style.display = concept ? '' : 'none';
+  document.getElementById('scene').style.display = concept ? 'none' : '';
+  document.getElementById('panel').style.display = concept ? 'none' : '';
+  document.getElementById('legend').style.display = concept ? 'none' : '';
+  document.getElementById('title').style.display = concept ? 'none' : '';
+  document.getElementById('dimToggle').style.display = concept ? 'none' : '';
+  appVisible = !concept; // same pause-when-not-visible convention 96_simple.js already uses
+}
 Modes.register('science', {
   label: 'The Science of Sound',
   panelId: 'scienceControls',
@@ -2185,6 +2251,8 @@ Modes.register('science', {
     applyColors(colorMode);
     setRender(renderMode);
     positionLabels();
+    sciStage = 'concept';
+    applySciStage();
     if(!sciSpectrumBuilt){
       renderSciSpectrum();
       document.getElementById('sciSpectrumChart').addEventListener('click', e => {
@@ -2193,8 +2261,20 @@ Modes.register('science', {
       });
       sciSpectrumBuilt = true;
     }
+    if(!sciStageWired){
+      wireSciWaveDemo();
+      const cta = document.getElementById('sciExploreCta');
+      if(cta) cta.onclick = () => { sciStage = 'explore'; applySciStage(); };
+      const back = document.getElementById('sciBackConceptBtn');
+      if(back) back.onclick = () => { sciStage = 'concept'; applySciStage(); };
+      const toLessons = document.getElementById('sciToLessonsBtn');
+      if(toLessons) toLessons.onclick = () => switchMode('lessons');
+      sciStageWired = true;
+    }
   },
-  onExit(){}
+  onExit(){
+    document.getElementById('scienceHome').style.display = 'none';
+  }
 });
 
 // ---- MODE: LESSONS (standalone teaching-tool demos) ----
@@ -3450,6 +3530,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, pcName }; } catch(e){}
 
 })();</script></body></html>

@@ -107,6 +107,51 @@ try {
   if (C['simpleFront'].style.display === 'none') throw new Error('the header mark should act as a home link back to the Simple front door');
   // back into Advanced/Science for the rest of this test, same as the CTA does above
   C['heroCta'].onclick();
+  // Science concept stage: a fresh entry always lands on the concept page first (the wave demo,
+  // then the spectrum banner, then the CTA into the map) — not everything shown at once
+  if (C['scienceHome'].style.display === 'none') throw new Error('a fresh entry into Science should land on the concept stage');
+  if (C['scene'].style.display === '') throw new Error('the 3D map should stay hidden until "Start exploring" is clicked');
+  if (C['panel'].style.display === '') throw new Error('the exploration sidebar should stay hidden on the concept stage');
+  // "how sound happens" wave demo: silent/flat at rest, becomes a sine wave that tightens (more
+  // cycles) as the mouse moves right, and names the real note (via pcName/m2f) it's landed on
+  const waveRest = document.createElement('div');
+  __api.renderSciWaveDemo(waveRest, {});
+  if (!/data-cycles="0"/.test(waveRest.innerHTML)) throw new Error('the wave demo should render flat (0 cycles) at rest');
+  const waveMid = document.createElement('div');
+  __api.renderSciWaveDemo(waveMid, { freqT: 0.5 });
+  if (!/data-cycles="10"/.test(waveMid.innerHTML)) throw new Error('the wave demo should render 10 cycles at freqT 0.5 (2 + 0.5*16)');
+  if (!/data-pc="6"/.test(waveMid.innerHTML)) throw new Error('the wave demo should land on pitch class 6 at freqT 0.5');
+  if (!waveMid.innerHTML.includes(__api.pcName(6, 0))) throw new Error('the wave demo caption should name the real note (pcName) it lands on');
+  let waveOscCount = 0;
+  const origWaveCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ waveOscCount++; return origWaveCreateOsc.apply(this, arguments); };
+  fire(C['sciWaveDemo'], 'pointermove', { clientX: 400 }); // harness's stubbed getBoundingClientRect is {left:0,width:800}, so this is freqT 0.5
+  global.window.AudioContext.prototype.createOscillator = origWaveCreateOsc;
+  if (waveOscCount !== 1) throw new Error('moving across the wave demo should sound a note per semitone crossed, played ' + waveOscCount);
+  if (!/data-pc="6"/.test(C['sciWaveDemo'].innerHTML)) throw new Error('the live wave demo should re-render with the hovered pitch class');
+  fire(C['sciWaveDemo'], 'pointerleave', {});
+  if (!/data-cycles="0"/.test(C['sciWaveDemo'].innerHTML)) throw new Error('leaving the wave demo should return it to the flat, silent rest state');
+  // "Start exploring" reveals the existing 3D map/sidebar/legend, unchanged, and hides the concept page
+  C['sciExploreCta'].onclick();
+  if (C['scienceHome'].style.display !== 'none') throw new Error('starting exploring should hide the concept page');
+  if (C['scene'].style.display === 'none') throw new Error('starting exploring should reveal the 3D map');
+  if (C['panel'].style.display === 'none') throw new Error('starting exploring should reveal the exploration sidebar');
+  // "back to concept" returns without leaving Science mode, then re-enter explore for the rest of this test
+  C['sciBackConceptBtn'].onclick();
+  if (C['scienceHome'].style.display === 'none') throw new Error('"back to concept" should return to the concept stage');
+  if (__api.View.get().mode !== 'science') throw new Error('"back to concept" should not leave Science mode');
+  C['sciExploreCta'].onclick();
+  // "continue to Lessons" is a clear forward path out of the exploration stage, via the same switchMode choke point
+  C['sciToLessonsBtn'].onclick();
+  if (__api.View.get().mode !== 'lessons') throw new Error('"continue to Lessons" should switch to Lessons mode');
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
+  C['sciExploreCta'].onclick();
+  // onExit cleanup: leaving Science while still on the concept stage shouldn't leave it stacked on top of another mode
+  C['sciBackConceptBtn'].onclick();
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
+  if (C['scienceHome'].style.display !== 'none') throw new Error('leaving Science should hide #scienceHome even if it was on the concept stage (onExit)');
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
+  C['sciExploreCta'].onclick();
   // spectrum banner: sound ("Hear") in context of the wider wave spectrum, wired at boot when
   // Science mode is first entered — a direct-render check first, then the live mount point
   const spec = document.createElement('div');
