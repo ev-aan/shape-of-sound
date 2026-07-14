@@ -413,7 +413,7 @@
   <div class="heroRow" data-mode="musical" data-accent="#ff5a3c">
    <span class="heroRowNum">01</span>
    <div class="heroRowMain">
-    <span class="heroRowTitle">Musical</span>
+    <span class="heroRowTitle">Musical Theory</span>
     <p class="heroRowDesc">Curious what key you're in? Tap any note and watch its whole world of chords light up around the wheel.</p>
    </div>
    <span class="heroRowArrow">→</span>
@@ -421,7 +421,7 @@
   <div class="heroRow" data-mode="science" data-accent="#5ad1ff">
    <span class="heroRowNum">02</span>
    <div class="heroRowMain">
-    <span class="heroRowTitle">Science</span>
+    <span class="heroRowTitle">The Science of Sound</span>
     <p class="heroRowDesc">Ever wonder why some chords just click? 127 real chords, mapped by how much their overtones actually overlap.</p>
    </div>
    <span class="heroRowArrow">→</span>
@@ -429,7 +429,7 @@
   <div class="heroRow" data-mode="play" data-accent="#8bff6a">
    <span class="heroRowNum">03</span>
    <div class="heroRowMain">
-    <span class="heroRowTitle">Play</span>
+    <span class="heroRowTitle">Play with Sound</span>
     <p class="heroRowDesc">Got a progression stuck in your head? Build it on the keyboard or the map, hear it resolve, loop it till it's yours.</p>
    </div>
    <span class="heroRowArrow">→</span>
@@ -2120,11 +2120,11 @@ function selectSpectrumBand(bandId){
   if(bandId === 'hear') playFreqs([m2f(69)]); // A4, a familiar reference pitch — the only band here you can actually hear
 }
 Modes.register('science', {
-  label: 'Science',
+  label: 'The Science of Sound',
   panelId: 'scienceControls',
   onEnter(){
     showMode('science');
-    document.getElementById('topbarLabel').textContent = 'Science — physics from overtone overlap';
+    document.getElementById('topbarLabel').textContent = 'The Science of Sound — physics from overtone overlap';
     applyColors(colorMode);
     setRender(renderMode);
     positionLabels();
@@ -2335,10 +2335,10 @@ const MUSICAL_RINGS = [
 ];
 
 Modes.register('musical', {
-  label: 'Musical',
+  label: 'Musical Theory',
   onEnter(){
     showMode('musical');
-    document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
+    document.getElementById('topbarLabel').textContent = 'Musical Theory — keys and function';
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption
@@ -2670,11 +2670,11 @@ function wireMusicalHome(){
 let playKeyboard = null;
 
 Modes.register('play', {
-  label: 'Play',
+  label: 'Play with Sound',
   panelId: 'playControls',
   onEnter(){
     showMode('play');
-    document.getElementById('topbarLabel').textContent = 'Play — build chords on the keyboard, or tap stars on the map';
+    document.getElementById('topbarLabel').textContent = 'Play with Sound — build chords on the keyboard, or tap stars on the map';
     applyColors(colorMode);
     setRender(renderMode);
     positionLabels();

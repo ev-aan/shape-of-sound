@@ -2,11 +2,11 @@
 let playKeyboard = null;
 
 Modes.register('play', {
-  label: 'Play',
+  label: 'Play with Sound',
   panelId: 'playControls',
   onEnter(){
     showMode('play');
-    document.getElementById('topbarLabel').textContent = 'Play — build chords on the keyboard, or tap stars on the map';
+    document.getElementById('topbarLabel').textContent = 'Play with Sound — build chords on the keyboard, or tap stars on the map';
     applyColors(colorMode);
     setRender(renderMode);
     positionLabels();

@@ -15,10 +15,10 @@ const MUSICAL_RINGS = [
 ];
 
 Modes.register('musical', {
-  label: 'Musical',
+  label: 'Musical Theory',
   onEnter(){
     showMode('musical');
-    document.getElementById('topbarLabel').textContent = 'Musical — theory, keys, and function';
+    document.getElementById('topbarLabel').textContent = 'Musical Theory — keys and function';
     if(!musCofBuilt){
       Surfaces.get('cof').render(document.getElementById('musCof'), {
         caption: false, // Musical shows its own chord-tone breakdown instead of the generic caption

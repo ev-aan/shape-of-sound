@@ -15,11 +15,11 @@ function selectSpectrumBand(bandId){
   if(bandId === 'hear') playFreqs([m2f(69)]); // A4, a familiar reference pitch — the only band here you can actually hear
 }
 Modes.register('science', {
-  label: 'Science',
+  label: 'The Science of Sound',
   panelId: 'scienceControls',
   onEnter(){
     showMode('science');
-    document.getElementById('topbarLabel').textContent = 'Science — physics from overtone overlap';
+    document.getElementById('topbarLabel').textContent = 'The Science of Sound — physics from overtone overlap';
     applyColors(colorMode);
     setRender(renderMode);
     positionLabels();
