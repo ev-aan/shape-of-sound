@@ -1,10 +1,13 @@
 // ---- TOP BAR + Why <-> How BRIDGE ----
 // One primary control (mode). Bridge button in the detail card that swaps mode while keeping the selection.
-// switchMode keeps the topbar pills and the Modes registry in sync — the one place that does both,
-// used by the topbar click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
+// switchMode keeps the topbar pills, the persistent header's own nav, and the Modes registry in
+// sync — the one place that does all three, used by the topbar click handler, the header nav
+// click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
 function switchMode(id){
   const bar = document.getElementById('modeToggle');
   if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
+  const headerNav = document.getElementById('siteHeaderNav');
+  if(headerNav) headerNav.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   Modes.enter(id);
   Link.writeModePath(id);
 }
@@ -14,6 +17,18 @@ function wireTopbar(){
     const b = e.target.closest('button[data-mode]'); if(!b) return;
     switchMode(b.dataset.mode);
   });
+}
+// the persistent header (see 06_elorah_logo.js for the logo it mounts) doubles as primary
+// navigation: its own nav links jump straight to a mode, and the mark itself is a "home" link —
+// the same round trip the "‹ Simple" button already does, just from a second, more prominent spot
+function wireSiteHeader(){
+  const nav = document.getElementById('siteHeaderNav');
+  if(nav) nav.addEventListener('click', e => {
+    const b = e.target.closest('button[data-mode]'); if(!b) return;
+    switchMode(b.dataset.mode);
+  });
+  const home = document.getElementById('siteHeaderHome');
+  if(home) home.onclick = () => showSimple();
 }
 
 // Add a "Why?" / "How?" button to the detail card. Detail card is (re)rendered on selectNode;

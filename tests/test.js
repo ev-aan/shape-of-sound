@@ -97,6 +97,16 @@ try {
   C['heroCta'].onclick();
   if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
   if (__api.View.get().mode !== 'science') throw new Error('the CTA should default to Science mode');
+  // persistent header doubles as navigation: its own nav buttons jump straight to a mode via the
+  // same switchMode used everywhere else, and the mark itself is a second "back to Simple" link
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
+  if (__api.View.get().mode !== 'musical') throw new Error('a header nav button should switch mode via switchMode');
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
+  if (__api.View.get().mode !== 'science') throw new Error('the header nav should be able to switch mode again');
+  C['siteHeaderHome'].onclick();
+  if (C['simpleFront'].style.display === 'none') throw new Error('the header mark should act as a home link back to the Simple front door');
+  // back into Advanced/Science for the rest of this test, same as the CTA does above
+  C['heroCta'].onclick();
   // spectrum banner: sound ("Hear") in context of the wider wave spectrum, wired at boot when
   // Science mode is first entered — a direct-render check first, then the live mount point
   const spec = document.createElement('div');

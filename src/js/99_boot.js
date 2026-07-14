@@ -17,6 +17,7 @@ const elorahLogoMarkup = elorahLogoSvg(22);
 const heroLogoSlot = document.getElementById('heroLogoSlot'); if(heroLogoSlot) heroLogoSlot.innerHTML = elorahLogoMarkup;
 const siteHeaderLogoSlot = document.getElementById('siteHeaderLogoSlot'); if(siteHeaderLogoSlot) siteHeaderLogoSlot.innerHTML = elorahLogoMarkup;
 wireTopbar();
+wireSiteHeader();
 wireDimToggle();
 wireTuneToggle();
 wireLevelToggle();

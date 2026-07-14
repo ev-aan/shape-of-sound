@@ -8,10 +8,18 @@
     (it lives inside #advancedApp, so it shows/hides for free alongside everything else in there —
     no per-mode display rule needed). #title/#topbar shift down below it, same reasoning as the
     spectrum banner shifting them further still, on Science specifically. */
- #siteHeader{position:fixed;top:12px;left:16px;z-index:7;display:flex;align-items:center;gap:8px;
+ #siteHeader{position:fixed;top:12px;left:16px;z-index:7;display:flex;align-items:center;gap:18px;
    font:600 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.14em;
-   text-transform:uppercase;color:var(--dim);pointer-events:none;}
+   text-transform:uppercase;color:var(--dim);pointer-events:none;flex-wrap:wrap;max-width:calc(100vw - 32px);}
+ .siteHeaderMark{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;
+   font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;pointer-events:auto;}
  #siteHeader b{color:var(--ink);font-weight:600;}
+ .siteHeaderNav{display:flex;gap:14px;pointer-events:auto;}
+ .siteHeaderNav button{background:transparent;border:0;padding:2px 0;font:inherit;letter-spacing:inherit;
+   text-transform:inherit;color:var(--dim);cursor:pointer;border-bottom:1px solid transparent;}
+ .siteHeaderNav button:hover{color:var(--ink);}
+ .siteHeaderNav button.on{color:var(--ink);border-bottom-color:var(--ink);}
+ @media(max-width:640px){ .siteHeaderNav{display:none;} }
  #title{position:fixed;top:52px;left:16px;pointer-events:none;max-width:60vw;}
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}

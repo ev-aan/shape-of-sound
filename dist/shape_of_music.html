@@ -14,10 +14,18 @@
     (it lives inside #advancedApp, so it shows/hides for free alongside everything else in there —
     no per-mode display rule needed). #title/#topbar shift down below it, same reasoning as the
     spectrum banner shifting them further still, on Science specifically. */
- #siteHeader{position:fixed;top:12px;left:16px;z-index:7;display:flex;align-items:center;gap:8px;
+ #siteHeader{position:fixed;top:12px;left:16px;z-index:7;display:flex;align-items:center;gap:18px;
    font:600 11px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.14em;
-   text-transform:uppercase;color:var(--dim);pointer-events:none;}
+   text-transform:uppercase;color:var(--dim);pointer-events:none;flex-wrap:wrap;max-width:calc(100vw - 32px);}
+ .siteHeaderMark{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;
+   font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;pointer-events:auto;}
  #siteHeader b{color:var(--ink);font-weight:600;}
+ .siteHeaderNav{display:flex;gap:14px;pointer-events:auto;}
+ .siteHeaderNav button{background:transparent;border:0;padding:2px 0;font:inherit;letter-spacing:inherit;
+   text-transform:inherit;color:var(--dim);cursor:pointer;border-bottom:1px solid transparent;}
+ .siteHeaderNav button:hover{color:var(--ink);}
+ .siteHeaderNav button.on{color:var(--ink);border-bottom-color:var(--ink);}
+ @media(max-width:640px){ .siteHeaderNav{display:none;} }
  #title{position:fixed;top:52px;left:16px;pointer-events:none;max-width:60vw;}
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
@@ -460,7 +468,15 @@
  </div>
 </div>
 <div id="advancedApp" style="display:none;">
-<div id="siteHeader"><span id="siteHeaderLogoSlot" class="logoSlot"></span><b>ELORAH</b></div>
+<div id="siteHeader">
+ <button id="siteHeaderHome" class="siteHeaderMark"><span id="siteHeaderLogoSlot" class="logoSlot"></span><b>ELORAH</b></button>
+ <nav id="siteHeaderNav" class="siteHeaderNav">
+  <button data-mode="musical">Musical</button>
+  <button data-mode="science">Science</button>
+  <button data-mode="play">Play</button>
+  <button data-mode="lessons">Lessons</button>
+ </nav>
+</div>
 <canvas id="scene"></canvas>
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
@@ -2751,11 +2767,14 @@ function wirePlayControls(){
 
 // ---- TOP BAR + Why <-> How BRIDGE ----
 // One primary control (mode). Bridge button in the detail card that swaps mode while keeping the selection.
-// switchMode keeps the topbar pills and the Modes registry in sync — the one place that does both,
-// used by the topbar click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
+// switchMode keeps the topbar pills, the persistent header's own nav, and the Modes registry in
+// sync — the one place that does all three, used by the topbar click handler, the header nav
+// click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
 function switchMode(id){
   const bar = document.getElementById('modeToggle');
   if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
+  const headerNav = document.getElementById('siteHeaderNav');
+  if(headerNav) headerNav.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   Modes.enter(id);
   Link.writeModePath(id);
 }
@@ -2765,6 +2784,18 @@ function wireTopbar(){
     const b = e.target.closest('button[data-mode]'); if(!b) return;
     switchMode(b.dataset.mode);
   });
+}
+// the persistent header (see 06_elorah_logo.js for the logo it mounts) doubles as primary
+// navigation: its own nav links jump straight to a mode, and the mark itself is a "home" link —
+// the same round trip the "‹ Simple" button already does, just from a second, more prominent spot
+function wireSiteHeader(){
+  const nav = document.getElementById('siteHeaderNav');
+  if(nav) nav.addEventListener('click', e => {
+    const b = e.target.closest('button[data-mode]'); if(!b) return;
+    switchMode(b.dataset.mode);
+  });
+  const home = document.getElementById('siteHeaderHome');
+  if(home) home.onclick = () => showSimple();
 }
 
 // Add a "Why?" / "How?" button to the detail card. Detail card is (re)rendered on selectNode;
@@ -3389,6 +3420,7 @@ const elorahLogoMarkup = elorahLogoSvg(22);
 const heroLogoSlot = document.getElementById('heroLogoSlot'); if(heroLogoSlot) heroLogoSlot.innerHTML = elorahLogoMarkup;
 const siteHeaderLogoSlot = document.getElementById('siteHeaderLogoSlot'); if(siteHeaderLogoSlot) siteHeaderLogoSlot.innerHTML = elorahLogoMarkup;
 wireTopbar();
+wireSiteHeader();
 wireDimToggle();
 wireTuneToggle();
 wireLevelToggle();
