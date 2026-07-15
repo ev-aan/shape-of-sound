@@ -219,7 +219,7 @@ try {
   C['sciMoreBtn'].onclick();
   // Play tab: keyboard + sequencer live together; the old per-panel compose buttons are gone
   if (C['composeBtn']) throw new Error('composeBtn should have been removed from the Science panel');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'play' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'play' } } : null } });
   frames(5);
   if (__api.View.get().mode !== 'play') throw new Error('Play tab did not activate');
   if (!C['compose'].classList.contains('show')) throw new Error('entering Play should open the sequencer drawer');
@@ -249,7 +249,7 @@ try {
   C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
   // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
   // function-coloured diagram of that key's chords (subdominant -> dominant -> tonic)
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
   frames(5);
   if (typeof __api === 'undefined' || __api.View.get().mode !== 'musical') throw new Error('mode toggle failed');
   if (C['scene'].style.display !== 'none') throw new Error('Musical mode should hide the 3D map');
@@ -307,7 +307,7 @@ try {
   C['musAddSeqBtn'].onclick();
   if (__api.View.get().mode !== 'play') throw new Error('add-to-progression should hand off into Play');
   if (!/Amin/.test(C['seqSlots'].innerHTML)) throw new Error('the selected chord should land in the sequence');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
   frames(5);
   // "where next?" suggestions should follow the newly-selected chord, and clicking one navigates too
   if (!/suggChip/.test(C['musSuggest'].innerHTML)) throw new Error('no "where next" suggestions rendered');
@@ -478,14 +478,14 @@ try {
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'intervals-link' } }) } });
   if (__api.View.get().mode !== 'lessons') throw new Error('the "intervals" cross-link should switch to Lessons mode');
   if (!/Tritone/.test(C['musInterval'].innerHTML)) throw new Error('Bdim should seed the interval visualizer with B -> F, a Tritone (not a nonexistent perfect 5th), got: ' + C['musInterval'].innerHTML);
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
   frames(5);
   fire(C['musCof'], 'click', { target: { closest: sel => sel === '.cofRing' ? { dataset: { ring: 'dim', pc: '11' } } : null } });
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'extend-link' } }) } });
   if (__api.View.get().mode !== 'lessons') throw new Error('the "extend" cross-link should switch to Lessons mode');
   if (+C['ssRootSel'].value !== 11) throw new Error('extend-link should seed the superstructure root to B (11), got ' + C['ssRootSel'].value);
   if ((C['musSuperstructure'].innerHTML.match(/class="ssNode"/g) || []).length !== 3) throw new Error('Bdim is a triad (3 notes) — extend-link should seed upTo:3');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'musical' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
   frames(5);
   // piano roll: one rect per note event, reusing exactly the staff engine's measure data shape
   const rollTest = document.createElement('div');
@@ -511,7 +511,7 @@ try {
   if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopping should restore the play button label');
   // Lessons mode: a 4th top-level surface for the standalone teaching demos only (Bach and
   // neighbouring chords stay in Musical mode since they depend on its live chord-selection state)
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
   if (__api.View.get().mode !== 'lessons') throw new Error('Lessons tab did not activate');
   if (C['lessonsHome'].style.display === 'none') throw new Error('Lessons mode should show #lessonsHome');
@@ -547,14 +547,14 @@ try {
   if (C['tuneToggle'].style.display === '') throw new Error('Lessons mode should hide the tune toggle, which has no effect on its demos');
   // a mode switch is a fresh page: scroll position shouldn't carry over from a previous visit
   C['lessonsHome'].scrollTop = 400;
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
   frames(5);
   if (C['lessonsHome'].style.display === '') throw new Error('leaving Lessons should hide #lessonsHome');
   if (C['tuneToggle'].style.display !== '') throw new Error('Science mode should show the tune toggle again');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
   if (C['lessonsHome'].scrollTop !== 0) throw new Error('re-entering Lessons should reset scroll to the top, not resume a previous scroll position');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
   frames(5);
   // bridge: from Musical back to Science should work with observer callback
   fire(C['detail'], 'click', { target: { closest: () => ({ dataset: { act: 'bridge' } }) } });
@@ -580,13 +580,13 @@ try {
   if (!/consonance/.test(C['detail'].innerHTML)) throw new Error('Advanced mode should show the consonance section (re-rendered live on toggle)');
   if (!/suggTag/.test(C['musNeighbors'].innerHTML)) throw new Error('Advanced mode should show the neighbour-chord tags (re-rendered live on toggle)');
   // same toggle, checked against the Lessons-mode interval visualizer (a different render path)
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'lessons' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
   fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
   if (!/ratio/.test(C['musInterval'].innerHTML)) throw new Error('Advanced mode should show the ratio/consonance line in the interval visualizer');
   fire(C['levelToggle'], 'click', { target: { closest: () => ({ dataset: { level: 'beginner' }, classList: { toggle(){} } }) } });
   if (/ratio/.test(C['musInterval'].innerHTML)) throw new Error('Beginner mode should hide the ratio/consonance line in the interval visualizer (re-rendered live on toggle)');
-  fire(C['modeToggle'], 'click', { target: { closest: () => ({ dataset: { mode: 'science' }, classList: { add(){}, remove(){}, toggle(){} } }) } });
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
   frames(5);
   // tuning: swapping to JI should change played frequencies and node positions
   const N0 = __api.N || (typeof N !== 'undefined' ? N : null);

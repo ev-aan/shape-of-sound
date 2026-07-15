@@ -1,22 +1,14 @@
 // ---- TOP BAR + Why <-> How BRIDGE ----
-// One primary control (mode). Bridge button in the detail card that swaps mode while keeping the selection.
-// switchMode keeps the topbar pills, the persistent header's own nav, and the Modes registry in
-// sync — the one place that does all three, used by the topbar click handler, the header nav
-// click handler, the bridge button, deep-link restore, and the Play hand-off from addToSeq.
+// One primary control (mode) lives in the persistent header nav now — the topbar's own mode
+// pills were a second, redundant place to do the same thing, so they were removed in favor of
+// the header. switchMode keeps the header nav and the Modes registry in sync — the one place
+// that does both, used by the header nav click handler, the bridge button, deep-link restore,
+// and the Play hand-off from addToSeq.
 function switchMode(id){
-  const bar = document.getElementById('modeToggle');
-  if(bar) bar.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   const headerNav = document.getElementById('siteHeaderNav');
   if(headerNav) headerNav.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
   Modes.enter(id);
   Link.writeModePath(id);
-}
-function wireTopbar(){
-  const bar = document.getElementById('modeToggle');
-  bar.addEventListener('click', e=>{
-    const b = e.target.closest('button[data-mode]'); if(!b) return;
-    switchMode(b.dataset.mode);
-  });
 }
 // the persistent header (see 06_elorah_logo.js for the logo it mounts) doubles as primary
 // navigation: its own nav links jump straight to a mode, and the mark itself is a "home" link —
