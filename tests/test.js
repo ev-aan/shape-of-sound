@@ -131,32 +131,38 @@ try {
   __api.renderSciWaveformStage(waveformStage, { amplitude: 0.5 });
   if (!/data-amplitude="0.50"/.test(waveformStage.innerHTML)) throw new Error('the waveform stage should render the given amplitude');
   if (!/class="specWave"/.test(waveformStage.innerHTML)) throw new Error('the waveform stage should draw a wave path');
-  // scroll through the 3 stages of the "how sound happens" progression: scrolling past each
-  // 700px band advances from the dot (amplitude) to the waveform to the frequency stage
-  C['scienceHome'].scrollTop = 50;
+  // renderSciWaveContinuum: one continuous shape (via buildSinePath) that densifies smoothly
+  // with t, never jump-cutting between stages — direct-render checks first
+  const contRest = document.createElement('div');
+  __api.renderSciWaveContinuum(contRest, { t: 0, amplitude: 0.5 });
+  if (!/data-cycles="0.50"/.test(contRest.innerHTML)) throw new Error('t=0 should render a single hump (cycles 0.5)');
+  if (/data-pc="\d/.test(contRest.innerHTML)) throw new Error('t=0 should not have a pitch class yet (still in the amplitude zone)');
+  if (!/<filter id="sciGlow"/.test(contRest.innerHTML)) throw new Error('the continuum renderer should draw its soft glow filter');
+  const contFreq = document.createElement('div');
+  __api.renderSciWaveContinuum(contFreq, { t: 0.9, amplitude: 0.5 });
+  if (!/data-cycles="16.25"/.test(contFreq.innerHTML)) throw new Error('t=0.9 should render 16.25 cycles (0.5 + 0.9*17.5)');
+  if (!/data-pc="8"/.test(contFreq.innerHTML)) throw new Error('t=0.9 should land on pitch class 8');
+  // scroll continuously drives the same shape (RANGE_PX 2000, harness offsetTop is 0) — the
+  // caption's bright word changes across 3 zones, and a real note only plays in the frequency zone
+  C['scienceHome'].scrollTop = 200; // t=0.1: amplitude zone
   fire(C['scienceHome'], 'scroll', {});
-  if (!/class="sciDot"/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 50 should still be on the amplitude/dot stage');
-  if (C['sciAmpGroup'].style.display === 'none') throw new Error('the amplitude slider should show on the dot stage');
-  C['scienceHome'].scrollTop = 800;
-  fire(C['scienceHome'], 'scroll', {});
-  if (/sciDot/.test(C['sciStagePanel'].innerHTML) || !/specWave/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 800 should be on the waveform stage (a wave path, no dot)');
-  C['scienceHome'].scrollTop = 1500;
-  fire(C['scienceHome'], 'scroll', {});
-  if (!/data-cycles=/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 1500 should be on the frequency stage (renderSciWaveDemo)');
-  if (C['sciFreqGroup'].style.display === 'none') throw new Error('the frequency slider should show on the frequency stage');
-  if (C['sciAmpGroup'].style.display !== 'none') throw new Error('the amplitude slider should hide once on the frequency stage');
-  // each stage's own slider is the "interactive piece for learning" — dragging it re-renders,
-  // and the frequency slider plays a real note same as the old pointermove interaction did
+  if (!/sciCaptionBright">AMPLITUDE/.test(C['sciStagePanel'].innerHTML)) throw new Error('t=0.1 should show the AMPLITUDE caption');
   let waveOscCount = 0;
   const origWaveCreateOsc = global.window.AudioContext.prototype.createOscillator;
   global.window.AudioContext.prototype.createOscillator = function(){ waveOscCount++; return origWaveCreateOsc.apply(this, arguments); };
-  C['sciFreqSlider'].value = '50'; fire(C['sciFreqSlider'], 'input', {});
+  C['scienceHome'].scrollTop = 1000; // t=0.5: wave zone, still silent
+  fire(C['scienceHome'], 'scroll', {});
+  if (!/sciCaptionBright">A WAVE/.test(C['sciStagePanel'].innerHTML)) throw new Error('t=0.5 should show the A WAVE caption');
+  if (waveOscCount !== 0) throw new Error('the wave zone should stay silent, played ' + waveOscCount);
+  C['scienceHome'].scrollTop = 1800; // t=0.9: frequency zone — now it should sound a note
+  fire(C['scienceHome'], 'scroll', {});
   global.window.AudioContext.prototype.createOscillator = origWaveCreateOsc;
-  if (waveOscCount !== 1) throw new Error('dragging the frequency slider should sound a note per semitone crossed, played ' + waveOscCount);
-  if (!/data-pc="6"/.test(C['sciStagePanel'].innerHTML)) throw new Error('the frequency slider should re-render with the matching pitch class');
-  C['scienceHome'].scrollTop = 50; fire(C['scienceHome'], 'scroll', {}); // back to the dot stage
+  if (waveOscCount !== 1) throw new Error('entering the frequency zone should sound a note, played ' + waveOscCount);
+  if (!C['sciStagePanel'].innerHTML.includes(__api.pcName(8, 0))) throw new Error('the frequency zone caption should name the real note it lands on');
+  // the amplitude slider is the one always-visible interactive control, live at any scroll position
   C['sciAmpSlider'].value = '80'; fire(C['sciAmpSlider'], 'input', {});
-  if (!/data-amplitude="0.80"/.test(C['sciStagePanel'].innerHTML)) throw new Error('dragging the amplitude slider should re-render the dot stage with the new amplitude');
+  if (!/data-cycles="16.25"/.test(C['sciStagePanel'].innerHTML)) throw new Error('dragging the amplitude slider should keep the current scroll position\'s cycle count');
+  C['scienceHome'].scrollTop = 200; fire(C['scienceHome'], 'scroll', {}); // back to the amplitude zone for a clean handoff
   // "Start exploring" reveals the existing 3D map/sidebar/legend, unchanged, and hides the concept page
   C['sciExploreCta'].onclick();
   if (C['scienceHome'].style.display !== 'none') throw new Error('starting exploring should hide the concept page');
