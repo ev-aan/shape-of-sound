@@ -146,6 +146,10 @@ function applySciStage(){
   document.getElementById('legend').style.display = concept ? 'none' : '';
   document.getElementById('title').style.display = concept ? 'none' : '';
   document.getElementById('dimToggle').style.display = concept ? 'none' : '';
+  // the topbar's tuning/level/share controls apply to the exploration tool, not the concept
+  // intro — the concept page has its own headline and controls, so the floating menu is just
+  // redundant clutter on top of it until "Start exploring" is clicked
+  document.getElementById('topbar').style.display = concept ? 'none' : '';
   appVisible = !concept; // same pause-when-not-visible convention 96_simple.js already uses
 }
 Modes.register('science', {
