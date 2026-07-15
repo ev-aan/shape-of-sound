@@ -122,15 +122,41 @@ try {
   if (!/data-cycles="10"/.test(waveMid.innerHTML)) throw new Error('the wave demo should render 10 cycles at freqT 0.5 (2 + 0.5*16)');
   if (!/data-pc="6"/.test(waveMid.innerHTML)) throw new Error('the wave demo should land on pitch class 6 at freqT 0.5');
   if (!waveMid.innerHTML.includes(__api.pcName(6, 0))) throw new Error('the wave demo caption should name the real note (pcName) it lands on');
+  // stage 1 (amplitude, a swinging dot) and stage 2 (waveform, the same motion unrolled) — direct-render checks
+  const ampStage = document.createElement('div');
+  __api.renderSciAmplitudeStage(ampStage, { amplitude: 0.5 });
+  if (!/data-amplitude="0.50"/.test(ampStage.innerHTML)) throw new Error('the amplitude stage should render the given amplitude');
+  if (!/class="sciDot"/.test(ampStage.innerHTML)) throw new Error('the amplitude stage should render a dot, not a wave shape yet');
+  const waveformStage = document.createElement('div');
+  __api.renderSciWaveformStage(waveformStage, { amplitude: 0.5 });
+  if (!/data-amplitude="0.50"/.test(waveformStage.innerHTML)) throw new Error('the waveform stage should render the given amplitude');
+  if (!/class="specWave"/.test(waveformStage.innerHTML)) throw new Error('the waveform stage should draw a wave path');
+  // scroll through the 3 stages of the "how sound happens" progression: scrolling past each
+  // 700px band advances from the dot (amplitude) to the waveform to the frequency stage
+  C['scienceHome'].scrollTop = 50;
+  fire(C['scienceHome'], 'scroll', {});
+  if (!/class="sciDot"/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 50 should still be on the amplitude/dot stage');
+  if (C['sciAmpGroup'].style.display === 'none') throw new Error('the amplitude slider should show on the dot stage');
+  C['scienceHome'].scrollTop = 800;
+  fire(C['scienceHome'], 'scroll', {});
+  if (/sciDot/.test(C['sciStagePanel'].innerHTML) || !/specWave/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 800 should be on the waveform stage (a wave path, no dot)');
+  C['scienceHome'].scrollTop = 1500;
+  fire(C['scienceHome'], 'scroll', {});
+  if (!/data-cycles=/.test(C['sciStagePanel'].innerHTML)) throw new Error('scrollTop 1500 should be on the frequency stage (renderSciWaveDemo)');
+  if (C['sciFreqGroup'].style.display === 'none') throw new Error('the frequency slider should show on the frequency stage');
+  if (C['sciAmpGroup'].style.display !== 'none') throw new Error('the amplitude slider should hide once on the frequency stage');
+  // each stage's own slider is the "interactive piece for learning" — dragging it re-renders,
+  // and the frequency slider plays a real note same as the old pointermove interaction did
   let waveOscCount = 0;
   const origWaveCreateOsc = global.window.AudioContext.prototype.createOscillator;
   global.window.AudioContext.prototype.createOscillator = function(){ waveOscCount++; return origWaveCreateOsc.apply(this, arguments); };
-  fire(C['sciWaveDemo'], 'pointermove', { clientX: 400 }); // harness's stubbed getBoundingClientRect is {left:0,width:800}, so this is freqT 0.5
+  C['sciFreqSlider'].value = '50'; fire(C['sciFreqSlider'], 'input', {});
   global.window.AudioContext.prototype.createOscillator = origWaveCreateOsc;
-  if (waveOscCount !== 1) throw new Error('moving across the wave demo should sound a note per semitone crossed, played ' + waveOscCount);
-  if (!/data-pc="6"/.test(C['sciWaveDemo'].innerHTML)) throw new Error('the live wave demo should re-render with the hovered pitch class');
-  fire(C['sciWaveDemo'], 'pointerleave', {});
-  if (!/data-cycles="0"/.test(C['sciWaveDemo'].innerHTML)) throw new Error('leaving the wave demo should return it to the flat, silent rest state');
+  if (waveOscCount !== 1) throw new Error('dragging the frequency slider should sound a note per semitone crossed, played ' + waveOscCount);
+  if (!/data-pc="6"/.test(C['sciStagePanel'].innerHTML)) throw new Error('the frequency slider should re-render with the matching pitch class');
+  C['scienceHome'].scrollTop = 50; fire(C['scienceHome'], 'scroll', {}); // back to the dot stage
+  C['sciAmpSlider'].value = '80'; fire(C['sciAmpSlider'], 'input', {});
+  if (!/data-amplitude="0.80"/.test(C['sciStagePanel'].innerHTML)) throw new Error('dragging the amplitude slider should re-render the dot stage with the new amplitude');
   // "Start exploring" reveals the existing 3D map/sidebar/legend, unchanged, and hides the concept page
   C['sciExploreCta'].onclick();
   if (C['scienceHome'].style.display !== 'none') throw new Error('starting exploring should hide the concept page');

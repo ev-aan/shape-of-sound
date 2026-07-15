@@ -36,9 +36,16 @@
     independent of showMode()'s per-mode visibility. */
  #scienceHome{position:fixed;inset:0;overflow:auto;}
  .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
- .sciWaveDemo{height:120px;margin:24px auto;cursor:crosshair;}
+ /* a tall scroll range so 3 stages (dot -> waveform -> frequency) each get room to "pause" in as
+    the visitor scrolls through; the inner panel stays pinned on screen for that whole range. */
+ .sciScrollStage{height:2200px;position:relative;}
+ .sciStageSticky{position:sticky;top:170px;}
+ .sciWaveDemo{height:140px;margin:24px auto;}
  .sciWaveSvg{width:100%;height:100%;display:block;}
  .sciWaveCaption{margin-top:8px;font-size:11px;color:var(--dim);}
+ .sciDot{fill:var(--ink);}
+ .sciStageCtrl{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11px;color:var(--dim);}
+ .sciStageCtrl input[type=range]{max-width:220px;}
  /* the spectrum banner now lives inside #scienceHome, in normal flow — no longer a fixed
     overlay pinned throughout all of Science mode (it's concept-only, gone once exploring). */
  #sciSpectrum{background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -609,9 +616,15 @@
 <div id="scienceHome" style="display:none;">
  <div class="musWrap sciConceptWrap">
   <h1 class="serif">How sound happens</h1>
-  <div id="sciWaveDemo" class="sciWaveDemo"></div>
-  <p class="heroSub">Sound is just something vibrating back and forth. Move your mouse across
-  the line above — the faster it vibrates, the higher the note. Frequency is just how fast.</p>
+  <div id="sciScrollStage" class="sciScrollStage">
+   <div class="sciStageSticky">
+    <div id="sciStagePanel" class="sciWaveDemo"></div>
+    <div id="sciAmpGroup" class="sciStageCtrl"><span>amplitude</span><input id="sciAmpSlider" type="range" min="0" max="100" value="50"></div>
+    <div id="sciFreqGroup" class="sciStageCtrl" style="display:none;"><span>frequency</span><input id="sciFreqSlider" type="range" min="0" max="100" value="50"></div>
+   </div>
+  </div>
+  <p class="heroSub">Sound is just something vibrating back and forth. Scroll to watch it go
+  from a single swing, to a wave, to a pitch you can hear. Frequency is just how fast it repeats.</p>
   <div id="sciSpectrum"><div id="sciSpectrumChart"></div></div>
   <button id="sciExploreCta" class="heroCta">Start exploring the chord map →</button>
  </div>
@@ -2189,9 +2202,40 @@ function selectSpectrumBand(bandId){
   renderSciSpectrum();
   if(bandId === 'hear') playFreqs([m2f(69)]); // A4, a familiar reference pitch — the only band here you can actually hear
 }
-// ---- CONCEPT STAGE: "how sound happens" wave demo ----
-// A flat, silent line until the mouse moves across it — then it becomes a sine wave whose
-// tightness tracks mouse position (further right = more cycles = higher pitch), sounding a real
+// ---- CONCEPT STAGE: "how sound happens", a scroll-driven dot -> waveform -> frequency progression ----
+// Each stage is a pure render function of (stage, current slider value) — no independent
+// time-based animation, so nothing here needs a second requestAnimationFrame loop (the harness
+// only supports one rAF callback slot; see 90_init.js's frame()). Which stage is showing is
+// driven by scroll position (wireSciScrollStage below), following the exact same direct-
+// scrollTop-reading pattern 96_simple.js's hero parallax already uses.
+// One shared primitive, reused by all three stage renderers below.
+function buildSinePath(W, H, midY, cycles, ampPx){
+  const pts = [];
+  for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+ampPx*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
+  return pts.join(' ');
+}
+// stage 1: a single dot swinging vertically — no wave shape yet, just amplitude (how far it swings)
+function renderSciAmplitudeStage(container, opts){
+  const amp = (opts && opts.amplitude != null) ? opts.amplitude : 0.5;
+  const W = 600, H = 140, midY = 70, maxSwing = 55, swing = amp*maxSwing;
+  const topY = (midY-swing).toFixed(1), botY = (midY+swing).toFixed(1);
+  container.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" class="sciWaveSvg" data-amplitude="'+amp.toFixed(2)+'">'+
+    '<line x1="300" y1="'+topY+'" x2="300" y2="'+botY+'" class="specWave" stroke-dasharray="2 4"></line>'+
+    '<circle cx="300" cy="'+topY+'" r="6" class="sciDot"></circle>'+
+    '<circle cx="300" cy="'+botY+'" r="6" class="sciDot" opacity=".35"></circle></svg>'+
+    '<p class="sciWaveCaption">amplitude — how far it swings. Bigger swings sound louder, not higher.</p>';
+}
+// stage 2: that same swinging motion, unrolled over time into the classic wave shape (fixed cycle
+// count — not about pitch yet, just "this is what the motion looks like traced out")
+function renderSciWaveformStage(container, opts){
+  const amp = (opts && opts.amplitude != null) ? opts.amplitude : 0.5;
+  const W = 600, H = 140, midY = 70;
+  const d = buildSinePath(W, H, midY, 3, amp*55);
+  container.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" class="sciWaveSvg" data-amplitude="'+amp.toFixed(2)+'"><path d="'+d+'" class="specWave"></path></svg>'+
+    '<p class="sciWaveCaption">that same swinging motion, drawn out over time, traces this shape — a wave.</p>';
+}
+// stage 3: the wave tightening into audible frequency — a flat, silent line at rest, becomes a
+// sine wave whose tightness tracks freqT (higher = more cycles = higher pitch), sounding a real
 // note per semitone crossed. Rendered as SVG-in-innerHTML (not raw canvas) so it's directly
 // testable the same way every other Surfaces.* component in this app already is.
 let sciWaveLastPc = null;
@@ -2205,15 +2249,16 @@ function renderSciWaveDemo(container, opts){
   } else {
     cycles = Math.round(2 + freqT*16);
     pc = Math.min(11, Math.floor(freqT*12));
-    const pts = [];
-    for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+40*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
-    d = pts.join(' ');
+    d = buildSinePath(W, H, midY, cycles, 40);
   }
   const caption = freqT == null ? 'move your mouse — nothing is vibrating yet'
     : pcName(pc,0) + ' — the faster it vibrates, the higher the pitch you hear';
   container.innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" class="sciWaveSvg" data-cycles="'+cycles+'" data-pc="'+(pc==null?'':pc)+'"><path d="'+d+'" class="specWave"></path></svg>'+
     '<p class="sciWaveCaption">'+caption+'</p>';
 }
+// preserved as a reusable module, not deleted, per the "iteration friendly" build guidance — no
+// longer wired into onEnter (superseded by the scroll+slider flow below), but still fully
+// functional if a future pass wants mouse-hover scrubbing back, here or elsewhere.
 function wireSciWaveDemo(){
   const el = document.getElementById('sciWaveDemo'); if(!el) return;
   el.addEventListener('pointermove', e => {
@@ -2225,6 +2270,35 @@ function wireSciWaveDemo(){
   });
   el.addEventListener('pointerleave', () => { sciWaveLastPc = null; renderSciWaveDemo(el, {}); });
   renderSciWaveDemo(el, {});
+}
+// scroll picks which of the 3 stages is showing; each stage's own slider drives its parameter
+let sciAmplitude = 0.5, sciFreqT = 0.5, sciActiveStage = 0;
+function renderSciActiveStage(){
+  const panel = document.getElementById('sciStagePanel'); if(!panel) return;
+  if(sciActiveStage === 0) renderSciAmplitudeStage(panel, { amplitude: sciAmplitude });
+  else if(sciActiveStage === 1) renderSciWaveformStage(panel, { amplitude: sciAmplitude });
+  else renderSciWaveDemo(panel, { freqT: sciFreqT });
+  const ampGroup = document.getElementById('sciAmpGroup'), freqGroup = document.getElementById('sciFreqGroup');
+  if(ampGroup) ampGroup.style.display = sciActiveStage < 2 ? '' : 'none';
+  if(freqGroup) freqGroup.style.display = sciActiveStage === 2 ? '' : 'none';
+}
+function wireSciScrollStage(){
+  const home = document.getElementById('scienceHome'), wrap = document.getElementById('sciScrollStage');
+  const STAGE_PX = 700;
+  if(home && wrap) home.addEventListener('scroll', () => {
+    const base = wrap.offsetTop || 0;
+    const stage = Math.min(2, Math.floor(Math.max(0, home.scrollTop - base) / STAGE_PX));
+    if(stage !== sciActiveStage){ sciActiveStage = stage; renderSciActiveStage(); }
+  });
+  const ampSlider = document.getElementById('sciAmpSlider');
+  if(ampSlider) ampSlider.addEventListener('input', () => { sciAmplitude = ampSlider.value/100; renderSciActiveStage(); });
+  const freqSlider = document.getElementById('sciFreqSlider');
+  if(freqSlider) freqSlider.addEventListener('input', () => {
+    sciFreqT = freqSlider.value/100; renderSciActiveStage();
+    const pc = Math.min(11, Math.floor(sciFreqT*12));
+    if(pc !== sciWaveLastPc){ sciWaveLastPc = pc; playFreqs([m2f(60+pc)], 0.3); }
+  });
+  renderSciActiveStage();
 }
 // ---- CONCEPT / EXPLORE STAGE: not everything needs to be on screen at once ----
 // A fresh entry into Science always lands on the concept page first (nav click, deep link, the
@@ -2262,7 +2336,7 @@ Modes.register('science', {
       sciSpectrumBuilt = true;
     }
     if(!sciStageWired){
-      wireSciWaveDemo();
+      wireSciScrollStage();
       const cta = document.getElementById('sciExploreCta');
       if(cta) cta.onclick = () => { sciStage = 'explore'; applySciStage(); };
       const back = document.getElementById('sciBackConceptBtn');
@@ -3530,6 +3604,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, pcName }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, pcName }; } catch(e){}
 
 })();</script></body></html>

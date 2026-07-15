@@ -203,9 +203,15 @@
 <div id="scienceHome" style="display:none;">
  <div class="musWrap sciConceptWrap">
   <h1 class="serif">How sound happens</h1>
-  <div id="sciWaveDemo" class="sciWaveDemo"></div>
-  <p class="heroSub">Sound is just something vibrating back and forth. Move your mouse across
-  the line above — the faster it vibrates, the higher the note. Frequency is just how fast.</p>
+  <div id="sciScrollStage" class="sciScrollStage">
+   <div class="sciStageSticky">
+    <div id="sciStagePanel" class="sciWaveDemo"></div>
+    <div id="sciAmpGroup" class="sciStageCtrl"><span>amplitude</span><input id="sciAmpSlider" type="range" min="0" max="100" value="50"></div>
+    <div id="sciFreqGroup" class="sciStageCtrl" style="display:none;"><span>frequency</span><input id="sciFreqSlider" type="range" min="0" max="100" value="50"></div>
+   </div>
+  </div>
+  <p class="heroSub">Sound is just something vibrating back and forth. Scroll to watch it go
+  from a single swing, to a wave, to a pitch you can hear. Frequency is just how fast it repeats.</p>
   <div id="sciSpectrum"><div id="sciSpectrumChart"></div></div>
   <button id="sciExploreCta" class="heroCta">Start exploring the chord map →</button>
  </div>

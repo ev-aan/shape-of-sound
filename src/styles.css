@@ -30,9 +30,16 @@
     independent of showMode()'s per-mode visibility. */
  #scienceHome{position:fixed;inset:0;overflow:auto;}
  .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
- .sciWaveDemo{height:120px;margin:24px auto;cursor:crosshair;}
+ /* a tall scroll range so 3 stages (dot -> waveform -> frequency) each get room to "pause" in as
+    the visitor scrolls through; the inner panel stays pinned on screen for that whole range. */
+ .sciScrollStage{height:2200px;position:relative;}
+ .sciStageSticky{position:sticky;top:170px;}
+ .sciWaveDemo{height:140px;margin:24px auto;}
  .sciWaveSvg{width:100%;height:100%;display:block;}
  .sciWaveCaption{margin-top:8px;font-size:11px;color:var(--dim);}
+ .sciDot{fill:var(--ink);}
+ .sciStageCtrl{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11px;color:var(--dim);}
+ .sciStageCtrl input[type=range]{max-width:220px;}
  /* the spectrum banner now lives inside #scienceHome, in normal flow — no longer a fixed
     overlay pinned throughout all of Science mode (it's concept-only, gone once exploring). */
  #sciSpectrum{background:var(--panel);border:1px solid var(--line);border-radius:12px;
