@@ -34,18 +34,6 @@
    font-size:20px;color:var(--dim);}
  #rippleRoomClose:hover{color:var(--ink);}
  body.rippleOpen #rippleRoomClose{display:block;}
- /* paste-and-run Shadertoy loader (see 33_shadertoy.js) — a second rendering mode for the same
-    room/canvas/toggle, only reachable while the room itself is open. */
- .shaderToyOpenBtn{position:fixed;bottom:16px;left:16px;z-index:9;display:none;width:auto;}
- body.rippleOpen .shaderToyOpenBtn{display:block;}
- .shaderToyPanel{position:fixed;bottom:16px;left:16px;z-index:9;width:min(480px,calc(100vw - 32px));
-   background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;
-   backdrop-filter:blur(8px);}
- #shaderToySource{font:11px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);
-   background:#ffffff10;border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;
-   height:160px;resize:vertical;margin:6px 0;}
- .shaderToyPanel .ctrls{gap:8px;}
- .shaderToyPanel .hint{color:#f0958a;min-height:1.2em;margin-top:4px;}
  #title{position:fixed;top:52px;left:16px;pointer-events:none;max-width:60vw;}
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
@@ -509,16 +497,6 @@
 </div>
 <canvas id="rippleView"></canvas>
 <span class="x" id="rippleRoomClose">✕</span>
-<button id="shaderToyOpenBtn" class="infobtn shaderToyOpenBtn">⌨ load a shader</button>
-<div id="shaderToyPanel" class="shaderToyPanel" style="display:none;">
- <div class="lbl">paste a shadertoy.com shader (needs a mainImage(...) function)</div>
- <textarea id="shaderToySource" spellcheck="false"></textarea>
- <div class="ctrls">
-  <button id="shaderToyRunBtn" class="infobtn" style="width:auto;">▶ run shader</button>
-  <button id="shaderToyBackBtn" class="infobtn" style="width:auto;">‹ back to room</button>
- </div>
- <div id="shaderToyError" class="hint"></div>
-</div>
 <canvas id="scene"></canvas>
 <div id="musicalHome" style="display:none;">
  <div class="musWrap">
@@ -1432,19 +1410,10 @@ function updateShaderToy(dt){
   shaderToyUniforms.iResolution.value.set(innerWidth, innerHeight, 1);
 }
 function getRippleMode(){ return rippleMode; }
-document.getElementById('shaderToySource').value = CINESHADER_RIPPLE_EXAMPLE;
-document.getElementById('shaderToyOpenBtn').onclick = () => {
-  document.getElementById('shaderToyPanel').style.display = 'block';
-};
-document.getElementById('shaderToyRunBtn').onclick = () => {
-  const result = loadShadertoy(document.getElementById('shaderToySource').value);
-  document.getElementById('shaderToyError').textContent = result.ok ? '' : result.error;
-};
-document.getElementById('shaderToyBackBtn').onclick = () => {
-  rippleMode = 'room';
-  document.getElementById('shaderToyPanel').style.display = 'none';
-  document.getElementById('shaderToyError').textContent = '';
-};
+// no paste-and-run UI for now (removed per request) — loadShadertoy/getRippleMode/
+// CINESHADER_RIPPLE_EXAMPLE stay as reusable, already-tested infrastructure for whenever this
+// gets a new entry point (e.g. mounted onto an object inside the room, rather than a fullscreen
+// overlay with its own textarea).
 
 // audio
 let actx=null,master=null,unlocked=false,soundOn=true;
