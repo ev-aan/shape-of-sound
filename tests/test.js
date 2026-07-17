@@ -261,13 +261,16 @@ try {
   C['cymH'].value = '6'; C['cymH'].oninput();
   C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
   // ripple panel, again here (now deep into Play mode) — its own render surface keeps working
-  // regardless of which mode/page is active, and stays audio-reactive
+  // regardless of which mode/page is active, and stays audio-reactive. A real noise-displaced
+  // shader now (not a canvas texture), so we assert against its uniforms instead of pixels.
   C['rippleToggleBtn'].onclick();
   if (!__api.rippleMesh.visible) throw new Error('the ripple toggle should still work from within Play mode');
-  __api.updateRipple(0.016); // should not throw — the harness's canvas 2D stub no-ops createRadialGradient/addColorStop
-  if (!__api.rippleTexture.needsUpdate) throw new Error('drawing the ripple should flag its texture for a GPU re-upload');
-  __api.playFreqs([440]); // A4 — exercises the audio-reactive path (lastPlayedFreqs -> ripplePc), should not throw
+  const uTimeBefore = __api.rippleUniforms.uTime.value;
+  __api.updateRipple(0.016); // should not throw
+  if (__api.rippleUniforms.uTime.value !== uTimeBefore + 0.016) throw new Error('updateRipple should advance the shader\'s uTime uniform');
+  __api.playFreqs([440]); // A4 = pitch class 9 (not 0 -- 440Hz is the A-relative reference, offset back to this app's C=0 numbering)
   __api.updateRipple(0.016);
+  if (__api.rippleUniforms.uHSL.value.x !== __api.Palette.noteHue(9)) throw new Error('playing a note should tint the ripple with that note\'s real hue');
   C['rippleToggleBtn'].onclick();
   if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
   // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
