@@ -16,6 +16,7 @@ function frame(){const dt=Math.min(clock.getDelta(),0.05);
     halos[i].scale.setScalar(halos[i].userData.base*(1+pulses[i]));}}
   if(hl){hlT-=dt;hl.material.opacity=Math.max(0,hlT/2.4)*0.9;if(hlT<=0){scene.remove(hl);hl.geometry.dispose();hl.material.dispose();hl=null;}}
   if(prog)advanceProg(dt);
+  updateRipple(dt);
   updateCamera();renderer.render(scene,camera);
   } else if(typeof heroFrameStep === 'function'){ heroFrameStep(dt); }
   requestAnimationFrame(frame);}

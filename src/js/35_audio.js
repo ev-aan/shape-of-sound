@@ -8,7 +8,11 @@ function unlockAudio(){if(unlocked)return;try{const a=audio();const b=a.createBu
   const p=el.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}unlocked=true;
   soundPill.textContent=soundOn?'🔊 sound on':'🔇 muted';}
 document.addEventListener('pointerdown',unlockAudio);
+// shared "a note just played" state — one place every caller (~20 across the app) gets for
+// free, so anything (like the ripple panel, 32_ripple.js) can react without its own hook per call site
+let lastPlayedAt=0,lastPlayedFreqs=null;
 function playFreqs(freqs,dur){if(!soundOn)return;const a=audio(),t=a.currentTime;dur=dur||0.95;
+  lastPlayedAt=performance.now();lastPlayedFreqs=freqs;
   freqs.forEach(f=>{const o=a.createOscillator(),g=a.createGain();o.type='triangle';o.frequency.value=f;
     o.detune.value=(Math.random()-0.5)*4;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+0.02);
     g.gain.exponentialRampToValueAtTime(0.06,t+dur*0.5);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);

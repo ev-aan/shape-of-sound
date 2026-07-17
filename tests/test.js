@@ -253,6 +253,17 @@ try {
   fire(C['cym'], 'click', { target: { closest: () => ({ dataset: { cs: 'circular' } }) } });
   C['cymH'].value = '6'; C['cymH'].oninput();
   C['cymAnimBtn'].onclick(); C['cymPlay'].onclick(); C['cymClose'].onclick();
+  // ripple panel: a real mesh in the shared chord-map scene (not a second canvas/rAF loop),
+  // toggled via the same plain onclick convention as wfBtn/cymBtn
+  if (__api.rippleMesh.visible) throw new Error('the ripple panel should start hidden');
+  C['sciRippleBtn'].onclick();
+  if (!__api.rippleMesh.visible) throw new Error('the ripple toggle should show the ripple panel');
+  __api.updateRipple(0.016); // should not throw — the harness's canvas 2D stub no-ops createRadialGradient/addColorStop
+  if (!__api.rippleTexture.needsUpdate) throw new Error('drawing the ripple should flag its texture for a GPU re-upload');
+  __api.playFreqs([440]); // A4 — exercises the audio-reactive path (lastPlayedFreqs -> ripplePc), should not throw
+  __api.updateRipple(0.016);
+  C['sciRippleBtn'].onclick();
+  if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
   // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
   // function-coloured diagram of that key's chords (subdominant -> dominant -> tonic)
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });
