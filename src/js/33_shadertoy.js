@@ -92,16 +92,7 @@ function updateShaderToy(dt){
   shaderToyUniforms.iResolution.value.set(innerWidth, innerHeight, 1);
 }
 function getRippleMode(){ return rippleMode; }
-document.getElementById('shaderToySource').value = CINESHADER_RIPPLE_EXAMPLE;
-document.getElementById('shaderToyOpenBtn').onclick = () => {
-  document.getElementById('shaderToyPanel').style.display = 'block';
-};
-document.getElementById('shaderToyRunBtn').onclick = () => {
-  const result = loadShadertoy(document.getElementById('shaderToySource').value);
-  document.getElementById('shaderToyError').textContent = result.ok ? '' : result.error;
-};
-document.getElementById('shaderToyBackBtn').onclick = () => {
-  rippleMode = 'room';
-  document.getElementById('shaderToyPanel').style.display = 'none';
-  document.getElementById('shaderToyError').textContent = '';
-};
+// no paste-and-run UI for now (removed per request) — loadShadertoy/getRippleMode/
+// CINESHADER_RIPPLE_EXAMPLE stay as reusable, already-tested infrastructure for whenever this
+// gets a new entry point (e.g. mounted onto an object inside the room, rather than a fullscreen
+// overlay with its own textarea).
