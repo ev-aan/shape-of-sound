@@ -1,4 +1,4 @@
-// ---- RIPPLE PANEL: a noise-displaced, softly-lit surface, tinted by pitch ----
+// ---- RIPPLE ROOM: a full-screen 3D space, a noise-displaced softly-lit panel as its centerpiece ----
 // Its own tiny THREE.js renderer/scene/camera — not a spot inside the chord-map scene, so it
 // can be shown from any mode/page, not just while that scene happens to be rendering.
 // Still just one shared requestAnimationFrame loop: its per-frame render is one added line
@@ -64,6 +64,7 @@ void main(){
 const RIPPLE_FRAG = `
 uniform vec3 uHSL;
 uniform float uPulse;
+uniform float uOpacity;
 varying vec3 vNormal;
 
 vec3 hsl2rgb(vec3 c){
@@ -71,33 +72,72 @@ vec3 hsl2rgb(vec3 c){
   return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0*c.z - 1.0));
 }
 void main(){
-  vec3 lightDir = normalize(vec3(-0.4, 0.6, 0.8));
-  float diff = max(dot(normalize(vNormal), lightDir), 0.0);
-  float shade = 0.35 + 0.65 * diff;
+  vec3 keyDir = normalize(vec3(-0.4, 0.6, 0.8));
+  vec3 fillDir = normalize(vec3(0.5, -0.3, 0.6));
+  float key = max(dot(normalize(vNormal), keyDir), 0.0);
+  float fill = max(dot(normalize(vNormal), fillDir), 0.0);
+  float shade = 0.32 + 0.55 * key + 0.2 * fill;
   vec3 tint = hsl2rgb(vec3(uHSL.x, uHSL.y, 0.5));
-  vec3 base = mix(tint * 0.6, vec3(1.0), shade);
+  vec3 base = mix(tint * 0.6, vec3(1.0), clamp(shade, 0.0, 1.0));
   base += uPulse * 0.25;
-  gl_FragColor = vec4(base, 1.0);
+  gl_FragColor = vec4(base, uOpacity);
 }
 `;
 const rippleUniforms = {
   uTime: { value: 0 },
   uHSL: { value: new THREE.Vector3(0, 0.7, 0.5) },
-  uPulse: { value: 0 }
+  uPulse: { value: 0 },
+  uOpacity: { value: 1 }
 };
 const rippleMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(30, 30, 48, 48),
-  new THREE.ShaderMaterial({ uniforms: rippleUniforms, vertexShader: RIPPLE_VERT, fragmentShader: RIPPLE_FRAG })
+  new THREE.PlaneGeometry(44, 44, 64, 64),
+  new THREE.ShaderMaterial({ uniforms: rippleUniforms, vertexShader: RIPPLE_VERT, fragmentShader: RIPPLE_FRAG, transparent: true })
 );
 rippleMesh.visible = false;
-const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true, alpha: true });
+const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true });
 rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-rippleRenderer.setSize(160, 160);
+rippleRenderer.setClearColor(0x04050a, 1); // opaque — this is a full room now, not a corner widget blending with the page behind it
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
-const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 500);
-rippleCamera.position.set(0, 0, 60);
-let rippleClock = 0, ripplePc = 0;
+const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 800);
+function resizeRipple(){
+  rippleRenderer.setSize(innerWidth, innerHeight);
+  rippleCamera.aspect = innerWidth / innerHeight;
+  rippleCamera.updateProjectionMatrix();
+}
+addEventListener('resize', resizeRipple);
+resizeRipple();
+let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
+// the room's heavier pieces (floor, reflection, fog, the angled camera framing) are built once,
+// lazily, the first time the room is actually opened — not at boot, and not refetched, just
+// deferred construction, since this is a single offline HTML file with no separate bundle to load
+function buildRippleRoom(){
+  if(rippleRoomBuilt) return;
+  rippleRoomBuilt = true;
+  rippleScene.fog = new THREE.FogExp2(0x04050a, 0.006);
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(300, 300),
+    new THREE.MeshBasicMaterial({ color: 0x0a0c16 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -24;
+  rippleScene.add(floor);
+  rippleReflectionUniforms = {
+    uTime: { value: 0 },
+    uHSL: { value: new THREE.Vector3(0, 0.7, 0.5) },
+    uPulse: { value: 0 },
+    uOpacity: { value: 0.28 }
+  };
+  const reflection = new THREE.Mesh(
+    new THREE.PlaneGeometry(44, 44, 64, 64),
+    new THREE.ShaderMaterial({ uniforms: rippleReflectionUniforms, vertexShader: RIPPLE_VERT, fragmentShader: RIPPLE_FRAG, transparent: true })
+  );
+  reflection.scale.y = -1;
+  reflection.position.y = -48;
+  rippleScene.add(reflection);
+  rippleCamera.position.set(0, 14, 130);
+  rippleCamera.lookAt(0, -8, 0);
+}
 function updateRipple(dt){
   if(!rippleMesh.visible) return;
   rippleClock += dt;
@@ -111,7 +151,26 @@ function updateRipple(dt){
   rippleUniforms.uHSL.value.set(Palette.noteHue(ripplePc), 0.7, 0.5);
   const sinceNote = (performance.now() - lastPlayedAt)/1000;
   rippleUniforms.uPulse.value = Math.max(0, 1 - sinceNote/1.2);
+  if(rippleReflectionUniforms){
+    rippleReflectionUniforms.uTime.value = rippleUniforms.uTime.value;
+    rippleReflectionUniforms.uHSL.value.copy(rippleUniforms.uHSL.value);
+    rippleReflectionUniforms.uPulse.value = rippleUniforms.uPulse.value;
+  }
 }
-function showRipple(){ document.getElementById('rippleView').style.display = 'block'; rippleMesh.visible = true; }
-function hideRipple(){ document.getElementById('rippleView').style.display = 'none'; rippleMesh.visible = false; }
+function showRipple(){
+  buildRippleRoom();
+  document.getElementById('rippleView').style.display = 'block';
+  document.body.classList.add('rippleOpen');
+  rippleMesh.visible = true;
+}
+function hideRipple(){
+  document.getElementById('rippleView').style.display = 'none';
+  document.body.classList.remove('rippleOpen');
+  rippleMesh.visible = false;
+}
 document.getElementById('rippleToggleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };
+document.getElementById('rippleRoomClose').onclick = hideRipple;
+// rippleReflectionUniforms is reassigned by buildRippleRoom (starts null), so a plain __api
+// reference would only ever capture its boot-time value — expose it live via a getter instead
+function getRippleReflectionUniforms(){ return rippleReflectionUniforms; }
+function isRippleRoomBuilt(){ return rippleRoomBuilt; }

@@ -8,9 +8,9 @@ const sc=()=>({set(){},setScalar(){}}),quat=()=>({setFromUnitVectors(){}});
 class Geo{constructor(){this.attributes={};}setAttribute(n,a){this.attributes[n]=a;return this;}dispose(){}}
 class Attr{constructor(arr){this.array=arr;this.needsUpdate=false;}}
 const M=class{constructor(g,m){this.geometry=g||new Geo();this.material=m||{opacity:1,color:new Col(),dispose(){}};
- this.position=new V3();this.scale=sc();this.quaternion=quat();this.userData={};this.visible=true;}};
+ this.position=new V3();this.scale=sc();this.rotation={x:0,y:0,z:0};this.quaternion=quat();this.userData={};this.visible=true;}};
 const THREE={AdditiveBlending:2,
- WebGLRenderer:class{setPixelRatio(){}setSize(){}render(){}},Scene:class{add(){}remove(){}},FogExp2:class{},
+ WebGLRenderer:class{setPixelRatio(){}setSize(){}setClearColor(){}render(){}},Scene:class{add(){}remove(){}},FogExp2:class{},
  PerspectiveCamera:class{constructor(){this.position=new V3();this.up=new V3();}lookAt(){}updateProjectionMatrix(){}},
  OrthographicCamera:class{constructor(){this.position=new V3();this.up=new V3();}lookAt(){}updateProjectionMatrix(){}},
  Vector3:V3,BufferGeometry:Geo,Float32BufferAttribute:Attr,

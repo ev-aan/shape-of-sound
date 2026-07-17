@@ -20,8 +20,20 @@ try {
   // ripple panel: its own render surface (not a spot inside the chord-map scene), so it must be
   // toggleable from anywhere — proven here, before ever entering Advanced/Science/Play at all
   if (__api.rippleMesh.visible || C['rippleView'].style.display === 'block') throw new Error('the ripple panel should start hidden');
+  if (__api.isRippleRoomBuilt()) throw new Error('the room\'s floor/reflection/fog should not be built until first opened');
   C['rippleToggleBtn'].onclick();
   if (!__api.rippleMesh.visible || C['rippleView'].style.display !== 'block') throw new Error('the ripple toggle should work from the Simple front door, before entering any mode');
+  if (!__api.isRippleRoomBuilt()) throw new Error('opening the ripple should lazily build the room');
+  const reflectionAfterFirstOpen = __api.getRippleReflectionUniforms();
+  if (!reflectionAfterFirstOpen) throw new Error('opening the ripple should create the reflection uniforms');
+  C['rippleToggleBtn'].onclick();
+  if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
+  C['rippleToggleBtn'].onclick();
+  if (__api.getRippleReflectionUniforms() !== reflectionAfterFirstOpen) throw new Error('reopening the ripple should reuse the already-built room, not rebuild it');
+  __api.updateRipple(0.016);
+  const refl = __api.getRippleReflectionUniforms();
+  if (refl.uTime.value !== __api.rippleUniforms.uTime.value) throw new Error('the reflection should track the main panel\'s time uniform');
+  if (refl.uHSL.value.x !== __api.rippleUniforms.uHSL.value.x) throw new Error('the reflection should track the main panel\'s tint');
   C['rippleToggleBtn'].onclick();
   if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
   // the Elorah logo: the circle of fifths drawn as the spiral it actually is — real fifths order
