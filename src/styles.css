@@ -20,6 +20,12 @@
  .siteHeaderNav button:hover{color:var(--ink);}
  .siteHeaderNav button.on{color:var(--ink);border-bottom-color:var(--ink);}
  @media(max-width:640px){ .siteHeaderNav{display:none;} }
+ #rippleToggleBtn{font-size:15px;line-height:1;}
+ /* a small always-available widget, same fixed-panel family as #legend — its own tiny
+    THREE.js renderer/scene/camera (see 32_ripple.js), independent of whichever mode's own
+    scene/page is showing, so it can be toggled on from anywhere via #rippleToggleBtn above. */
+ #rippleView{position:fixed;top:12px;right:12px;width:160px;height:160px;border-radius:12px;
+   border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(8px);z-index:7;display:none;}
  #title{position:fixed;top:52px;left:16px;pointer-events:none;max-width:60vw;}
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}

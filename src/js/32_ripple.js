@@ -1,22 +1,29 @@
 // ---- RIPPLE PANEL: sound as concentric rings, colored by pitch, radiating outward ----
-// A standalone mesh in the same scene/camera/renderer that already draws the chord map (see
-// 00_core.js) — not a second WebGL context, and no second requestAnimationFrame loop (its
-// per-frame update is one added line inside 90_init.js's existing frame()). Continuously
-// animating on its own clock, and audio-reactive via lastPlayedAt/lastPlayedFreqs (35_audio.js)
-// — every caller of playFreqs anywhere in the app makes this pulse, with no per-call-site wiring.
-// show/hideRipple() toggle it, so it can be called from anywhere, not just one mode.
+// Its own tiny THREE.js renderer/scene/camera — not a spot inside the chord-map scene anymore,
+// so it can be shown from any mode/page, not just while that scene happens to be rendering.
+// Still just one shared requestAnimationFrame loop: its per-frame render is one added line
+// inside 90_init.js's existing frame(), not a second rAF registration (the test harness's
+// stubbed requestAnimationFrame only tracks one callback slot). Continuously animating on its
+// own clock, and audio-reactive via lastPlayedAt/lastPlayedFreqs (35_audio.js) — every caller of
+// playFreqs anywhere in the app makes this pulse, with no per-call-site wiring.
+// show/hideRipple() toggle it from the persistent header (#rippleToggleBtn), reachable anywhere.
 const RIPPLE_SIZE = 256;
 const rippleCanvas = document.createElement('canvas');
 rippleCanvas.width = rippleCanvas.height = RIPPLE_SIZE;
 const rippleCtx = rippleCanvas.getContext('2d');
 const rippleTexture = new THREE.CanvasTexture(rippleCanvas);
 const rippleMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(48, 48),
+  new THREE.PlaneGeometry(30, 30),
   new THREE.MeshBasicMaterial({ map: rippleTexture, transparent: true, opacity: 0.92, depthWrite: false })
 );
 rippleMesh.visible = false;
-rippleMesh.position.set(90, 40, -20); // off to the side of the chord cluster — tuned live against the actual camera framing
-scene.add(rippleMesh);
+const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true, alpha: true });
+rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+rippleRenderer.setSize(160, 160);
+const rippleScene = new THREE.Scene();
+rippleScene.add(rippleMesh);
+const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 500);
+rippleCamera.position.set(0, 0, 60);
 let rippleClock = 0, ripplePc = 0;
 // reuses Palette.noteCss — the same "a note keeps its colour everywhere" system the logo, the
 // wheel, and every other surface already use, so the rings are the app's real 12-tone palette,
@@ -44,6 +51,6 @@ function updateRipple(dt){
   }
   drawRipple();
 }
-function showRipple(){ rippleMesh.visible = true; drawRipple(); }
-function hideRipple(){ rippleMesh.visible = false; }
-document.getElementById('sciRippleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };
+function showRipple(){ document.getElementById('rippleView').style.display = 'block'; rippleMesh.visible = true; drawRipple(); }
+function hideRipple(){ document.getElementById('rippleView').style.display = 'none'; rippleMesh.visible = false; }
+document.getElementById('rippleToggleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };

@@ -6,6 +6,10 @@ setTimeout(()=>{const t=document.getElementById('toast');if(t){t.style.opacity=0
 let appVisible=true; // paused while the Simple front door is showing — nothing to see, no need to render
 const clock=new THREE.Clock();
 function frame(){const dt=Math.min(clock.getDelta(),0.05);
+  // the ripple panel has its own renderer/scene, independent of whichever mode's own scene/page
+  // is showing (see 32_ripple.js) — updated here, unconditionally, so it keeps animating on
+  // every page, not just while the chord-map scene below happens to be on screen
+  if(rippleMesh.visible){ updateRipple(dt); rippleRenderer.render(rippleScene,rippleCamera); }
   if(appVisible){
   if(!down&&!prog)theta+=dt*0.03;
   const ringTarget=(layoutName==='expl')?1:0;
@@ -16,7 +20,6 @@ function frame(){const dt=Math.min(clock.getDelta(),0.05);
     halos[i].scale.setScalar(halos[i].userData.base*(1+pulses[i]));}}
   if(hl){hlT-=dt;hl.material.opacity=Math.max(0,hlT/2.4)*0.9;if(hlT<=0){scene.remove(hl);hl.geometry.dispose();hl.material.dispose();hl=null;}}
   if(prog)advanceProg(dt);
-  updateRipple(dt);
   updateCamera();renderer.render(scene,camera);
   } else if(typeof heroFrameStep === 'function'){ heroFrameStep(dt); }
   requestAnimationFrame(frame);}
