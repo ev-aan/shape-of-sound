@@ -108,6 +108,13 @@ function resizeRipple(){
 addEventListener('resize', resizeRipple);
 resizeRipple();
 let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
+// 'room' (the noise-displaced panel below) or 'shader' (a pasted Shadertoy shader — see
+// 33_shadertoy.js, which reads/writes this same shared variable)
+let rippleMode = 'room';
+function renderRippleFrame(dt){
+  if(rippleMode === 'shader'){ updateShaderToy(dt); rippleRenderer.render(shaderToyScene, shaderToyCamera); }
+  else { updateRipple(dt); rippleRenderer.render(rippleScene, rippleCamera); }
+}
 // the room's heavier pieces (floor, reflection, fog, the angled camera framing) are built once,
 // lazily, the first time the room is actually opened — not at boot, and not refetched, just
 // deferred construction, since this is a single offline HTML file with no separate bundle to load
@@ -167,6 +174,10 @@ function hideRipple(){
   document.getElementById('rippleView').style.display = 'none';
   document.body.classList.remove('rippleOpen');
   rippleMesh.visible = false;
+  // reopening should always start back in the noise room, not wherever a previous
+  // shader-editing session left off
+  rippleMode = 'room';
+  const panel = document.getElementById('shaderToyPanel'); if(panel) panel.style.display = 'none';
 }
 document.getElementById('rippleToggleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };
 document.getElementById('rippleRoomClose').onclick = hideRipple;

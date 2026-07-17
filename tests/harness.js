@@ -4,6 +4,8 @@ class V3{constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
  sub(v){this.x-=v.x;this.y-=v.y;this.z-=v.z;return this;}length(){return Math.hypot(this.x,this.y,this.z);}
  normalize(){const l=this.length()||1;this.x/=l;this.y/=l;this.z/=l;return this;}multiplyScalar(s){this.x*=s;this.y*=s;this.z*=s;return this;}lookAt(){}}
 class Col{constructor(){this.r=.5;this.g=.5;this.b=.5;}set(){return this;}setHSL(){return this;}}
+class V4{constructor(x=0,y=0,z=0,w=0){this.x=x;this.y=y;this.z=z;this.w=w;}
+ set(x,y,z,w){this.x=x;this.y=y;this.z=z;this.w=w;return this;}copy(v){this.x=v.x;this.y=v.y;this.z=v.z;this.w=v.w;return this;}}
 const sc=()=>({set(){},setScalar(){}}),quat=()=>({setFromUnitVectors(){}});
 class Geo{constructor(){this.attributes={};}setAttribute(n,a){this.attributes[n]=a;return this;}dispose(){}}
 class Attr{constructor(arr){this.array=arr;this.needsUpdate=false;}}
@@ -13,7 +15,7 @@ const THREE={AdditiveBlending:2,
  WebGLRenderer:class{setPixelRatio(){}setSize(){}setClearColor(){}render(){}},Scene:class{add(){}remove(){}},FogExp2:class{},
  PerspectiveCamera:class{constructor(){this.position=new V3();this.up=new V3();}lookAt(){}updateProjectionMatrix(){}},
  OrthographicCamera:class{constructor(){this.position=new V3();this.up=new V3();}lookAt(){}updateProjectionMatrix(){}},
- Vector3:V3,BufferGeometry:Geo,Float32BufferAttribute:Attr,
+ Vector3:V3,Vector4:V4,BufferGeometry:Geo,Float32BufferAttribute:Attr,
  Points:class{constructor(g,m){this.geometry=g||new Geo();this.material=m||{};this.visible=true;}},
  PointsMaterial:class{},CanvasTexture:class{},SphereGeometry:class{dispose(){}},ConeGeometry:class{dispose(){}},PlaneGeometry:class{dispose(){}},
  MeshBasicMaterial:class{constructor(o={}){this.color=o.color&&o.color.set?o.color:new Col();this.visible=o.visible;this.opacity=o.opacity??1;this.transparent=o.transparent;}dispose(){}},

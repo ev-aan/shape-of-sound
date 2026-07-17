@@ -283,8 +283,24 @@ try {
   __api.playFreqs([440]); // A4 = pitch class 9 (not 0 -- 440Hz is the A-relative reference, offset back to this app's C=0 numbering)
   __api.updateRipple(0.016);
   if (__api.rippleUniforms.uHSL.value.x !== __api.Palette.noteHue(9)) throw new Error('playing a note should tint the ripple with that note\'s real hue');
-  C['rippleToggleBtn'].onclick();
+  // Shadertoy loader: paste raw Shadertoy GLSL, wrapped with the standard uniforms and run as
+  // a second ripple-room mode (see 33_shadertoy.js) — no headless GLSL compilation, just proving
+  // the wrapping/wiring doesn't throw and the mode switch behaves, same posture as the room's own shader
+  if (__api.getRippleMode() !== 'room') throw new Error('the ripple should start in room mode');
+  const wrapped = __api.wrapShadertoyGLSL('void mainImage( out vec4 fragColor, in vec2 fragCoord ){ fragColor = vec4(1.0); }');
+  if (!/uniform vec3 iResolution/.test(wrapped) || !/uniform float iTime/.test(wrapped) || !/mainImage\(gl_FragColor, gl_FragCoord\.xy\)/.test(wrapped)) throw new Error('wrapShadertoyGLSL should inject the standard Shadertoy uniforms and call mainImage');
+  const badResult = __api.loadShadertoy('this is not a shader');
+  if (badResult.ok) throw new Error('loading a shader with no mainImage(...) should fail, not silently succeed');
+  if (__api.getRippleMode() !== 'room') throw new Error('a failed shader load should not change the ripple mode');
+  const goodResult = __api.loadShadertoy(__api.CINESHADER_RIPPLE_EXAMPLE);
+  if (!goodResult.ok) throw new Error('loading the built-in example shader should succeed');
+  if (__api.getRippleMode() !== 'shader') throw new Error('loading a valid shader should switch the ripple into shader mode');
+  __api.updateShaderToy(0.016); // should not throw
+  if (__api.shaderToyUniforms.iTime.value !== 0.016) throw new Error('updateShaderToy should advance iTime');
+  if (__api.shaderToyUniforms.iFrame.value !== 1) throw new Error('updateShaderToy should advance iFrame');
+  C['rippleToggleBtn'].onclick(); // close the whole room
   if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
+  if (__api.getRippleMode() !== 'room') throw new Error('closing the ripple room should reset back to room mode, not stay in shader mode');
   // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
   // function-coloured diagram of that key's chords (subdominant -> dominant -> tonic)
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'musical' } } : null } });

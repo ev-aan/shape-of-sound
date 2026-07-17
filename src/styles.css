@@ -28,6 +28,18 @@
    font-size:20px;color:var(--dim);}
  #rippleRoomClose:hover{color:var(--ink);}
  body.rippleOpen #rippleRoomClose{display:block;}
+ /* paste-and-run Shadertoy loader (see 33_shadertoy.js) — a second rendering mode for the same
+    room/canvas/toggle, only reachable while the room itself is open. */
+ .shaderToyOpenBtn{position:fixed;bottom:16px;left:16px;z-index:9;display:none;width:auto;}
+ body.rippleOpen .shaderToyOpenBtn{display:block;}
+ .shaderToyPanel{position:fixed;bottom:16px;left:16px;z-index:9;width:min(480px,calc(100vw - 32px));
+   background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;
+   backdrop-filter:blur(8px);}
+ #shaderToySource{font:11px/1.4 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);
+   background:#ffffff10;border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;
+   height:160px;resize:vertical;margin:6px 0;}
+ .shaderToyPanel .ctrls{gap:8px;}
+ .shaderToyPanel .hint{color:#f0958a;min-height:1.2em;margin-top:4px;}
  #title{position:fixed;top:52px;left:16px;pointer-events:none;max-width:60vw;}
  #title h1{margin:0;font-weight:600;font-size:20px;}
  #title p{margin:3px 0 0;font-size:10.5px;color:var(--dim);line-height:1.3;}
