@@ -65,17 +65,17 @@ try {
   fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'musical' } } : null } });
   if (C['advancedApp'].style.display === 'none') throw new Error('the Musical row should open Advanced');
   if (__api.View.get().mode !== 'musical') throw new Error('the Musical row should enter Musical mode');
-  C['backToSimpleBtn'].onclick();
+  C['siteHeaderHome'].onclick();
   fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'science' } } : null } });
   if (__api.View.get().mode !== 'science') throw new Error('the Science row should enter Science mode');
   if (__api.View.get().dim !== '3d') throw new Error('the Science row should switch to 3D');
-  C['backToSimpleBtn'].onclick();
+  C['siteHeaderHome'].onclick();
   fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'play' } } : null } });
   if (__api.View.get().mode !== 'play') throw new Error('the Play row should enter Play mode');
-  C['backToSimpleBtn'].onclick();
+  C['siteHeaderHome'].onclick();
   fire(C['heroRows'], 'click', { target: { closest: sel => sel === '.heroRow' ? { dataset: { mode: 'lessons' } } : null } });
   if (__api.View.get().mode !== 'lessons') throw new Error('the Lessons row should enter Lessons mode');
-  C['backToSimpleBtn'].onclick();
+  C['siteHeaderHome'].onclick();
   if (C['simpleFront'].style.display === 'none') throw new Error('back-to-Simple button should restore the front door');
   // magnetic hover: the CTA and the wheel's notes nudge toward the cursor on pointermove, and
   // release (clear their transform) on pointerleave
@@ -566,14 +566,14 @@ try {
   global.window.AudioContext.prototype.createOscillator = origRwCreateOsc;
   if (rwOscCount !== 1) throw new Error('tapping a note should play it, played ' + rwOscCount);
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
-  // fixed equal temperament) — showing it there would be chrome bleeding across pages
-  if (C['tuneToggle'].style.display === '') throw new Error('Lessons mode should hide the tune toggle, which has no effect on its demos');
+  // fixed equal temperament) — showMode() never relocates it into #lessonsSettingsAnchor
+  if (C['lessonsSettingsAnchor'].children.includes(C['tuneToggle'])) throw new Error('Lessons mode should not have the tune toggle, which has no effect on its demos');
   // a mode switch is a fresh page: scroll position shouldn't carry over from a previous visit
   C['lessonsHome'].scrollTop = 400;
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
   frames(5);
   if (C['lessonsHome'].style.display === '') throw new Error('leaving Lessons should hide #lessonsHome');
-  if (C['tuneToggle'].style.display !== '') throw new Error('Science mode should show the tune toggle again');
+  if (!C['sciSettingsAnchor'].children.includes(C['tuneToggle'])) throw new Error('Science mode should relocate the tune toggle back into its own sidebar');
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
   if (C['lessonsHome'].scrollTop !== 0) throw new Error('re-entering Lessons should reset scroll to the top, not resume a previous scroll position');

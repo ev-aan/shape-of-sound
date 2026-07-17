@@ -267,5 +267,4 @@ function wireSimpleFront(){
   wireHeroParallax();
   wireMagnetic(document.getElementById('heroCta'), { baseX: 4, max: 12 });
   document.getElementById('heroCta').onclick = () => { showAdvanced(); switchMode('science'); };
-  document.getElementById('backToSimpleBtn').onclick = () => showSimple();
 }

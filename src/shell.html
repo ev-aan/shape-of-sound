@@ -85,6 +85,7 @@
   <div class="hint" id="mLegend" style="text-align:center;margin-top:10px;">Tap any note — what key do you want to try?</div>
   <div id="musSuggest" class="musSuggest"></div>
   <div class="musSecondaryControls">
+   <div id="musSettingsAnchor" class="settingsAnchor"></div>
    <div class="musScaleRow"><span class="musScaleLbl">scale</span><select id="mScaleSel"></select></div>
    <div class="musScaleRow"><span class="musScaleLbl">tap plays</span><div class="pills" id="musTapPills">
      <button data-k="chord" class="on">Chord</button><button data-k="note">Note</button></div></div>
@@ -112,6 +113,7 @@
 <div id="lessonsHome" style="display:none;">
  <div class="musWrap">
   <div id="lessonNav" class="lessonNav"></div>
+  <div id="lessonsSettingsAnchor" class="settingsAnchor"></div>
   <p class="hint" style="text-align:center;">Want a full worked example instead? See the Bach Prelude playback in Musical mode.</p>
   <div class="musScaleRow"><span class="musScaleLbl">notes</span><div class="pills" id="staffColorPills">
     <button data-k="bw" class="on">Black &amp; white</button><button data-k="color">Colour</button></div></div>
@@ -218,20 +220,6 @@
  </div>
 </div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
-<div id="topbar">
- <button id="backToSimpleBtn" class="sharebtn">‹ Simple</button>
- <div id="dimToggle" class="pills">
-   <button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button>
- </div>
- <div id="tuneToggle" class="pills">
-   <button data-tune="ET" class="on">Equal</button><button data-tune="JI">Just</button>
- </div>
- <div id="levelToggle" class="pills">
-   <button data-level="beginner" class="on">Beginner</button><button data-level="advanced">Advanced</button>
- </div>
- <div id="topbarLabel">Science — physics from overtone overlap</div>
- <button id="shareBtn" class="sharebtn">⤴ share view</button>
-</div>
 <div id="sound">tap for sound</div>
 <div id="toast">No sound on iPhone? Flip the side <b>Silent</b> switch off, volume up, or open in <b>Safari</b>.</div>
 <div id="detail"></div>
@@ -283,6 +271,13 @@
 </div>
 <div id="panel">
  <div id="scienceControls">
+ <div id="sciSettingsAnchor" class="settingsAnchor grp">
+  <div id="topbarLabel" class="hint"></div>
+  <div id="levelToggle" class="pills"><button data-level="beginner" class="on">Beginner</button><button data-level="advanced">Advanced</button></div>
+  <div id="tuneToggle" class="pills"><button data-tune="ET" class="on">Equal</button><button data-tune="JI">Just</button></div>
+  <div id="dimToggle" class="pills"><button data-dim="3d" class="on">3D</button><button data-dim="2d">2D</button></div>
+  <button id="shareBtn" class="sharebtn">⤴ share view</button>
+ </div>
  <div class="grp"><button id="sciBackConceptBtn" class="simpleFullLink">‹ back to concept</button></div>
  <div class="grp"><div class="lbl">key (light up a key's chords)</div>
    <select id="keySel"></select>
@@ -307,6 +302,7 @@
  <div class="grp"><button id="sciToLessonsBtn" class="simpleFullLink">continue to Lessons →</button></div>
  </div>
  <div id="playControls" style="display:none;">
+ <div id="playSettingsAnchor" class="settingsAnchor grp"></div>
  <div class="grp"><div class="lbl">play</div><div class="hint">Build a chord on the keyboard below, or tap a star on the map. Once we recognise it, add it to your progression — then hit play to hear it back.</div></div>
  </div>
 </div>

@@ -59,13 +59,24 @@ function showMode(mode){
   // just stacks two unrelated captions on screen at once.
   document.getElementById('title').style.display = (mode === 'musical' || mode === 'lessons' || mode === 'play') ? 'none' : '';
   document.getElementById('legend').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
-  document.getElementById('dimToggle').style.display = (mode === 'musical' || mode === 'lessons') ? 'none' : '';
-  // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
-  // effect there — showing it anyway is exactly the kind of chrome bleeding across pages that
-  // makes each mode feel less like its own distinct page.
-  document.getElementById('tuneToggle').style.display = (mode === 'lessons') ? 'none' : '';
-  // the spectrum banner (#sciSpectrum, styled in styles.css) is Science-only; this class also
-  // shifts #title/#topbar down in CSS to clear it rather than being covered by it.
+  // the old floating centered topbar is gone — its controls (dimToggle, tuneToggle, levelToggle,
+  // shareBtn, topbarLabel) now live inside whichever mode's own sidebar is active, moved here via
+  // appendChild (which relocates an existing DOM node rather than cloning it) into a small
+  // per-mode "settings anchor". A control not relevant to the incoming mode (e.g. dimToggle
+  // entering Musical) is just left wherever it was, inside a now-hidden sidebar — already
+  // invisible, no separate display toggling needed the way the old code required.
+  const settingsAnchor = document.getElementById({ science: 'sciSettingsAnchor', play: 'playSettingsAnchor',
+    musical: 'musSettingsAnchor', lessons: 'lessonsSettingsAnchor' }[mode]);
+  if (settingsAnchor) {
+    settingsAnchor.appendChild(document.getElementById('topbarLabel'));
+    settingsAnchor.appendChild(document.getElementById('levelToggle'));
+    settingsAnchor.appendChild(document.getElementById('shareBtn'));
+    if (mode === 'science' || mode === 'play') settingsAnchor.appendChild(document.getElementById('dimToggle'));
+    // the Lessons demos always play back at fixed equal temperament (m2f), so Equal/Just has no
+    // effect there — showing it anyway is exactly the kind of chrome bleeding across pages that
+    // makes each mode feel less like its own distinct page.
+    if (mode !== 'lessons') settingsAnchor.appendChild(document.getElementById('tuneToggle'));
+  }
   document.body.classList.toggle('sciMode', mode === 'science');
   appVisible = (mode !== 'musical' && mode !== 'lessons');
 }

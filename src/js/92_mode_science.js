@@ -145,11 +145,9 @@ function applySciStage(){
   document.getElementById('panel').style.display = concept ? 'none' : '';
   document.getElementById('legend').style.display = concept ? 'none' : '';
   document.getElementById('title').style.display = concept ? 'none' : '';
-  document.getElementById('dimToggle').style.display = concept ? 'none' : '';
-  // the topbar's tuning/level/share controls apply to the exploration tool, not the concept
-  // intro — the concept page has its own headline and controls, so the floating menu is just
-  // redundant clutter on top of it until "Start exploring" is clicked
-  document.getElementById('topbar').style.display = concept ? 'none' : '';
+  // dimToggle/tuneToggle/levelToggle/shareBtn/topbarLabel now live inside #scienceControls
+  // (see #sciSettingsAnchor, wired up by showMode()'s appendChild relocation) — hiding #panel
+  // above already hides all of them along with the rest of the sidebar, no separate line needed.
   appVisible = !concept; // same pause-when-not-visible convention 96_simple.js already uses
 }
 Modes.register('science', {
