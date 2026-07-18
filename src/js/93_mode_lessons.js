@@ -73,19 +73,12 @@ function applyLessonsStage(){
 }
 function wireLessonsScrollStage(){
   const home = document.getElementById('lessonsHome'), wrap = document.getElementById('lessonsScrollStage');
-  const RANGE_PX = 2400;
   const staffEl = document.getElementById('lessonsStageStaff'), captionEl = document.getElementById('lessonsStageCaption');
   const renderStage = () => {
     const r = renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT });
     if(r.idx !== lessonsLastPlayedIdx){ lessonsLastPlayedIdx = r.idx; playFreqs([m2f(r.playMidi)], r.playDur); }
   };
-  if(home && wrap) home.addEventListener('scroll', () => {
-    const base = wrap.offsetTop || 0;
-    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / RANGE_PX));
-    if(Math.abs(t - lessonsT) < 0.002) return; // skip redundant re-renders on sub-pixel scroll deltas
-    lessonsT = t;
-    renderStage();
-  });
+  wireScrollRange(home, wrap, 2400, t => { lessonsT = t; renderStage(); });
   renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT }); // initial paint only — no sound until the visitor actually scrolls
 }
 

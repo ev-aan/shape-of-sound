@@ -115,19 +115,12 @@ function renderSciWaveContinuum(container, opts){
 }
 function wireSciScrollStage(){
   const home = document.getElementById('scienceHome'), wrap = document.getElementById('sciScrollStage');
-  const RANGE_PX = 2000;
   const renderContinuum = () => {
     const r = renderSciWaveContinuum(document.getElementById('sciStagePanel'), { t: sciT, amplitude: sciAmplitude });
     if(sciT >= 0.66 && r.pc !== sciWaveLastPc){ sciWaveLastPc = r.pc; playFreqs([m2f(60+r.pc)], 0.3); }
     else if(sciT < 0.66){ sciWaveLastPc = null; }
   };
-  if(home && wrap) home.addEventListener('scroll', () => {
-    const base = wrap.offsetTop || 0;
-    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / RANGE_PX));
-    if(Math.abs(t - sciT) < 0.002) return; // skip redundant re-renders on sub-pixel scroll deltas
-    sciT = t;
-    renderContinuum();
-  });
+  wireScrollRange(home, wrap, 2000, t => { sciT = t; renderContinuum(); });
   const ampSlider = document.getElementById('sciAmpSlider');
   if(ampSlider) ampSlider.addEventListener('input', () => { sciAmplitude = ampSlider.value/100; renderContinuum(); });
   renderContinuum();

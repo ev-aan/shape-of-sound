@@ -1094,6 +1094,26 @@ Surfaces.register('elorahlogo', {
   }
 });
 
+// ---- SCROLL STAGE: shared scroll-to-progress math for scroll-driven concept pages ----
+// the scroll-to-progress math every scroll-driven concept page in this app needs: read
+// home.scrollTop, treat wrap's own offsetTop as the zero point, divide by rangePx to get a
+// t in [0,1], and skip redundant calls on sub-pixel scroll deltas. Owns no state itself —
+// callers keep their own `t`/render-result variables (e.g. Science's amplitude slider reads
+// its own sciT independent of a scroll event), this just wires the listener and dispatches.
+// See 92_mode_science.js's wireSciScrollStage() and 93_mode_lessons.js's
+// wireLessonsScrollStage(), which both call this instead of hand-rolling the same math.
+function wireScrollRange(home, wrap, rangePx, onScroll){
+  if(!home || !wrap) return;
+  let last = -1;
+  home.addEventListener('scroll', () => {
+    const base = wrap.offsetTop || 0;
+    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / rangePx));
+    if(Math.abs(t - last) < 0.002) return;
+    last = t;
+    onScroll(t);
+  });
+}
+
 // circle-of-fifths ring + labels
 const ringGroup=[];let ringLine=null;
 (function(){const pts=[];for(let cof=0;cof<=12;cof++){const a=2*Math.PI*(cof%12)/12;pts.push(R0*Math.cos(a),0,R0*Math.sin(a));}
@@ -2697,19 +2717,12 @@ function renderSciWaveContinuum(container, opts){
 }
 function wireSciScrollStage(){
   const home = document.getElementById('scienceHome'), wrap = document.getElementById('sciScrollStage');
-  const RANGE_PX = 2000;
   const renderContinuum = () => {
     const r = renderSciWaveContinuum(document.getElementById('sciStagePanel'), { t: sciT, amplitude: sciAmplitude });
     if(sciT >= 0.66 && r.pc !== sciWaveLastPc){ sciWaveLastPc = r.pc; playFreqs([m2f(60+r.pc)], 0.3); }
     else if(sciT < 0.66){ sciWaveLastPc = null; }
   };
-  if(home && wrap) home.addEventListener('scroll', () => {
-    const base = wrap.offsetTop || 0;
-    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / RANGE_PX));
-    if(Math.abs(t - sciT) < 0.002) return; // skip redundant re-renders on sub-pixel scroll deltas
-    sciT = t;
-    renderContinuum();
-  });
+  wireScrollRange(home, wrap, 2000, t => { sciT = t; renderContinuum(); });
   const ampSlider = document.getElementById('sciAmpSlider');
   if(ampSlider) ampSlider.addEventListener('input', () => { sciAmplitude = ampSlider.value/100; renderContinuum(); });
   renderContinuum();
@@ -2842,19 +2855,12 @@ function applyLessonsStage(){
 }
 function wireLessonsScrollStage(){
   const home = document.getElementById('lessonsHome'), wrap = document.getElementById('lessonsScrollStage');
-  const RANGE_PX = 2400;
   const staffEl = document.getElementById('lessonsStageStaff'), captionEl = document.getElementById('lessonsStageCaption');
   const renderStage = () => {
     const r = renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT });
     if(r.idx !== lessonsLastPlayedIdx){ lessonsLastPlayedIdx = r.idx; playFreqs([m2f(r.playMidi)], r.playDur); }
   };
-  if(home && wrap) home.addEventListener('scroll', () => {
-    const base = wrap.offsetTop || 0;
-    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / RANGE_PX));
-    if(Math.abs(t - lessonsT) < 0.002) return; // skip redundant re-renders on sub-pixel scroll deltas
-    lessonsT = t;
-    renderStage();
-  });
+  wireScrollRange(home, wrap, 2400, t => { lessonsT = t; renderStage(); });
   renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT }); // initial paint only — no sound until the visitor actually scrolls
 }
 
