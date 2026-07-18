@@ -16,7 +16,7 @@ Surfaces.register('cof', {
   render(container, opts){
     if(!container) return;
     opts = opts || {};
-    const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
+    const order = FIFTHS_ORDER;
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = opts.noteRadius || 22;
     const pad = opts.viewBoxPad || 0;
     let svg = '<svg viewBox="'+(-pad)+' '+(-pad)+' '+(size+2*pad)+' '+(size+2*pad)+'" class="cofSvg">';

@@ -4,6 +4,12 @@
 // the header. switchMode keeps the header nav and the Modes registry in sync — the one place
 // that does both, used by the header nav click handler, the bridge button, deep-link restore,
 // and the Play hand-off from addToSeq.
+// the superstructure surface only has two thirds-stacks (major/minor, see SS_STACK in
+// 89_surface_superstructure.js), so any chord quality has to collapse into one of the two —
+// shared by both bridge hand-offs below rather than each re-deriving the same guess
+function guessScaleFamily(n){
+  return (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+}
 function switchMode(id){
   const headerNav = document.getElementById('siteHeaderNav');
   if(headerNav) headerNav.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
@@ -71,7 +77,7 @@ function installBridgeButton(){
           const n = N[idx];
           const cur = View.get();
           if(cur.key == null){
-            const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+            const scale = guessScaleFamily(n);
             View.set({ key: n.root, scale });
             const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
             const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
@@ -91,10 +97,7 @@ function installBridgeButton(){
     }
     if(act === 'extend-link' && detailIdx != null){
       const n = N[detailIdx];
-      // same "is this chord minor-ish" heuristic the bridge button above already uses to guess
-      // a scale — the superstructure surface only has two stacks (major/minor), so it's the
-      // right approximation here too, not a new rule to invent.
-      const quality = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+      const quality = guessScaleFamily(n);
       switchMode('lessons');
       selectLesson('extensions', { root: n.root, quality, upTo: n.ivs.length });
       return;

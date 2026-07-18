@@ -15,8 +15,6 @@ const TQ_MAJOR_IVS = TQ_ROWS[0].ivs; // [0,4,7] — the reference every other ro
 function tqRowSvg(root, row){
   const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 30;
   const xFor = semis => pad + semis*step;
-  let ticks = '';
-  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="tqTick"></line>'; }
   // ghost outlines: major-triad tone positions this row replaces (root is always shared, skip it)
   let ghosts = '';
   TQ_MAJOR_IVS.forEach(iv => {
@@ -24,14 +22,14 @@ function tqRowSvg(root, row){
   });
   let dots = '';
   row.ivs.forEach((iv, i) => {
-    const pc = ((root+iv) % 12 + 12) % 12, col = Palette.noteCss(pc, .68, .62);
+    const pc = mod12(root+iv), col = Palette.noteCss(pc, .68, .62);
     dots += '<circle cx="'+xFor(iv)+'" cy="'+y+'" r="8" style="--pc:'+col+'" class="tqDot"></circle>'+
       '<text x="'+xFor(iv)+'" y="'+(y-13)+'" class="tqToneLabel">'+row.tones[i]+'</text>'+
       '<text x="'+xFor(iv)+'" y="'+(y+23)+'" class="tqNoteLabel">'+NOTE[pc]+'</text>';
   });
   return '<svg viewBox="0 0 '+w+' 58" class="tqSvg">'+
     '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="tqLine"></line>'+
-    ticks+ghosts+dots+
+    tickMarksHorizontal(xFor, y, 'tqTick')+ghosts+dots+
     '</svg>';
 }
 
@@ -43,7 +41,7 @@ Surfaces.register('triadquality', {
   label: 'Triad quality',
   render(container, opts){
     if(!container) return null;
-    const root = ((opts.root % 12) + 12) % 12;
+    const root = mod12(opts.root);
     container.innerHTML = TQ_ROWS.map(row =>
       '<div class="tqRow" data-q="'+row.q+'" title="tap to hear it">'+
         '<div class="tqRowLbl">'+row.label+'</div>'+

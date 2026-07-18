@@ -844,6 +844,16 @@ function applyColors(mode){N.forEach((n,i)=>{const c=dots[i].material.color,h=ha
   dots[i].material.opacity=1;halos[i].material.opacity=.55;
   if(mode==='family'){c.set(FAM[n.family]);h.set(FAM[n.family]);}else{Palette.applyToTHREE(c,n.root);Palette.applyToTHREE(h,n.root);}});}
 
+// mod12: the pitch-class-wraparound idiom used all over this app (a MIDI note, an interval sum,
+// a transposed root — anything that must land in 0..11 even when the input is negative, since
+// JS's % keeps the sign of its operand rather than always returning a positive remainder).
+// Bare top-level helper (not on Palette) since callers reach for it well before pitch/colour is
+// involved — e.g. plain interval-distance math.
+function mod12(x){ return ((x % 12) + 12) % 12; }
+// the circle of fifths in traversal order (index 0 = the root, index 1 = a fifth above, ...) —
+// matches Palette's own hue mapping below (i*7)%12, so any surface walking "around the circle"
+// draws notes in the same order they're coloured.
+const FIFTHS_ORDER = Array.from({ length: 12 }, (_, i) => mod12(i * 7));
 // ---- PALETTE: one source of truth for note & function colours ----
 // pitch class -> fifths index -> hue on the colour wheel
 // C=red, G=orange, D=yellow, A=green(ish), E=green-cyan, B=teal, F#=cyan, C#=azure, G#=indigo, D#=violet, A#=magenta, F=rose
@@ -852,7 +862,7 @@ const Palette = (function(){
   const NOTE_HUE = new Array(12);
   for(let pc=0; pc<12; pc++){ NOTE_HUE[pc] = ((pc*7)%12)/12; }
   function hsl(h,s,l){ return 'hsl('+Math.round(h*360)+','+Math.round(s*100)+'%,'+Math.round(l*100)+'%)'; }
-  function noteHue(pc){ return NOTE_HUE[((pc%12)+12)%12]; }
+  function noteHue(pc){ return NOTE_HUE[mod12(pc)]; }
   function noteCss(pc, s=.62, l=.62){ return hsl(noteHue(pc), s, l); }
   function applyToTHREE(color, pc, s=.62, l=.62){ color.setHSL(noteHue(pc), s, l); return color; }
   // function colours (Tonic/Subdominant/Dominant) — kept from existing FN palette
@@ -984,13 +994,13 @@ function scalePcs(scaleId, keyRoot){
 }
 function chordInScale(n, scaleId, keyRoot){
   const set = scalePcs(scaleId, keyRoot); if(!set) return true;
-  const pcs = n.pcs || (n.ivs||[]).map(iv => ((n.root + iv) % 12 + 12) % 12);
-  for(const pc of pcs){ if(!set.has(((pc%12)+12)%12)) return false; }
+  const pcs = n.pcs || (n.ivs||[]).map(iv => mod12(n.root + iv));
+  for(const pc of pcs){ if(!set.has(mod12(pc))) return false; }
   return true;
 }
 function chordDegreeIn(n, scaleId, keyRoot){
   const s = SCALES[scaleId]; if(!s || keyRoot==null) return null;
-  const deg = s.pcs.indexOf(((n.root - keyRoot) % 12 + 12) % 12);
+  const deg = s.pcs.indexOf(mod12(n.root - keyRoot));
   return deg >= 0 ? deg : null;
 }
 function chordFn(n, scaleId, keyRoot){
@@ -1031,6 +1041,19 @@ const Surfaces = (function(){
   function list(){ return Object.keys(reg); }
   return { register, get, list };
 })();
+// shared semitone-axis tick marks (0..12 semitones), used by any surface that draws a note pair
+// or triad along a straight axis (interval, triad quality) — one perpendicular tick per semitone,
+// so the two orientations (axis drawn horizontally vs. vertically) don't each reimplement the loop.
+function tickMarksHorizontal(xFor, y, cssClass){
+  let ticks = '';
+  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="'+cssClass+'"></line>'; }
+  return ticks;
+}
+function tickMarksVertical(yFor, x, cssClass){
+  let ticks = '';
+  for(let s=0; s<=12; s++){ const yy = yFor(s); ticks += '<line x1="'+(x-4)+'" x2="'+(x+4)+'" y1="'+yy+'" y2="'+yy+'" class="'+cssClass+'"></line>'; }
+  return ticks;
+}
 
 // ---- ELORAH LOGO: the circle of fifths, drawn as the spiral it actually is ----
 // Stack twelve real (justly-tuned) perfect fifths — ratio 3:2 each — and you don't land back on
@@ -1060,6 +1083,16 @@ function elorahLogoSvg(size){
     '<path d="'+path.trim()+'" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"></path>'+
     dots+'</svg>';
 }
+// registered so it's discoverable through Surfaces.list() alongside every other diagram —
+// elorahLogoSvg() itself stays a plain string-returning function (still called directly at its
+// one existing call site, src/js/99_boot.js), this is just a conforming container/opts wrapper
+Surfaces.register('elorahlogo', {
+  label: 'Elorah logo',
+  render(container, opts){
+    if(!container) return;
+    container.innerHTML = elorahLogoSvg(opts && opts.size);
+  }
+});
 
 // circle-of-fifths ring + labels
 const ringGroup=[];let ringLine=null;
@@ -1318,7 +1351,7 @@ function updateRipple(dt){
     // 440Hz is A4 (pitch class 9, not 0) — offset the A-relative semitone count so the tint
     // actually matches the note playing, using the app's usual C=0 chromatic numbering
     const semis = Math.round(12*Math.log2(lastPlayedFreqs[0]/440));
-    ripplePc = (((semis + 9) % 12) + 12) % 12;
+    ripplePc = mod12(semis + 9);
   }
   rippleUniforms.uHSL.value.set(Palette.noteHue(ripplePc), 0.7, 0.5);
   const sinceNote = (performance.now() - lastPlayedAt)/1000;
@@ -1522,8 +1555,8 @@ detailEl.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   if(act==='rel'){selectNode(+t.dataset.idx);}
   if(act==='cmp'){openScope(detailIdx,+t.dataset.idx);}
   if(act==='add'){addToSeq(detailIdx);}
-  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}
-  if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});
+  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(mod12));}
+  if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(mod12));}});
 // toggling Beginner/Advanced while a chord's detail card is already open should update it
 // immediately, not just on the next selection
 View.subscribe((state,prev)=>{ if(state.level!==prev.level && detailIdx>=0) renderDetail(detailIdx); });
@@ -1599,7 +1632,7 @@ function buildCloud(){const H=10,col=[],siz=[],tmp=new THREE.Color();cloudLocal=
   N.forEach((n,i)=>{const f0=Math.min.apply(null,n.freqs);
     n.freqs.forEach(f=>{for(let k=1;k<=H;k++){const pf=k*f,amp=1/k,pitch=Math.log2(pf),seed=(i*131+k*17+Math.round(f))%360,rad=2.2+amp*2;
       cloudLocal.push({i,ox:Math.cos(seed)*rad,oy:(pitch-Math.log2(f0))*8-14,oz:Math.sin(seed)*rad});
-      siz.push(2+amp*16);const pc=((Math.round(12*Math.log2(pf/CREF))%12)+12)%12;Palette.applyToTHREE(tmp,pc,.7,.6);col.push(tmp.r,tmp.g,tmp.b);}});});
+      siz.push(2+amp*16);const pc=mod12(Math.round(12*Math.log2(pf/CREF)));Palette.applyToTHREE(tmp,pc,.7,.6);col.push(tmp.r,tmp.g,tmp.b);}});});
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(cloudLocal.length*3),3));
   g.setAttribute('vcolor',new THREE.Float32BufferAttribute(col,3));g.setAttribute('psize',new THREE.Float32BufferAttribute(siz,1));
   cloudPoints=new THREE.Points(g,cloudMat);cloudPoints.visible=false;scene.add(cloudPoints);}
@@ -1829,7 +1862,7 @@ function pcName(pc, keyRoot){
   const useFlats = flatKeys.has(keyRoot||0);
   const flatN = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   const shpN  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  return (useFlats ? flatN : shpN)[((pc%12)+12)%12];
+  return (useFlats ? flatN : shpN)[mod12(pc)];
 }
 function renderScalesChart(){
   const host = document.getElementById('scalesChart'); if(!host) return;
@@ -1859,6 +1892,14 @@ function renderScalesChart(){
   }
   host.innerHTML = rows.join('');
 }
+// registered so it's discoverable through the same Surfaces.list() every other diagram is —
+// a thin wrapper only, not a full container/opts-driven rewrite: renderScalesChart() still reads
+// its own hardcoded #scalesChart element and View.get() directly, so the container/opts args
+// here are accepted for shape-conformance but not actually used yet.
+Surfaces.register('scaleschart', {
+  label: 'Scales chart',
+  render(container, opts){ renderScalesChart(); }
+});
 function openScalesChart(){
   document.getElementById('scalesPanel').classList.add('show');
   renderScalesChart();
@@ -1974,7 +2015,7 @@ Surfaces.register('cof', {
   render(container, opts){
     if(!container) return;
     opts = opts || {};
-    const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
+    const order = FIFTHS_ORDER;
     const size = 300, cx = size/2, cy = size/2, R = cx-40, r = opts.noteRadius || 22;
     const pad = opts.viewBoxPad || 0;
     let svg = '<svg viewBox="'+(-pad)+' '+(-pad)+' '+(size+2*pad)+' '+(size+2*pad)+'" class="cofSvg">';
@@ -2033,11 +2074,9 @@ function intervalSvgHorizontal(a, b, iv, colA, colB){
   const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 60, arcY = 26;
   const xFor = semis => pad + semis*step;
   const xa = xFor(0), xb = xFor(iv), midX = (xa + xb) / 2;
-  let ticks = '';
-  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="ivTick"></line>'; }
   return '<svg viewBox="0 0 '+w+' 90" class="ivSvg">'+
     '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="ivLine"></line>'+
-    ticks+
+    tickMarksHorizontal(xFor, y, 'ivTick')+
     (iv > 0 ? '<path d="M'+xa+' '+(y-6)+' Q '+midX+' '+arcY+' '+xb+' '+(y-6)+'" class="ivArc"></path>'+
       '<text x="'+midX+'" y="'+(arcY-4)+'" class="ivArcLabel">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
     '<circle cx="'+xa+'" cy="'+y+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
@@ -2050,11 +2089,9 @@ function intervalSvgVertical(a, b, iv, colA, colB){
   const w = 195, h = 230, pad = 26, step = (h - 2*pad) / 12, cx = 70, arcX = cx + 24;
   const yFor = semis => (h - pad) - semis*step; // higher semitone = higher up, lower note at the bottom
   const ya = yFor(0), yb = yFor(iv), midY = (ya + yb) / 2;
-  let ticks = '';
-  for(let s=0; s<=12; s++){ const yy = yFor(s); ticks += '<line x1="'+(cx-4)+'" x2="'+(cx+4)+'" y1="'+yy+'" y2="'+yy+'" class="ivTick"></line>'; }
   return '<svg viewBox="0 0 '+w+' '+h+'" class="ivSvg ivSvg-vert">'+
     '<line x1="'+cx+'" x2="'+cx+'" y1="'+pad+'" y2="'+(h-pad)+'" class="ivLine"></line>'+
-    ticks+
+    tickMarksVertical(yFor, cx, 'ivTick')+
     (iv > 0 ? '<path d="M'+(cx+6)+' '+ya+' Q '+arcX+' '+midY+' '+(cx+6)+' '+yb+'" class="ivArc"></path>'+
       '<text x="'+(arcX+5)+'" y="'+(midY+3)+'" class="ivArcLabel ivArcLabelVert">'+iv+' semitone'+(iv===1?'':'s')+'</text>' : '')+
     '<circle cx="'+cx+'" cy="'+ya+'" r="7" style="--pc:'+colA+'" class="ivDot"></circle>'+
@@ -2067,8 +2104,8 @@ Surfaces.register('interval', {
   label: 'Interval',
   render(container, opts){
     if(!container) return null;
-    const a = ((opts.a % 12) + 12) % 12, b = ((opts.b % 12) + 12) % 12;
-    const iv = ((b - a) % 12 + 12) % 12;
+    const a = mod12(opts.a), b = mod12(opts.b);
+    const iv = mod12(b - a);
     const colA = Palette.noteCss(a, .68, .62), colB = Palette.noteCss(b, .68, .62);
     const svg = opts.orientation === 'vertical' ? intervalSvgVertical(a, b, iv, colA, colB) : intervalSvgHorizontal(a, b, iv, colA, colB);
     // an explicit opts.level, not a View.get() read — this surface stays stateless like cof and
@@ -2161,7 +2198,7 @@ Surfaces.register('pianoroll', {
     svg += '<line x1="'+lastX+'" x2="'+lastX+'" y1="0" y2="'+h+'" class="rollBarline rollFinal"></line>';
     events.forEach(e => {
       const x = xFor(e.startBeat), y = yFor(e.midi), width = Math.max(2, e.beats*beatW - 2);
-      const pc = ((e.midi % 12) + 12) % 12, col = Palette.noteCss(pc, .68, .62);
+      const pc = mod12(e.midi), col = Palette.noteCss(pc, .68, .62);
       svg += '<rect x="'+x+'" y="'+(y - rowH/2 + 1)+'" width="'+width+'" height="'+(rowH - 2)+'" rx="1.5" style="--pc:'+col+'" class="rollNote"></rect>';
     });
     svg += '</svg>';
@@ -2182,8 +2219,8 @@ Surfaces.register('ratiowheel', {
   render(container, opts){
     if(!container) return;
     opts = opts || {};
-    const root = ((opts.root||0) % 12 + 12) % 12;
-    const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
+    const root = mod12(opts.root||0);
+    const order = FIFTHS_ORDER;
     const size = 300, cx = size/2, cy = size/2, Rmax = cx-40, noteR = opts.noteRadius || 20;
     function radiusFor(pc){
       const iv = (pc - root + 12) % 12;
@@ -2330,7 +2367,7 @@ function durBeats(dur){
 }
 function measureBeats(timeSig){ const ts = timeSig || [4,4]; return ts[0] * (4/ts[1]); }
 function midiToDiatonic(midi, useFlats){
-  const pc = ((midi%12)+12)%12, octave = Math.floor(midi/12)-1;
+  const pc = mod12(midi), octave = Math.floor(midi/12)-1;
   const name = (useFlats ? NOTE_FLAT : NOTE)[pc], letter = name[0];
   const level = name.length>1 ? (useFlats ? -1 : 1) : 0; // +1 sharp, -1 flat, 0 natural
   return { diatonic: octave*7 + LETTER_STEP[letter], letter, level };
@@ -2372,7 +2409,7 @@ Surfaces.register('staff', {
     }
     function notehead(midi, clef, x, mi, vi, ei){
       const y = yFor(midi, clef), { letter, level } = midiToDiatonic(midi, useFlats), acc = accidentalFor(letter, level);
-      const pc = ((midi%12)+12)%12, col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
+      const pc = mod12(midi), col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
       return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">'+acc+'</text>' : '') +
         '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" style="--pc:'+col+'" class="staffNote" data-bar="'+mi+'" data-voice="'+vi+'" data-event="'+ei+'"></ellipse>';
     }
@@ -2437,7 +2474,7 @@ Surfaces.register('superstructure', {
   label: 'Superstructure',
   render(container, opts){
     if(!container) return null;
-    const root = ((opts.root % 12) + 12) % 12;
+    const root = mod12(opts.root);
     const quality = opts.quality === 'minor' ? 'minor' : 'major';
     const upTo = Math.max(1, Math.min(7, opts.upTo || 3));
     const steps = SS_STACK[quality];
@@ -2447,7 +2484,7 @@ Surfaces.register('superstructure', {
     let svg = '<svg viewBox="0 0 '+w+' '+h+'" class="ssSvg">';
     for(let i=0;i<7;i++){
       const y = yFor(i), built = i < upTo;
-      const midi = 60 + root + steps[i], pc = ((midi % 12) + 12) % 12;
+      const midi = 60 + root + steps[i], pc = mod12(midi);
       const col = Palette.noteCss(pc, .68, .62);
       if(i > 0) svg += '<line x1="'+(w/2)+'" x2="'+(w/2)+'" y1="'+(y+rowH)+'" y2="'+y+'" class="ssStem'+(built ? '' : ' ssStem-dim')+'"></line>';
       svg += '<circle cx="'+(w/2)+'" cy="'+y+'" r="11" style="--pc:'+col+'" class="ssNode'+(built ? '' : ' ssNode-dim')+'"></circle>'+
@@ -2477,8 +2514,6 @@ const TQ_MAJOR_IVS = TQ_ROWS[0].ivs; // [0,4,7] — the reference every other ro
 function tqRowSvg(root, row){
   const w = 300, pad = 30, step = (w - 2*pad) / 12, y = 30;
   const xFor = semis => pad + semis*step;
-  let ticks = '';
-  for(let s=0; s<=12; s++){ const x = xFor(s); ticks += '<line x1="'+x+'" x2="'+x+'" y1="'+(y-4)+'" y2="'+(y+4)+'" class="tqTick"></line>'; }
   // ghost outlines: major-triad tone positions this row replaces (root is always shared, skip it)
   let ghosts = '';
   TQ_MAJOR_IVS.forEach(iv => {
@@ -2486,14 +2521,14 @@ function tqRowSvg(root, row){
   });
   let dots = '';
   row.ivs.forEach((iv, i) => {
-    const pc = ((root+iv) % 12 + 12) % 12, col = Palette.noteCss(pc, .68, .62);
+    const pc = mod12(root+iv), col = Palette.noteCss(pc, .68, .62);
     dots += '<circle cx="'+xFor(iv)+'" cy="'+y+'" r="8" style="--pc:'+col+'" class="tqDot"></circle>'+
       '<text x="'+xFor(iv)+'" y="'+(y-13)+'" class="tqToneLabel">'+row.tones[i]+'</text>'+
       '<text x="'+xFor(iv)+'" y="'+(y+23)+'" class="tqNoteLabel">'+NOTE[pc]+'</text>';
   });
   return '<svg viewBox="0 0 '+w+' 58" class="tqSvg">'+
     '<line x1="'+pad+'" x2="'+(w-pad)+'" y1="'+y+'" y2="'+y+'" class="tqLine"></line>'+
-    ticks+ghosts+dots+
+    tickMarksHorizontal(xFor, y, 'tqTick')+ghosts+dots+
     '</svg>';
 }
 
@@ -2505,7 +2540,7 @@ Surfaces.register('triadquality', {
   label: 'Triad quality',
   render(container, opts){
     if(!container) return null;
-    const root = ((opts.root % 12) + 12) % 12;
+    const root = mod12(opts.root);
     container.innerHTML = TQ_ROWS.map(row =>
       '<div class="tqRow" data-q="'+row.q+'" title="tap to hear it">'+
         '<div class="tqRowLbl">'+row.label+'</div>'+
@@ -3394,6 +3429,12 @@ function wirePlayControls(){
 // the header. switchMode keeps the header nav and the Modes registry in sync — the one place
 // that does both, used by the header nav click handler, the bridge button, deep-link restore,
 // and the Play hand-off from addToSeq.
+// the superstructure surface only has two thirds-stacks (major/minor, see SS_STACK in
+// 89_surface_superstructure.js), so any chord quality has to collapse into one of the two —
+// shared by both bridge hand-offs below rather than each re-deriving the same guess
+function guessScaleFamily(n){
+  return (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+}
 function switchMode(id){
   const headerNav = document.getElementById('siteHeaderNav');
   if(headerNav) headerNav.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.mode===id));
@@ -3461,7 +3502,7 @@ function installBridgeButton(){
           const n = N[idx];
           const cur = View.get();
           if(cur.key == null){
-            const scale = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+            const scale = guessScaleFamily(n);
             View.set({ key: n.root, scale });
             const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
             const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
@@ -3481,10 +3522,7 @@ function installBridgeButton(){
     }
     if(act === 'extend-link' && detailIdx != null){
       const n = N[detailIdx];
-      // same "is this chord minor-ish" heuristic the bridge button above already uses to guess
-      // a scale — the superstructure surface only has two stacks (major/minor), so it's the
-      // right approximation here too, not a new rule to invent.
-      const quality = (n.q === 'min' || n.q === 'min7' || n.q === 'm7b5' || n.q === 'dim' || n.q === 'mMaj7' || n.q === 'dim7') ? 'minor' : 'major';
+      const quality = guessScaleFamily(n);
       switchMode('lessons');
       selectLesson('extensions', { root: n.root, quality, upTo: n.ivs.length });
       return;
@@ -3998,7 +4036,7 @@ function startBach(){
     if(ev.ei === 0 || ev.ei === 4) playFreqs([m2f(bar.voices.bass[ev.ei===0?0:1].midi)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
-    const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');
+    const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+mod12(ev.midi)+'"]');
     if(noteEl) noteEl.classList.add('playing');
     if(bachStaffHandle) bachStaffHandle.highlight('treble', ev.mi, ev.ei);
     if(btn) btn.textContent = '■ stop — bar '+(ev.mi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';
@@ -4063,6 +4101,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderLessonsNoteBeatStage }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderLessonsNoteBeatStage, mod12, FIFTHS_ORDER, guessScaleFamily }; } catch(e){}
 
 })();</script></body></html>

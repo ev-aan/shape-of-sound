@@ -170,7 +170,7 @@ function updateRipple(dt){
     // 440Hz is A4 (pitch class 9, not 0) — offset the A-relative semitone count so the tint
     // actually matches the note playing, using the app's usual C=0 chromatic numbering
     const semis = Math.round(12*Math.log2(lastPlayedFreqs[0]/440));
-    ripplePc = (((semis + 9) % 12) + 12) % 12;
+    ripplePc = mod12(semis + 9);
   }
   rippleUniforms.uHSL.value.set(Palette.noteHue(ripplePc), 0.7, 0.5);
   const sinceNote = (performance.now() - lastPlayedAt)/1000;

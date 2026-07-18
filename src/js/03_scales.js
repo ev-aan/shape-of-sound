@@ -25,13 +25,13 @@ function scalePcs(scaleId, keyRoot){
 }
 function chordInScale(n, scaleId, keyRoot){
   const set = scalePcs(scaleId, keyRoot); if(!set) return true;
-  const pcs = n.pcs || (n.ivs||[]).map(iv => ((n.root + iv) % 12 + 12) % 12);
-  for(const pc of pcs){ if(!set.has(((pc%12)+12)%12)) return false; }
+  const pcs = n.pcs || (n.ivs||[]).map(iv => mod12(n.root + iv));
+  for(const pc of pcs){ if(!set.has(mod12(pc))) return false; }
   return true;
 }
 function chordDegreeIn(n, scaleId, keyRoot){
   const s = SCALES[scaleId]; if(!s || keyRoot==null) return null;
-  const deg = s.pcs.indexOf(((n.root - keyRoot) % 12 + 12) % 12);
+  const deg = s.pcs.indexOf(mod12(n.root - keyRoot));
   return deg >= 0 ? deg : null;
 }
 function chordFn(n, scaleId, keyRoot){

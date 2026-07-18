@@ -10,8 +10,8 @@ Surfaces.register('ratiowheel', {
   render(container, opts){
     if(!container) return;
     opts = opts || {};
-    const root = ((opts.root||0) % 12 + 12) % 12;
-    const order = Array.from({length:12}, (_,i)=>(i*7)%12); // fifths order — matches Palette's hue mapping
+    const root = mod12(opts.root||0);
+    const order = FIFTHS_ORDER;
     const size = 300, cx = size/2, cy = size/2, Rmax = cx-40, noteR = opts.noteRadius || 20;
     function radiusFor(pc){
       const iv = (pc - root + 12) % 12;

@@ -40,7 +40,7 @@ function durBeats(dur){
 }
 function measureBeats(timeSig){ const ts = timeSig || [4,4]; return ts[0] * (4/ts[1]); }
 function midiToDiatonic(midi, useFlats){
-  const pc = ((midi%12)+12)%12, octave = Math.floor(midi/12)-1;
+  const pc = mod12(midi), octave = Math.floor(midi/12)-1;
   const name = (useFlats ? NOTE_FLAT : NOTE)[pc], letter = name[0];
   const level = name.length>1 ? (useFlats ? -1 : 1) : 0; // +1 sharp, -1 flat, 0 natural
   return { diatonic: octave*7 + LETTER_STEP[letter], letter, level };
@@ -82,7 +82,7 @@ Surfaces.register('staff', {
     }
     function notehead(midi, clef, x, mi, vi, ei){
       const y = yFor(midi, clef), { letter, level } = midiToDiatonic(midi, useFlats), acc = accidentalFor(letter, level);
-      const pc = ((midi%12)+12)%12, col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
+      const pc = mod12(midi), col = Palette.noteCss(pc, .68, .62); // same note, same colour, everywhere
       return ledgers(midi, clef, x) + (acc ? '<text x="'+(x-9)+'" y="'+(y+3)+'" class="staffAcc">'+acc+'</text>' : '') +
         '<ellipse cx="'+x+'" cy="'+y+'" rx="4.2" ry="3.2" style="--pc:'+col+'" class="staffNote" data-bar="'+mi+'" data-voice="'+vi+'" data-event="'+ei+'"></ellipse>';
     }

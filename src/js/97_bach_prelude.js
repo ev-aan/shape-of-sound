@@ -161,7 +161,7 @@ function startBach(){
     if(ev.ei === 0 || ev.ei === 4) playFreqs([m2f(bar.voices.bass[ev.ei===0?0:1].midi)], stepMs/1000*4.5);
     playFreqs([m2f(ev.midi)], stepMs/1000*1.6);
     document.querySelectorAll('#musCof .cofNote.playing').forEach(el => el.classList.remove('playing'));
-    const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+(((ev.midi%12)+12)%12)+'"]');
+    const noteEl = document.querySelector('#musCof .cofNote[data-pc="'+mod12(ev.midi)+'"]');
     if(noteEl) noteEl.classList.add('playing');
     if(bachStaffHandle) bachStaffHandle.highlight('treble', ev.mi, ev.ei);
     if(btn) btn.textContent = '■ stop — bar '+(ev.mi+1)+'/'+BACH_PRELUDE.length+': '+N[bar.idx].name+' ('+bar.roman+')';

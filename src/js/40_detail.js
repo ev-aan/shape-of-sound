@@ -31,8 +31,8 @@ detailEl.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
   if(act==='rel'){selectNode(+t.dataset.idx);}
   if(act==='cmp'){openScope(detailIdx,+t.dataset.idx);}
   if(act==='add'){addToSeq(detailIdx);}
-  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}
-  if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(p=>((p%12)+12)%12));}});
+  if(act==='wave'){openWave(pcsOf(N[detailIdx]).map(mod12));}
+  if(act==='cym'){openCym(pcsOf(N[detailIdx]).map(mod12));}});
 // toggling Beginner/Advanced while a chord's detail card is already open should update it
 // immediately, not just on the next selection
 View.subscribe((state,prev)=>{ if(state.level!==prev.level && detailIdx>=0) renderDetail(detailIdx); });

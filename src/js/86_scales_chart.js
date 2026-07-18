@@ -8,7 +8,7 @@ function pcName(pc, keyRoot){
   const useFlats = flatKeys.has(keyRoot||0);
   const flatN = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   const shpN  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  return (useFlats ? flatN : shpN)[((pc%12)+12)%12];
+  return (useFlats ? flatN : shpN)[mod12(pc)];
 }
 function renderScalesChart(){
   const host = document.getElementById('scalesChart'); if(!host) return;
@@ -38,6 +38,14 @@ function renderScalesChart(){
   }
   host.innerHTML = rows.join('');
 }
+// registered so it's discoverable through the same Surfaces.list() every other diagram is —
+// a thin wrapper only, not a full container/opts-driven rewrite: renderScalesChart() still reads
+// its own hardcoded #scalesChart element and View.get() directly, so the container/opts args
+// here are accepted for shape-conformance but not actually used yet.
+Surfaces.register('scaleschart', {
+  label: 'Scales chart',
+  render(container, opts){ renderScalesChart(); }
+});
 function openScalesChart(){
   document.getElementById('scalesPanel').classList.add('show');
   renderScalesChart();

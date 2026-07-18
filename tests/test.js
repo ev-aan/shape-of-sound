@@ -14,6 +14,20 @@ const C = global.__cache, fire = global.__fire, raf = () => global.__raf();
 const frames = n => { for (let i = 0; i < n && raf(); i++) raf()(); };
 const clk = (el, k) => fire(el, 'click', { target: { closest: () => ({ dataset: k, disabled: false }) } });
 try {
+  // ---- shared library primitives: mod12, FIFTHS_ORDER, guessScaleFamily, and the two newly
+  // registered Surfaces (see 01_palette.js, 05_surfaces.js, 94_topbar.js, 86_scales_chart.js,
+  // 06_elorah_logo.js) — extracted from duplicated inline code across many surface files
+  if (__api.mod12(-1) !== 11) throw new Error('mod12(-1) should wrap to 11, not stay negative');
+  if (__api.mod12(13) !== 1) throw new Error('mod12(13) should wrap to 1');
+  if (__api.mod12(0) !== 0) throw new Error('mod12(0) should stay 0');
+  if (__api.FIFTHS_ORDER.length !== 12 || __api.FIFTHS_ORDER[0] !== 0 || __api.FIFTHS_ORDER[1] !== 7) throw new Error('FIFTHS_ORDER should start [0, 7, ...] (root, then a fifth above)');
+  if (__api.guessScaleFamily({ q: 'dim' }) !== 'minor') throw new Error('a diminished chord should guess the minor scale family');
+  if (__api.guessScaleFamily({ q: 'maj7' }) !== 'major') throw new Error('a major 7th chord should guess the major scale family');
+  if (!__api.Surfaces.get('scaleschart')) throw new Error('scales chart should be registered as a Surface');
+  if (!__api.Surfaces.get('elorahlogo')) throw new Error('the Elorah logo should be registered as a Surface');
+  const logoScratch = document.createElement('div');
+  __api.Surfaces.get('elorahlogo').render(logoScratch, { size: 40 });
+  if (!/class="elorahLogo"/.test(logoScratch.innerHTML) || !/width="40"/.test(logoScratch.innerHTML)) throw new Error('the registered elorahlogo surface should render the real logo svg with the requested size');
   // Simple mode: the Elorah hero front door, shown by default with no shared URL
   if (C['simpleFront'].style.display === 'none') throw new Error('Simple front door should show by default (no hash)');
   if (C['advancedApp'].style.display !== 'none') throw new Error('Advanced app should stay hidden until entered');

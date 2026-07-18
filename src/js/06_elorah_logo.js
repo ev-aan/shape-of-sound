@@ -26,3 +26,13 @@ function elorahLogoSvg(size){
     '<path d="'+path.trim()+'" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"></path>'+
     dots+'</svg>';
 }
+// registered so it's discoverable through Surfaces.list() alongside every other diagram —
+// elorahLogoSvg() itself stays a plain string-returning function (still called directly at its
+// one existing call site, src/js/99_boot.js), this is just a conforming container/opts wrapper
+Surfaces.register('elorahlogo', {
+  label: 'Elorah logo',
+  render(container, opts){
+    if(!container) return;
+    container.innerHTML = elorahLogoSvg(opts && opts.size);
+  }
+});

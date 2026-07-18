@@ -9,7 +9,7 @@ Surfaces.register('superstructure', {
   label: 'Superstructure',
   render(container, opts){
     if(!container) return null;
-    const root = ((opts.root % 12) + 12) % 12;
+    const root = mod12(opts.root);
     const quality = opts.quality === 'minor' ? 'minor' : 'major';
     const upTo = Math.max(1, Math.min(7, opts.upTo || 3));
     const steps = SS_STACK[quality];
@@ -19,7 +19,7 @@ Surfaces.register('superstructure', {
     let svg = '<svg viewBox="0 0 '+w+' '+h+'" class="ssSvg">';
     for(let i=0;i<7;i++){
       const y = yFor(i), built = i < upTo;
-      const midi = 60 + root + steps[i], pc = ((midi % 12) + 12) % 12;
+      const midi = 60 + root + steps[i], pc = mod12(midi);
       const col = Palette.noteCss(pc, .68, .62);
       if(i > 0) svg += '<line x1="'+(w/2)+'" x2="'+(w/2)+'" y1="'+(y+rowH)+'" y2="'+y+'" class="ssStem'+(built ? '' : ' ssStem-dim')+'"></line>';
       svg += '<circle cx="'+(w/2)+'" cy="'+y+'" r="11" style="--pc:'+col+'" class="ssNode'+(built ? '' : ' ssNode-dim')+'"></circle>'+
