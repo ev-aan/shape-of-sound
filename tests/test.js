@@ -581,6 +581,45 @@ try {
   if (C['lessonsHome'].style.display === 'none') throw new Error('Lessons mode should show #lessonsHome');
   if (C['musicalHome'].style.display !== 'none') throw new Error('Lessons mode should hide #musicalHome');
   if (C['scene'].style.display !== 'none') throw new Error('Lessons mode should hide the 3D map, same as Musical');
+  // ---- Lessons concept intro: scroll-driven single note -> solfège scale -> note durations ----
+  // direct-render checks first (pure function, scratch container), same convention as Science's
+  // renderSciWaveContinuum unit checks before the live scroll wiring is exercised
+  const lessonsDoStaff = document.createElement('div'), lessonsDoCap = document.createElement('div');
+  __api.renderLessonsNoteBeatStage(lessonsDoStaff, lessonsDoCap, { t: 0 });
+  if ((lessonsDoStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 1) throw new Error('t=0 should render a single note — the "start with a single note" moment');
+  if (!/sciCaptionBright">DO/.test(lessonsDoCap.innerHTML)) throw new Error('t=0 should show the DO caption');
+  const lessonsFaStaff = document.createElement('div'), lessonsFaCap = document.createElement('div');
+  __api.renderLessonsNoteBeatStage(lessonsFaStaff, lessonsFaCap, { t: 3 / 12 + 0.01 });
+  if ((lessonsFaStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 4) throw new Error('the 4th solfège step should show the scale built up to 4 notes (do re mi fa)');
+  if (!/sciCaptionBright">FA/.test(lessonsFaCap.innerHTML)) throw new Error('the 4th solfège step should show the FA caption');
+  const lessonsEighthStaff = document.createElement('div'), lessonsEighthCap = document.createElement('div');
+  __api.renderLessonsNoteBeatStage(lessonsEighthStaff, lessonsEighthCap, { t: 0.99 });
+  if ((lessonsEighthStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 1) throw new Error('the last beat step should render a single note (pitch fixed, only duration changes)');
+  if (!/sciCaptionBright">EIGHTH NOTE/.test(lessonsEighthCap.innerHTML)) throw new Error('t=0.99 should show the EIGHTH NOTE caption');
+  // the concept intro is the default landing stage — the card grid stays hidden until "explore" is chosen
+  if (C['lessonsIntro'].style.display === 'none') throw new Error('Lessons mode should land on the notes & beats intro, not the card grid');
+  if (C['lessonsGrid'].style.display !== 'none') throw new Error('the card grid should stay hidden until "Explore all lessons" is chosen');
+  if (C['lessonsHome'].scrollTop !== 0) throw new Error('a fresh entry into Lessons should start scrolled to the top');
+  // live scroll wiring: a real scroll event should advance the stage and sound exactly one note
+  // per step change (RANGE_PX 2400 / 12 steps = 200px each), not once per pixel scrolled
+  let lessonsOscCount = 0;
+  const origLessonsCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ lessonsOscCount++; return origLessonsCreateOsc.apply(this, arguments); };
+  C['lessonsHome'].scrollTop = 200; // exactly 1 step in
+  fire(C['lessonsHome'], 'scroll', {});
+  global.window.AudioContext.prototype.createOscillator = origLessonsCreateOsc;
+  if (lessonsOscCount !== 1) throw new Error('scrolling into the next solfège step should sound exactly one note, played ' + lessonsOscCount);
+  if (!/sciCaptionBright">RE/.test(C['lessonsStageCaption'].innerHTML)) throw new Error('scrolling 200px (1 step) should advance the caption to RE');
+  // "Explore all lessons" reveals the existing card grid, unchanged
+  C['lessonsExploreCta'].onclick();
+  if (C['lessonsIntro'].style.display === '') throw new Error('"Explore all lessons" should hide the concept intro');
+  if (C['lessonsGrid'].style.display === 'none') throw new Error('"Explore all lessons" should reveal the card grid');
+  if (__api.View.get().mode !== 'lessons') throw new Error('"Explore all lessons" should not leave Lessons mode');
+  // "back to notes & beats" returns to the intro without leaving Lessons mode
+  C['lessonsBackConceptBtn'].onclick();
+  if (C['lessonsIntro'].style.display === 'none') throw new Error('"back to notes & beats" should return to the concept intro');
+  if (__api.View.get().mode !== 'lessons') throw new Error('"back to notes & beats" should not leave Lessons mode');
+  C['lessonsExploreCta'].onclick(); // back to the grid for the existing lesson-card tests below
   if (!/lessonCard/.test(C['lessonNav'].innerHTML)) throw new Error('lesson nav should render lesson cards');
   fire(C['lessonNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { lesson: 'intervals' } } : null } });
   if (!C['musInterval'].innerHTML) throw new Error('selecting the intervals lesson should still have its mount point populated (wired at boot)');
@@ -618,6 +657,11 @@ try {
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
   if (C['lessonsHome'].scrollTop !== 0) throw new Error('re-entering Lessons should reset scroll to the top, not resume a previous scroll position');
+  // re-entering should also reset the stage itself, not just the scroll position — a previous
+  // visit that left off exploring the card grid shouldn't strand the next visit there
+  if (C['lessonsIntro'].style.display === 'none') throw new Error('re-entering Lessons should reset back to the notes & beats intro, not stay on the card grid');
+  if (C['lessonsGrid'].style.display !== 'none') throw new Error('re-entering Lessons should hide the card grid until "Explore" is chosen again');
+  if (!/sciCaptionBright">DO/.test(C['lessonsStageCaption'].innerHTML)) throw new Error('re-entering Lessons should restart the notes & beats intro from DO, not a stale scroll position');
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'science' } } : null } });
   frames(5);
   // bridge: from Musical back to Science should work with observer callback

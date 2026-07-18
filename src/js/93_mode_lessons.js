@@ -16,11 +16,99 @@ let activeLesson = LESSONS[0].id;
 let ivA, ivB, ivOrientation, renderIntervalViz;
 let ssRootSel, ssQuality, ssExtend, renderSuperstructure;
 
+// ---- CONCEPT STAGE: "notes & beats", a scroll-driven single-note -> solfège-scale ->
+// note-duration progression. Same family as 92_mode_science.js's wave continuum (a scroll-
+// position-driven `t`, a two-tone bright/dim caption), but built on real staff notation
+// (Surfaces.get('staff')) rather than hand-drawn SVG, since this is teaching notes and rhythm,
+// not a continuous physical wave — discrete degrees/durations are the honest representation here.
+const SOLFEGE_STEPS = [
+  { name:'DO', midi:60, dim:'a single note — the starting point. In solfège, this is "do."' },
+  { name:'RE', midi:62, dim:'one step up the major scale.' },
+  { name:'MI', midi:64, dim:'two steps up.' },
+  { name:'FA', midi:65, dim:'three steps up — a half step from mi.' },
+  { name:'SO', midi:67, dim:'the fifth degree — so (or sol).' },
+  { name:'LA', midi:69, dim:'the sixth degree.' },
+  { name:'TI', midi:71, dim:'the seventh degree — a half step from the octave.' },
+  { name:'DO', midi:72, dim:'back to do, one octave up — the scale complete.' },
+];
+const BEAT_STEPS = [
+  { name:'QUARTER NOTE', dur:'q', beats:1,   dim:'gets one beat — the reference unit rhythm is counted against.' },
+  { name:'HALF NOTE',    dur:'h', beats:2,   dim:'gets two beats — twice as long as a quarter note.' },
+  { name:'WHOLE NOTE',   dur:'w', beats:4,   dim:'gets four beats — a whole measure of common time.' },
+  { name:'EIGHTH NOTE',  dur:'e', beats:0.5, dim:'gets half a beat — two fit inside one quarter note.' },
+];
+const LESSON_STEPS = SOLFEGE_STEPS.length + BEAT_STEPS.length; // 12
+// staffEl/captionEl: two separate mount points (not one shared container split via
+// querySelector — this app's test harness stubs querySelector to always fabricate a match
+// rather than reflecting real innerHTML, so every other surface in this codebase already takes
+// its mount point(s) directly rather than searching for them; this follows the same convention).
+// opts.t: scroll position in [0,1]. Returns { idx } so callers only re-trigger audio on an
+// actual step change, not every sub-pixel scroll tick.
+function renderLessonsNoteBeatStage(staffEl, captionEl, opts){
+  opts = opts || {};
+  const t = Math.max(0, Math.min(1, opts.t != null ? opts.t : 0));
+  const idx = Math.min(LESSON_STEPS - 1, Math.floor(t * LESSON_STEPS));
+  let measure, bright, dim, playMidi, playDur;
+  if(idx < SOLFEGE_STEPS.length){
+    const scaleSoFar = SOLFEGE_STEPS.slice(0, idx + 1);
+    measure = [{ timeSig:[4,4], voices:{ treble: scaleSoFar.map(s => ({ midi:s.midi, dur:'q' })) } }];
+    const cur = SOLFEGE_STEPS[idx];
+    bright = cur.name; dim = cur.dim; playMidi = cur.midi; playDur = 0.35;
+  } else {
+    const b = BEAT_STEPS[idx - SOLFEGE_STEPS.length];
+    measure = [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:b.dur }] } }];
+    bright = b.name; dim = b.dim; playMidi = 60; playDur = b.beats * 0.5;
+  }
+  Surfaces.get('staff').render(staffEl, measure);
+  captionEl.innerHTML = '<span class="sciCaptionBright">'+bright+'</span> <span class="sciCaptionDim">'+dim+'</span>';
+  return { idx, playMidi, playDur };
+}
+// plain module-local staging (mirrors sciStage/sciStageWired in 92_mode_science.js) rather than
+// View state — Lessons-only, easy to unwind, matches how activeLesson is already tracked locally
+let lessonsStage = 'concept', lessonsStageWired = false, lessonsT = 0, lessonsLastPlayedIdx = null;
+function applyLessonsStage(){
+  const concept = lessonsStage === 'concept';
+  document.getElementById('lessonsIntro').style.display = concept ? '' : 'none';
+  document.getElementById('lessonsGrid').style.display = concept ? 'none' : '';
+}
+function wireLessonsScrollStage(){
+  const home = document.getElementById('lessonsHome'), wrap = document.getElementById('lessonsScrollStage');
+  const RANGE_PX = 2400;
+  const staffEl = document.getElementById('lessonsStageStaff'), captionEl = document.getElementById('lessonsStageCaption');
+  const renderStage = () => {
+    const r = renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT });
+    if(r.idx !== lessonsLastPlayedIdx){ lessonsLastPlayedIdx = r.idx; playFreqs([m2f(r.playMidi)], r.playDur); }
+  };
+  if(home && wrap) home.addEventListener('scroll', () => {
+    const base = wrap.offsetTop || 0;
+    const t = Math.max(0, Math.min(1, (home.scrollTop - base) / RANGE_PX));
+    if(Math.abs(t - lessonsT) < 0.002) return; // skip redundant re-renders on sub-pixel scroll deltas
+    lessonsT = t;
+    renderStage();
+  });
+  renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT }); // initial paint only — no sound until the visitor actually scrolls
+}
+
 Modes.register('lessons', {
   label: 'Lessons',
   onEnter(){
     showMode('lessons');
     document.getElementById('topbarLabel').textContent = 'Lessons — small standalone music-theory demos';
+    // showMode() already resets lessonsHome.scrollTop to 0 on every entry — resetting the JS-
+    // tracked scroll position to match keeps the caption from ever showing a stale mid-scale step
+    lessonsStage = 'concept';
+    lessonsT = 0; lessonsLastPlayedIdx = null;
+    applyLessonsStage();
+    if(!lessonsStageWired){
+      wireLessonsScrollStage();
+      const cta = document.getElementById('lessonsExploreCta');
+      if(cta) cta.onclick = () => { lessonsStage = 'explore'; applyLessonsStage(); };
+      const back = document.getElementById('lessonsBackConceptBtn');
+      if(back) back.onclick = () => { lessonsStage = 'concept'; applyLessonsStage(); };
+      lessonsStageWired = true;
+    } else {
+      renderLessonsNoteBeatStage(document.getElementById('lessonsStageStaff'), document.getElementById('lessonsStageCaption'), { t: lessonsT });
+    }
   },
   onExit(){}
 });

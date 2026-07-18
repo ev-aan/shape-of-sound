@@ -50,6 +50,11 @@
  .sciDot{fill:var(--ink);}
  .sciStageCtrl{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11px;color:var(--dim);}
  .sciStageCtrl input[type=range]{max-width:220px;}
+ /* Lessons' own concept intro (#lessonsIntro, see 93_mode_lessons.js) — same scroll-stage family
+    as Science's above, just more steps (12: 8 solfège degrees + 4 note durations) so it gets a
+    taller scroll range. */
+ .lessonsScrollStage{height:2640px;position:relative;}
+ .lessonsStageDemo{margin:24px auto;max-width:480px;overflow-x:auto;}
  /* the spectrum banner now lives inside #scienceHome, in normal flow — no longer a fixed
     overlay pinned throughout all of Science mode (it's concept-only, gone once exploring). */
  #sciSpectrum{background:var(--panel);border:1px solid var(--line);border-radius:12px;
