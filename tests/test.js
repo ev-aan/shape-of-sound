@@ -288,7 +288,7 @@ try {
   // the wrapping/wiring doesn't throw and the mode switch behaves, same posture as the room's own shader
   if (__api.getRippleMode() !== 'room') throw new Error('the ripple should start in room mode');
   const wrapped = __api.wrapShadertoyGLSL('void mainImage( out vec4 fragColor, in vec2 fragCoord ){ fragColor = vec4(1.0); }');
-  if (!/uniform vec3 iResolution/.test(wrapped) || !/uniform float iTime/.test(wrapped) || !/mainImage\(gl_FragColor, gl_FragCoord\.xy\)/.test(wrapped)) throw new Error('wrapShadertoyGLSL should inject the standard Shadertoy uniforms and call mainImage');
+  if (!/uniform vec3 iResolution/.test(wrapped) || !/uniform float iTime/.test(wrapped) || !/mainImage\(gl_FragColor, vUv \* iResolution\.xy\)/.test(wrapped)) throw new Error('wrapShadertoyGLSL should inject the standard Shadertoy uniforms and call mainImage from the plane\'s own UV, not gl_FragCoord');
   const badResult = __api.loadShadertoy('this is not a shader');
   if (badResult.ok) throw new Error('loading a shader with no mainImage(...) should fail, not silently succeed');
   if (__api.getRippleMode() !== 'room') throw new Error('a failed shader load should not change the ripple mode');
@@ -298,8 +298,18 @@ try {
   __api.updateShaderToy(0.016); // should not throw
   if (__api.shaderToyUniforms.iTime.value !== 0.016) throw new Error('updateShaderToy should advance iTime');
   if (__api.shaderToyUniforms.iFrame.value !== 1) throw new Error('updateShaderToy should advance iFrame');
+  // the shader is mounted into the same room/scene as the noise panel (not a fullscreen overlay
+  // with its own camera) — a render tick in shader mode should show the shader mesh and hide the
+  // noise mesh, while the room itself stays open the whole time
+  if (!__api.isRippleRoomOpen()) throw new Error('the room should still be open while a shader is loaded');
+  __api.renderRippleFrame(0.016);
+  if (__api.rippleMesh.visible) throw new Error('the noise panel should be hidden while the shader is showing');
+  if (!__api.shaderToyMesh.visible) throw new Error('the shader mesh should be visible once rendered in shader mode');
+  if (!__api.isRippleRoomOpen()) throw new Error('rendering a shader-mode frame should not close the room');
   C['rippleToggleBtn'].onclick(); // close the whole room
+  if (__api.isRippleRoomOpen()) throw new Error('the ripple toggle should close the room even while a shader is loaded');
   if (__api.rippleMesh.visible) throw new Error('the ripple toggle should hide the panel again');
+  if (__api.shaderToyMesh.visible) throw new Error('closing the room should hide the shader mesh too');
   if (__api.getRippleMode() !== 'room') throw new Error('closing the ripple room should reset back to room mode, not stay in shader mode');
   // Musical mode: no 3D controls — a circle of fifths (tap a note = pick a key) plus a
   // function-coloured diagram of that key's chords (subdominant -> dominant -> tonic)

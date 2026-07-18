@@ -1225,7 +1225,7 @@ const rippleMesh = new THREE.Mesh(
 );
 rippleMesh.visible = false;
 const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true });
-rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 3));
 rippleRenderer.setClearColor(0x04050a, 1); // opaque — this is a full room now, not a corner widget blending with the page behind it
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
@@ -1238,12 +1238,24 @@ function resizeRipple(){
 addEventListener('resize', resizeRipple);
 resizeRipple();
 let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
-// 'room' (the noise-displaced panel below) or 'shader' (a pasted Shadertoy shader — see
-// 33_shadertoy.js, which reads/writes this same shared variable)
+// whether the room is on screen at all — separate from rippleMesh.visible, which now only means
+// "the noise panel is the object currently showing" (false while a Shadertoy shader is mounted
+// instead, even though the room itself is still open)
+let rippleRoomOpen = false;
+// 'room' (the noise-displaced panel below) or 'shader' (a pasted Shadertoy shader, mounted onto
+// the same plane in the same room — see 33_shadertoy.js, which reads/writes this shared variable)
 let rippleMode = 'room';
 function renderRippleFrame(dt){
-  if(rippleMode === 'shader'){ updateShaderToy(dt); rippleRenderer.render(shaderToyScene, shaderToyCamera); }
-  else { updateRipple(dt); rippleRenderer.render(rippleScene, rippleCamera); }
+  if(rippleMode === 'shader'){
+    rippleMesh.visible = false;
+    shaderToyMesh.visible = true;
+    updateShaderToy(dt);
+  } else {
+    rippleMesh.visible = true;
+    shaderToyMesh.visible = false;
+    updateRipple(dt);
+  }
+  rippleRenderer.render(rippleScene, rippleCamera);
 }
 // the room's heavier pieces (floor, reflection, fog, the angled camera framing) are built once,
 // lazily, the first time the room is actually opened — not at boot, and not refetched, just
@@ -1272,6 +1284,11 @@ function buildRippleRoom(){
   reflection.scale.y = -1;
   reflection.position.y = -48;
   rippleScene.add(reflection);
+  // the Shadertoy shader mounts onto the same footprint as the noise panel, in the same room —
+  // not a fullscreen overlay with its own camera, so it inherits the room's perspective, fog and
+  // reflection for free (see 33_shadertoy.js for the mesh/uniforms/wrapper)
+  shaderToyMesh.visible = false;
+  rippleScene.add(shaderToyMesh);
   rippleCamera.position.set(0, 14, 130);
   rippleCamera.lookAt(0, -8, 0);
 }
@@ -1298,36 +1315,52 @@ function showRipple(){
   buildRippleRoom();
   document.getElementById('rippleView').style.display = 'block';
   document.body.classList.add('rippleOpen');
+  rippleRoomOpen = true;
   rippleMesh.visible = true;
 }
 function hideRipple(){
   document.getElementById('rippleView').style.display = 'none';
   document.body.classList.remove('rippleOpen');
+  rippleRoomOpen = false;
   rippleMesh.visible = false;
+  shaderToyMesh.visible = false;
   // reopening should always start back in the noise room, not wherever a previous
   // shader-editing session left off
   rippleMode = 'room';
   const panel = document.getElementById('shaderToyPanel'); if(panel) panel.style.display = 'none';
 }
-document.getElementById('rippleToggleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };
+document.getElementById('rippleToggleBtn').onclick = () => { rippleRoomOpen ? hideRipple() : showRipple(); };
 document.getElementById('rippleRoomClose').onclick = hideRipple;
 // rippleReflectionUniforms is reassigned by buildRippleRoom (starts null), so a plain __api
 // reference would only ever capture its boot-time value — expose it live via a getter instead
 function getRippleReflectionUniforms(){ return rippleReflectionUniforms; }
 function isRippleRoomBuilt(){ return rippleRoomBuilt; }
+function isRippleRoomOpen(){ return rippleRoomOpen; }
 
 // ---- SHADERTOY LOADER: paste raw Shadertoy GLSL, run it as a second ripple-room mode ----
 // Shadertoy.com shaders are just a mainImage(out vec4 fragColor, in vec2 fragCoord) function
 // plus a handful of standard uniforms (iTime, iResolution, iMouse, ...) — this wraps any pasted
-// shader with those uniforms and a fullscreen quad, so shaders copied straight from shadertoy.com
-// just work here, the same idea as the pygfx/shadertoy Python tool but native to this app's own
-// three.js renderer (see 32_ripple.js, whose renderRippleFrame() branches into this mode).
+// shader with those uniforms, so shaders copied straight from shadertoy.com just work here, the
+// same idea as the pygfx/shadertoy Python tool but native to this app's own three.js renderer
+// (see 32_ripple.js, whose renderRippleFrame() branches into this mode).
+//
+// Mounted onto the same plane the noise room uses (see buildRippleRoom() in 32_ripple.js), through
+// the room's own perspective camera — not a fullscreen clip-space quad — so it inherits the room's
+// fog/floor/reflection and reads as an object in the space rather than a flat overlay glued to the
+// screen. That's why the vertex shader does real projection/modelView math and passes the plane's
+// own UV through: the wrapper below maps iResolution-space fragCoord from vUv, not gl_FragCoord, so
+// the shader's pattern actually texture-maps onto the tilted surface instead of staying screen-locked.
 const SHADERTOY_VERT = `
-void main(){ gl_Position = vec4(position.xy, 0.0, 1.0); }
-`; // clip-space coords directly, no camera math — a 2x2 plane exactly fills the screen this way
+varying vec2 vUv;
+void main(){
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
 function wrapShadertoyGLSL(source){
   return `
 precision highp float;
+varying vec2 vUv;
 uniform vec3 iResolution;
 uniform float iTime;
 uniform float iTimeDelta;
@@ -1335,7 +1368,7 @@ uniform int iFrame;
 uniform vec4 iMouse;
 uniform vec4 iDate;
 ${source}
-void main(){ mainImage(gl_FragColor, gl_FragCoord.xy); }
+void main(){ mainImage(gl_FragColor, vUv * iResolution.xy); }
 `;
 }
 // the built-in example — a classic ripple-and-color-cycle shader, so this feature demos itself
@@ -1369,12 +1402,12 @@ const shaderToyUniforms = {
   iDate: { value: new THREE.Vector4(0, 0, 0, 0) }
 };
 const shaderToyMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(2, 2),
+  // same footprint as the room's noise panel (rippleMesh in 32_ripple.js) so swapping modes
+  // doesn't reframe the shot — mounted into rippleScene by buildRippleRoom(), rendered through
+  // the room's own rippleCamera, not a scene/camera of its own
+  new THREE.PlaneGeometry(44, 44),
   new THREE.ShaderMaterial({ uniforms: shaderToyUniforms, vertexShader: SHADERTOY_VERT, fragmentShader: wrapShadertoyGLSL(CINESHADER_RIPPLE_EXAMPLE) })
 );
-const shaderToyScene = new THREE.Scene();
-shaderToyScene.add(shaderToyMesh);
-const shaderToyCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); // unused by the shader itself, three.js just requires *a* camera object
 function loadShadertoy(source){
   if(source.indexOf('mainImage(') === -1){
     return { ok: false, error: 'no mainImage(...) function found — paste a full Shadertoy shader' };
@@ -2478,7 +2511,7 @@ function frame(){const dt=Math.min(clock.getDelta(),0.05);
   // every page, not just while the chord-map scene below happens to be on screen.
   // renderRippleFrame() branches internally between the noise room and a loaded Shadertoy
   // shader (see 33_shadertoy.js) so this call site doesn't need to know which is active.
-  if(rippleMesh.visible){ renderRippleFrame(dt); }
+  if(rippleRoomOpen){ renderRippleFrame(dt); }
   if(appVisible){
   if(!down&&!prog)theta+=dt*0.03;
   const ringTarget=(layoutName==='expl')?1:0;
@@ -3924,6 +3957,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, CINESHADER_RIPPLE_EXAMPLE }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE }; } catch(e){}
 
 })();</script></body></html>

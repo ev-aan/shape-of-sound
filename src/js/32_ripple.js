@@ -95,7 +95,7 @@ const rippleMesh = new THREE.Mesh(
 );
 rippleMesh.visible = false;
 const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true });
-rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 3));
 rippleRenderer.setClearColor(0x04050a, 1); // opaque — this is a full room now, not a corner widget blending with the page behind it
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
@@ -108,12 +108,24 @@ function resizeRipple(){
 addEventListener('resize', resizeRipple);
 resizeRipple();
 let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
-// 'room' (the noise-displaced panel below) or 'shader' (a pasted Shadertoy shader — see
-// 33_shadertoy.js, which reads/writes this same shared variable)
+// whether the room is on screen at all — separate from rippleMesh.visible, which now only means
+// "the noise panel is the object currently showing" (false while a Shadertoy shader is mounted
+// instead, even though the room itself is still open)
+let rippleRoomOpen = false;
+// 'room' (the noise-displaced panel below) or 'shader' (a pasted Shadertoy shader, mounted onto
+// the same plane in the same room — see 33_shadertoy.js, which reads/writes this shared variable)
 let rippleMode = 'room';
 function renderRippleFrame(dt){
-  if(rippleMode === 'shader'){ updateShaderToy(dt); rippleRenderer.render(shaderToyScene, shaderToyCamera); }
-  else { updateRipple(dt); rippleRenderer.render(rippleScene, rippleCamera); }
+  if(rippleMode === 'shader'){
+    rippleMesh.visible = false;
+    shaderToyMesh.visible = true;
+    updateShaderToy(dt);
+  } else {
+    rippleMesh.visible = true;
+    shaderToyMesh.visible = false;
+    updateRipple(dt);
+  }
+  rippleRenderer.render(rippleScene, rippleCamera);
 }
 // the room's heavier pieces (floor, reflection, fog, the angled camera framing) are built once,
 // lazily, the first time the room is actually opened — not at boot, and not refetched, just
@@ -142,6 +154,11 @@ function buildRippleRoom(){
   reflection.scale.y = -1;
   reflection.position.y = -48;
   rippleScene.add(reflection);
+  // the Shadertoy shader mounts onto the same footprint as the noise panel, in the same room —
+  // not a fullscreen overlay with its own camera, so it inherits the room's perspective, fog and
+  // reflection for free (see 33_shadertoy.js for the mesh/uniforms/wrapper)
+  shaderToyMesh.visible = false;
+  rippleScene.add(shaderToyMesh);
   rippleCamera.position.set(0, 14, 130);
   rippleCamera.lookAt(0, -8, 0);
 }
@@ -168,20 +185,24 @@ function showRipple(){
   buildRippleRoom();
   document.getElementById('rippleView').style.display = 'block';
   document.body.classList.add('rippleOpen');
+  rippleRoomOpen = true;
   rippleMesh.visible = true;
 }
 function hideRipple(){
   document.getElementById('rippleView').style.display = 'none';
   document.body.classList.remove('rippleOpen');
+  rippleRoomOpen = false;
   rippleMesh.visible = false;
+  shaderToyMesh.visible = false;
   // reopening should always start back in the noise room, not wherever a previous
   // shader-editing session left off
   rippleMode = 'room';
   const panel = document.getElementById('shaderToyPanel'); if(panel) panel.style.display = 'none';
 }
-document.getElementById('rippleToggleBtn').onclick = () => { rippleMesh.visible ? hideRipple() : showRipple(); };
+document.getElementById('rippleToggleBtn').onclick = () => { rippleRoomOpen ? hideRipple() : showRipple(); };
 document.getElementById('rippleRoomClose').onclick = hideRipple;
 // rippleReflectionUniforms is reassigned by buildRippleRoom (starts null), so a plain __api
 // reference would only ever capture its boot-time value — expose it live via a getter instead
 function getRippleReflectionUniforms(){ return rippleReflectionUniforms; }
 function isRippleRoomBuilt(){ return rippleRoomBuilt; }
+function isRippleRoomOpen(){ return rippleRoomOpen; }

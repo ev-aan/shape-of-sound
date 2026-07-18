@@ -1,15 +1,27 @@
 // ---- SHADERTOY LOADER: paste raw Shadertoy GLSL, run it as a second ripple-room mode ----
 // Shadertoy.com shaders are just a mainImage(out vec4 fragColor, in vec2 fragCoord) function
 // plus a handful of standard uniforms (iTime, iResolution, iMouse, ...) — this wraps any pasted
-// shader with those uniforms and a fullscreen quad, so shaders copied straight from shadertoy.com
-// just work here, the same idea as the pygfx/shadertoy Python tool but native to this app's own
-// three.js renderer (see 32_ripple.js, whose renderRippleFrame() branches into this mode).
+// shader with those uniforms, so shaders copied straight from shadertoy.com just work here, the
+// same idea as the pygfx/shadertoy Python tool but native to this app's own three.js renderer
+// (see 32_ripple.js, whose renderRippleFrame() branches into this mode).
+//
+// Mounted onto the same plane the noise room uses (see buildRippleRoom() in 32_ripple.js), through
+// the room's own perspective camera — not a fullscreen clip-space quad — so it inherits the room's
+// fog/floor/reflection and reads as an object in the space rather than a flat overlay glued to the
+// screen. That's why the vertex shader does real projection/modelView math and passes the plane's
+// own UV through: the wrapper below maps iResolution-space fragCoord from vUv, not gl_FragCoord, so
+// the shader's pattern actually texture-maps onto the tilted surface instead of staying screen-locked.
 const SHADERTOY_VERT = `
-void main(){ gl_Position = vec4(position.xy, 0.0, 1.0); }
-`; // clip-space coords directly, no camera math — a 2x2 plane exactly fills the screen this way
+varying vec2 vUv;
+void main(){
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
 function wrapShadertoyGLSL(source){
   return `
 precision highp float;
+varying vec2 vUv;
 uniform vec3 iResolution;
 uniform float iTime;
 uniform float iTimeDelta;
@@ -17,7 +29,7 @@ uniform int iFrame;
 uniform vec4 iMouse;
 uniform vec4 iDate;
 ${source}
-void main(){ mainImage(gl_FragColor, gl_FragCoord.xy); }
+void main(){ mainImage(gl_FragColor, vUv * iResolution.xy); }
 `;
 }
 // the built-in example — a classic ripple-and-color-cycle shader, so this feature demos itself
@@ -51,12 +63,12 @@ const shaderToyUniforms = {
   iDate: { value: new THREE.Vector4(0, 0, 0, 0) }
 };
 const shaderToyMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(2, 2),
+  // same footprint as the room's noise panel (rippleMesh in 32_ripple.js) so swapping modes
+  // doesn't reframe the shot — mounted into rippleScene by buildRippleRoom(), rendered through
+  // the room's own rippleCamera, not a scene/camera of its own
+  new THREE.PlaneGeometry(44, 44),
   new THREE.ShaderMaterial({ uniforms: shaderToyUniforms, vertexShader: SHADERTOY_VERT, fragmentShader: wrapShadertoyGLSL(CINESHADER_RIPPLE_EXAMPLE) })
 );
-const shaderToyScene = new THREE.Scene();
-shaderToyScene.add(shaderToyMesh);
-const shaderToyCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); // unused by the shader itself, three.js just requires *a* camera object
 function loadShadertoy(source){
   if(source.indexOf('mainImage(') === -1){
     return { ok: false, error: 'no mainImage(...) function found — paste a full Shadertoy shader' };

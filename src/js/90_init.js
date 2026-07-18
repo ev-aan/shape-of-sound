@@ -11,7 +11,7 @@ function frame(){const dt=Math.min(clock.getDelta(),0.05);
   // every page, not just while the chord-map scene below happens to be on screen.
   // renderRippleFrame() branches internally between the noise room and a loaded Shadertoy
   // shader (see 33_shadertoy.js) so this call site doesn't need to know which is active.
-  if(rippleMesh.visible){ renderRippleFrame(dt); }
+  if(rippleRoomOpen){ renderRippleFrame(dt); }
   if(appVisible){
   if(!down&&!prog)theta+=dt*0.03;
   const ringTarget=(layoutName==='expl')?1:0;
