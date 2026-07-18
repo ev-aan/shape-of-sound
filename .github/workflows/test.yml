@@ -1,0 +1,33 @@
+# Fast feedback on any branch/PR, before anything reaches main (which deploy-bluehost.yml treats
+# as production and pushes live on every push). This workflow never deploys anything and needs no
+# secrets — it just builds from src/ and runs the test suite, the same two commands a solo dev
+# would otherwise have to remember to run locally before merging.
+name: Build & test
+
+on:
+  push:
+    branches-ignore: [main]  # main's own push already builds+tests as step 1 of deploy-bluehost.yml
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build the single-file app from src/
+        run: python3 build/build.py
+
+      - name: Run the test suite
+        run: node tests/test.js
