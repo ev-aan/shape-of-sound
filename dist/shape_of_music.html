@@ -830,6 +830,27 @@ const resize = wireResize(renderer, camera3D, () => {
   g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
   scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0x223052,size:2,sizeAttenuation:false})));})();
 
+// a floor for grounding — sized with real margin over the default 'disc' layout's ~111-radius
+// extent (see 50_layout.js/curLayout()), flat MeshBasicMaterial matching this scene's existing
+// no-lighting convention, DoubleSide since the orbit camera can dip below the horizon
+// (60_pointer.js clamps phi to within ~8.6° of straight up/down, not to the equatorial plane)
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(700, 700),
+  new THREE.MeshBasicMaterial({ color: 0x0a0e1a, side: THREE.DoubleSide })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -130;
+scene.add(floor);
+// a small scale-reference silhouette (same two-primitive approach as the ripple room, see
+// 32_ripple.js's buildRippleRoom) — a fixed world-space landmark the orbit swings past, not a
+// framing device like the ripple room's static camera. Sized up from the ripple room's version
+// since this cluster's own world units are much larger (~111-radius default layout).
+const galaxyFigureMat = new THREE.MeshBasicMaterial({ color: 0x020203 });
+const galaxyFigureHead = new THREE.Mesh(new THREE.SphereGeometry(2.6, 12, 8), galaxyFigureMat);
+const galaxyFigureBody = new THREE.Mesh(new THREE.ConeGeometry(4.6, 17, 12), galaxyFigureMat);
+galaxyFigureHead.position.set(140, -117, 40); galaxyFigureBody.position.set(140, -130, 40);
+scene.add(galaxyFigureHead); scene.add(galaxyFigureBody);
+
 function glowTex(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
   const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');
   g.addColorStop(.25,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
