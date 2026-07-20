@@ -94,19 +94,12 @@ const rippleMesh = new THREE.Mesh(
   new THREE.ShaderMaterial({ uniforms: rippleUniforms, vertexShader: RIPPLE_VERT, fragmentShader: RIPPLE_FRAG, transparent: true })
 );
 rippleMesh.visible = false;
-const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true });
-rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 3));
-rippleRenderer.setClearColor(0x04050a, 1); // opaque — this is a full room now, not a corner widget blending with the page behind it
+// opaque clear color — this is a full room now, not a corner widget blending with the page behind it
+const rippleRenderer = createRenderer(document.getElementById('rippleView'), 3, 0x04050a);
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
 const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 800);
-function resizeRipple(){
-  rippleRenderer.setSize(innerWidth, innerHeight);
-  rippleCamera.aspect = innerWidth / innerHeight;
-  rippleCamera.updateProjectionMatrix();
-}
-addEventListener('resize', resizeRipple);
-resizeRipple();
+wireResize(rippleRenderer, rippleCamera);
 let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
 // whether the room is on screen at all — separate from rippleMesh.visible, which now only means
 // "the noise panel is the object currently showing" (false while a Shadertoy shader is mounted

@@ -779,8 +779,35 @@ function setLegend(mode){leg.innerHTML='';
     d.innerHTML='<i style="background:'+FAM[k]+'"></i>'+k;leg.appendChild(d);}}
   else{const d=document.createElement('div');d.innerHTML='<span class="bar"></span>&nbsp;root, around circle of 5ths';leg.appendChild(d);}}
 
+// constructs a WebGLRenderer with this app's shared defaults (antialiasing on, a
+// devicePixelRatio cap since multiple full-viewport renderers may run at once — this
+// bounds GPU cost on high-DPI screens), only the cap and an optional opaque clear
+// color varying per caller (see 32_ripple.js for the other renderer this builds).
+function createRenderer(canvas, pixelRatioCap, clearColor){
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, pixelRatioCap));
+  if(clearColor != null) renderer.setClearColor(clearColor, 1);
+  return renderer;
+}
+// wires a window resize handler that keeps a renderer's output size and a perspective
+// camera's aspect ratio in sync — the shared core every renderer in this app needs.
+// `extra`, if given, runs after that sync (e.g. a second camera, redrawing overlays).
+// Returns the resize function itself: the main scene's is also called directly elsewhere
+// (04_dim.js's 2D/3D toggle, 96_simple.js's front-door transition), not just on the window
+// resize event, so callers that need that direct-call handle keep it.
+function wireResize(renderer, camera, extra){
+  function resize(){
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    if(extra) extra();
+  }
+  addEventListener('resize', resize);
+  resize();
+  return resize;
+}
 const canvas=document.getElementById('scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const renderer=createRenderer(canvas,2);
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x060812,0.0015);
 const camera3D=new THREE.PerspectiveCamera(55,1,1,6000);
 const camera2D=new THREE.OrthographicCamera(-100,100,100,-100,-3000,6000);
@@ -791,12 +818,12 @@ function updateCamera(){
     tgt.z+radius*Math.sin(phi)*Math.sin(theta));camera3D.lookAt(tgt);
   camera2D.position.set(tgt.x,tgt.y+radius*2,tgt.z);camera2D.up.set(0,0,-1);camera2D.lookAt(tgt);
 }
-function resize(){renderer.setSize(innerWidth,innerHeight);const a=innerWidth/innerHeight;
-  camera3D.aspect=a;camera3D.updateProjectionMatrix();
+const resize = wireResize(renderer, camera3D, () => {
+  const a = innerWidth/innerHeight;
   const h=radius*0.9,w=h*a;camera2D.left=-w;camera2D.right=w;camera2D.top=h;camera2D.bottom=-h;camera2D.updateProjectionMatrix();
   if(document.getElementById('scope').classList.contains('show'))drawScope();
-  if(document.getElementById('wave').classList.contains('show'))drawWave2D();}
-addEventListener('resize',resize);resize();
+  if(document.getElementById('wave').classList.contains('show'))drawWave2D();
+});
 
 (function(){const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<420;i++){const r=1400+Math.random()*1600,
   u=Math.random()*2-1,a=Math.random()*6.283,s=Math.sqrt(1-u*u);p.push(r*s*Math.cos(a),r*u,r*s*Math.sin(a));}
@@ -808,6 +835,13 @@ function glowTex(){const c=document.createElement('canvas');c.width=c.height=64;
   g.addColorStop(.25,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
   return new THREE.CanvasTexture(c);}
 const GLOW=glowTex();
+// a soft additive-blended glow sprite — used for both the per-chord-node halo below and the
+// meteor's own glow in 30_meteor.js; only color/opacity/scale vary between them.
+function makeGlowSprite(color, opacity, scale){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false }));
+  sp.scale.setScalar(scale);
+  return sp;
+}
 function makeText(txt,color,sx,sy){const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');
   x.font='bold 40px Georgia';x.fillStyle=color;x.textAlign='center';x.textBaseline='middle';x.fillText(txt,64,32);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthWrite:false}));
@@ -823,8 +857,8 @@ const sphGeo=new THREE.SphereGeometry(1,16,12),pickGeo=new THREE.SphereGeometry(
 N.forEach((n,i)=>{const r=1.5+n.cons*2.4;
   const dot=new THREE.Mesh(sphGeo,new THREE.MeshBasicMaterial({color:new THREE.Color(FAM[n.family]),transparent:true,opacity:1}));
   dot.scale.setScalar(r);scene.add(dot);dots.push(dot);dot.userData.r=r;
-  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:new THREE.Color(FAM[n.family]),transparent:true,
-    opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));halo.userData.base=r*7;halo.scale.setScalar(r*7);
+  const halo=makeGlowSprite(new THREE.Color(FAM[n.family]), .55, r*7);
+  halo.userData.base=r*7;
   scene.add(halo);halos.push(halo);
   const pk=new THREE.Mesh(pickGeo,new THREE.MeshBasicMaterial({visible:false}));pk.scale.setScalar(Math.max(6,r*2.6));
   pk.userData.index=i;scene.add(pk);picks.push(pk);});
@@ -1123,23 +1157,37 @@ const ringGroup=[];let ringLine=null;
   for(let cof=0;cof<12;cof++){const a=2*Math.PI*cof/12,sp=makeText(NOTE[(cof*7)%12],'#dfe8ff',20,10);
     sp.position.set((R0+22)*Math.cos(a),0,(R0+22)*Math.sin(a));scene.add(sp);ringGroup.push(sp);}})();
 
+// tears down an optional line/mesh reference cleanly (scene removal + geometry/material
+// disposal) — the same 3-line teardown buildEdges/highlight (below) and rebuildTrail
+// (30_meteor.js) each repeat before rebuilding themselves from scratch.
+function disposeLine(line){
+  if(line){ scene.remove(line); line.geometry.dispose(); line.material.dispose(); }
+  return null;
+}
+// a BufferGeometry from a flat [x,y,z,...] position array, plus an optional flat
+// [r,g,b,...] vertex-color array (omit for a solid-color line, like highlight() below).
+function positionColorGeometry(positions, colors){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if(colors) g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  return g;
+}
 let edgeLines=null;
 function wAt(t){return wmin+(t/1000)*(wmax-wmin);}
-function buildEdges(thr){if(edgeLines){scene.remove(edgeLines);edgeLines.geometry.dispose();edgeLines.material.dispose();}
+function buildEdges(thr){
+  edgeLines = disposeLine(edgeLines);
   const P=[],C=[],span=(wmax-wmin)||1;
   for(const e of EDGES){if(e.w<thr)continue;const a=pos[e.i],b=pos[e.j];P.push(a.x,a.y,a.z,b.x,b.y,b.z);
     const t=(e.w-wmin)/span,br=0.12+0.85*t*t;for(let k=0;k<2;k++)C.push(0.55*br,0.68*br,0.95*br);}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
-  g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));
-  edgeLines=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.7,
+  edgeLines=new THREE.LineSegments(positionColorGeometry(P,C),new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.7,
     blending:THREE.AdditiveBlending,depthWrite:false}));edgeLines.visible=(keyRoot==null);scene.add(edgeLines);}
 
 let hl=null,hlT=0;
-function highlight(i){if(hl){scene.remove(hl);hl.geometry.dispose();hl.material.dispose();hl=null;}
+function highlight(i){
+  hl = disposeLine(hl);
   const P=[],row=W[i],order=row.map((w,j)=>[w,j]).sort((a,b)=>b[0]-a[0]).slice(1,8);
   for(const[,j]of order){const a=pos[i],b=pos[j];P.push(a.x,a.y,a.z,b.x,b.y,b.z);}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
-  hl=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:new THREE.Color(FAM[N[i].family]),transparent:true,
+  hl=new THREE.LineSegments(positionColorGeometry(P),new THREE.LineBasicMaterial({color:new THREE.Color(FAM[N[i].family]),transparent:true,
     opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));scene.add(hl);hlT=2.4;}
 
 // ---- KEY OVERLAY ----
@@ -1189,15 +1237,15 @@ function clearArrowsOnly(){keyArrows.forEach(o=>{scene.remove(o);if(o.geometry)o
 
 // meteor + trail
 const meteor=new THREE.Mesh(new THREE.SphereGeometry(2.6,16,12),new THREE.MeshBasicMaterial({color:0xfff1c2}));
-const mGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xffb24d,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}));
-mGlow.scale.setScalar(34);meteor.visible=mGlow.visible=false;scene.add(meteor);scene.add(mGlow);
+const mGlow=makeGlowSprite(0xffb24d, .95, 34);
+meteor.visible=mGlow.visible=false;scene.add(meteor);scene.add(mGlow);
 let trail=null,trailPts=[];
-function rebuildTrail(){if(trail){scene.remove(trail);trail.geometry.dispose();trail.material.dispose();}
+function rebuildTrail(){
+  trail = disposeLine(trail);
   if(trailPts.length<2){trail=null;return;}const P=[],C=[],n=trailPts.length;
   for(let k=0;k<n;k++){const v=trailPts[k];P.push(v.x,v.y,v.z);const f=k/(n-1);C.push(f,.72*f,.30*f);}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
-  g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));
-  trail=new THREE.Line(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));scene.add(trail);}
+  trail=new THREE.Line(positionColorGeometry(P,C),new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));
+  scene.add(trail);}
 
 // ---- RIPPLE ROOM: a full-screen 3D space, a noise-displaced softly-lit panel as its centerpiece ----
 // Its own tiny THREE.js renderer/scene/camera — not a spot inside the chord-map scene, so it
@@ -1295,19 +1343,12 @@ const rippleMesh = new THREE.Mesh(
   new THREE.ShaderMaterial({ uniforms: rippleUniforms, vertexShader: RIPPLE_VERT, fragmentShader: RIPPLE_FRAG, transparent: true })
 );
 rippleMesh.visible = false;
-const rippleRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('rippleView'), antialias: true });
-rippleRenderer.setPixelRatio(Math.min(devicePixelRatio, 3));
-rippleRenderer.setClearColor(0x04050a, 1); // opaque — this is a full room now, not a corner widget blending with the page behind it
+// opaque clear color — this is a full room now, not a corner widget blending with the page behind it
+const rippleRenderer = createRenderer(document.getElementById('rippleView'), 3, 0x04050a);
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
 const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 800);
-function resizeRipple(){
-  rippleRenderer.setSize(innerWidth, innerHeight);
-  rippleCamera.aspect = innerWidth / innerHeight;
-  rippleCamera.updateProjectionMatrix();
-}
-addEventListener('resize', resizeRipple);
-resizeRipple();
+wireResize(rippleRenderer, rippleCamera);
 let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
 // whether the room is on screen at all — separate from rippleMesh.visible, which now only means
 // "the noise panel is the object currently showing" (false while a Shadertoy shader is mounted

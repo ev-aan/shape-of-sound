@@ -21,8 +21,35 @@ function setLegend(mode){leg.innerHTML='';
     d.innerHTML='<i style="background:'+FAM[k]+'"></i>'+k;leg.appendChild(d);}}
   else{const d=document.createElement('div');d.innerHTML='<span class="bar"></span>&nbsp;root, around circle of 5ths';leg.appendChild(d);}}
 
+// constructs a WebGLRenderer with this app's shared defaults (antialiasing on, a
+// devicePixelRatio cap since multiple full-viewport renderers may run at once — this
+// bounds GPU cost on high-DPI screens), only the cap and an optional opaque clear
+// color varying per caller (see 32_ripple.js for the other renderer this builds).
+function createRenderer(canvas, pixelRatioCap, clearColor){
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, pixelRatioCap));
+  if(clearColor != null) renderer.setClearColor(clearColor, 1);
+  return renderer;
+}
+// wires a window resize handler that keeps a renderer's output size and a perspective
+// camera's aspect ratio in sync — the shared core every renderer in this app needs.
+// `extra`, if given, runs after that sync (e.g. a second camera, redrawing overlays).
+// Returns the resize function itself: the main scene's is also called directly elsewhere
+// (04_dim.js's 2D/3D toggle, 96_simple.js's front-door transition), not just on the window
+// resize event, so callers that need that direct-call handle keep it.
+function wireResize(renderer, camera, extra){
+  function resize(){
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    if(extra) extra();
+  }
+  addEventListener('resize', resize);
+  resize();
+  return resize;
+}
 const canvas=document.getElementById('scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const renderer=createRenderer(canvas,2);
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x060812,0.0015);
 const camera3D=new THREE.PerspectiveCamera(55,1,1,6000);
 const camera2D=new THREE.OrthographicCamera(-100,100,100,-100,-3000,6000);
@@ -33,12 +60,12 @@ function updateCamera(){
     tgt.z+radius*Math.sin(phi)*Math.sin(theta));camera3D.lookAt(tgt);
   camera2D.position.set(tgt.x,tgt.y+radius*2,tgt.z);camera2D.up.set(0,0,-1);camera2D.lookAt(tgt);
 }
-function resize(){renderer.setSize(innerWidth,innerHeight);const a=innerWidth/innerHeight;
-  camera3D.aspect=a;camera3D.updateProjectionMatrix();
+const resize = wireResize(renderer, camera3D, () => {
+  const a = innerWidth/innerHeight;
   const h=radius*0.9,w=h*a;camera2D.left=-w;camera2D.right=w;camera2D.top=h;camera2D.bottom=-h;camera2D.updateProjectionMatrix();
   if(document.getElementById('scope').classList.contains('show'))drawScope();
-  if(document.getElementById('wave').classList.contains('show'))drawWave2D();}
-addEventListener('resize',resize);resize();
+  if(document.getElementById('wave').classList.contains('show'))drawWave2D();
+});
 
 (function(){const g=new THREE.BufferGeometry(),p=[];for(let i=0;i<420;i++){const r=1400+Math.random()*1600,
   u=Math.random()*2-1,a=Math.random()*6.283,s=Math.sqrt(1-u*u);p.push(r*s*Math.cos(a),r*u,r*s*Math.sin(a));}
@@ -50,6 +77,13 @@ function glowTex(){const c=document.createElement('canvas');c.width=c.height=64;
   g.addColorStop(.25,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
   return new THREE.CanvasTexture(c);}
 const GLOW=glowTex();
+// a soft additive-blended glow sprite — used for both the per-chord-node halo below and the
+// meteor's own glow in 30_meteor.js; only color/opacity/scale vary between them.
+function makeGlowSprite(color, opacity, scale){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false }));
+  sp.scale.setScalar(scale);
+  return sp;
+}
 function makeText(txt,color,sx,sy){const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');
   x.font='bold 40px Georgia';x.fillStyle=color;x.textAlign='center';x.textBaseline='middle';x.fillText(txt,64,32);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:0,depthWrite:false}));
@@ -65,8 +99,8 @@ const sphGeo=new THREE.SphereGeometry(1,16,12),pickGeo=new THREE.SphereGeometry(
 N.forEach((n,i)=>{const r=1.5+n.cons*2.4;
   const dot=new THREE.Mesh(sphGeo,new THREE.MeshBasicMaterial({color:new THREE.Color(FAM[n.family]),transparent:true,opacity:1}));
   dot.scale.setScalar(r);scene.add(dot);dots.push(dot);dot.userData.r=r;
-  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:new THREE.Color(FAM[n.family]),transparent:true,
-    opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));halo.userData.base=r*7;halo.scale.setScalar(r*7);
+  const halo=makeGlowSprite(new THREE.Color(FAM[n.family]), .55, r*7);
+  halo.userData.base=r*7;
   scene.add(halo);halos.push(halo);
   const pk=new THREE.Mesh(pickGeo,new THREE.MeshBasicMaterial({visible:false}));pk.scale.setScalar(Math.max(6,r*2.6));
   pk.userData.index=i;scene.add(pk);picks.push(pk);});
