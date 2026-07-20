@@ -51,9 +51,10 @@ const Link = (function(){
       if(dim && (dim==='2d'||dim==='3d') && typeof setDim==='function') setDim(dim);
       if(mode && Modes.get(mode)) switchMode(mode);
       if(mode==='musical'){
-        if(scale && SCALES[scale]){ const ss=document.getElementById('mScaleSel'); if(ss) ss.value=scale; View.set({scale}); }
-        if(key!=null && key!==''){ const ks=document.getElementById('mKeySel'); if(ks) ks.value=key; View.set({key:+key}); }
-        if(typeof refreshMusicalScene==='function') refreshMusicalScene();
+        const finalScale = (scale && SCALES[scale]) ? scale : View.get().scale;
+        const finalKey = (key!=null && key!=='') ? +key : View.get().key;
+        if(finalKey != null) enterMusicalWithKeyScale(finalKey, finalScale);
+        else if(typeof refreshMusicalScene==='function') refreshMusicalScene();
       }
       if(sel!=null && sel!=='' && typeof selectNode==='function'){ const si=+sel; if(N[si]) selectNode(si); }
     } catch(e){ console.warn('deep-link restore failed', e); }

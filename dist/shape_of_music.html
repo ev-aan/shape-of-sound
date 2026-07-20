@@ -3055,6 +3055,16 @@ const MUSICAL_RINGS = [
   { id:'dim',   radius:168, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
 ];
 
+// enters Musical mode already configured with a key + scale — the one thing every bridge into
+// Musical mode needs (the topbar Why/How bridge, deep-link hash restore, and this mode's own
+// default-entry below), each of which used to hand-roll this same sequence independently.
+// #mKeySel doesn't exist in the markup (key selection is the circle-of-fifths tap, not a
+// dropdown) so there's nothing to sync for key, only the scale select.
+function enterMusicalWithKeyScale(key, scale){
+  View.set({ key, scale });
+  const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
+  refreshMusicalScene();
+}
 Modes.register('musical', {
   label: 'Musical Theory',
   onEnter(){
@@ -3083,8 +3093,8 @@ Modes.register('musical', {
     // land on something interactive rather than a blank "tap a note" prompt — C major is a
     // reasonable default a first-time visitor can immediately explore, not a forced choice
     // (a chosen key/scale from earlier in the session, or a deep link, always wins over this)
-    if(View.get().key == null) View.set({ key: 0, scale: View.get().scale || 'major' });
-    refreshMusicalScene();
+    if(View.get().key == null) enterMusicalWithKeyScale(0, View.get().scale || 'major');
+    else refreshMusicalScene();
   },
   onExit(){ stopBach(); }
 });
@@ -3506,14 +3516,7 @@ function installBridgeButton(){
         const idx = detailIdx;
         if(idx != null){
           const n = N[idx];
-          const cur = View.get();
-          if(cur.key == null){
-            const scale = guessScaleFamily(n);
-            View.set({ key: n.root, scale });
-            const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
-            const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
-            refreshMusicalScene();
-          }
+          if(View.get().key == null) enterMusicalWithKeyScale(n.root, guessScaleFamily(n));
         }
       }
       // re-open the detail so the user's selection stays visible in the new mode
@@ -3589,9 +3592,10 @@ const Link = (function(){
       if(dim && (dim==='2d'||dim==='3d') && typeof setDim==='function') setDim(dim);
       if(mode && Modes.get(mode)) switchMode(mode);
       if(mode==='musical'){
-        if(scale && SCALES[scale]){ const ss=document.getElementById('mScaleSel'); if(ss) ss.value=scale; View.set({scale}); }
-        if(key!=null && key!==''){ const ks=document.getElementById('mKeySel'); if(ks) ks.value=key; View.set({key:+key}); }
-        if(typeof refreshMusicalScene==='function') refreshMusicalScene();
+        const finalScale = (scale && SCALES[scale]) ? scale : View.get().scale;
+        const finalKey = (key!=null && key!=='') ? +key : View.get().key;
+        if(finalKey != null) enterMusicalWithKeyScale(finalKey, finalScale);
+        else if(typeof refreshMusicalScene==='function') refreshMusicalScene();
       }
       if(sel!=null && sel!=='' && typeof selectNode==='function'){ const si=+sel; if(N[si]) selectNode(si); }
     } catch(e){ console.warn('deep-link restore failed', e); }
@@ -4107,6 +4111,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderLessonsNoteBeatStage, mod12, FIFTHS_ORDER, guessScaleFamily }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderLessonsNoteBeatStage, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale }; } catch(e){}
 
 })();</script></body></html>

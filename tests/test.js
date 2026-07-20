@@ -746,5 +746,13 @@ try {
   __api.Link.writeModePath('bogus');
   if (lastReplacedUrl !== null) throw new Error('writeModePath should ignore an unrecognised mode rather than writing a garbage URL');
   global.history.replaceState = origReplaceState;
+  // enterMusicalWithKeyScale: the shared "seed Musical mode" helper (the topbar Why/How bridge,
+  // deep-link restore, and Musical mode's own default-entry all call this now instead of each
+  // hand-rolling the same View.set + select-sync + refresh sequence) \u2014 run last since it mutates
+  // View.state.key/scale and nothing downstream should depend on a particular value afterward
+  __api.enterMusicalWithKeyScale(4, 'dorian');
+  if (__api.View.get().key !== 4 || __api.View.get().scale !== 'dorian') throw new Error('enterMusicalWithKeyScale should update View state');
+  if (C['mScaleSel'].value !== 'dorian') throw new Error('enterMusicalWithKeyScale should sync the scale select');
+  if (!/Key of E /.test(C['mLegend'].textContent)) throw new Error('enterMusicalWithKeyScale should re-render the legend for the new key (E = pitch class 4)');
   console.log('PASS \u2014 all layers ran clean');
 } catch (e) { console.error('FAIL:', e.message); console.error(e.stack.split('\n').slice(0,6).join('\n')); process.exit(1); }

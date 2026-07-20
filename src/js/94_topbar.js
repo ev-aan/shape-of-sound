@@ -75,14 +75,7 @@ function installBridgeButton(){
         const idx = detailIdx;
         if(idx != null){
           const n = N[idx];
-          const cur = View.get();
-          if(cur.key == null){
-            const scale = guessScaleFamily(n);
-            View.set({ key: n.root, scale });
-            const ks = document.getElementById('mKeySel'); if(ks) ks.value = n.root;
-            const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
-            refreshMusicalScene();
-          }
+          if(View.get().key == null) enterMusicalWithKeyScale(n.root, guessScaleFamily(n));
         }
       }
       // re-open the detail so the user's selection stays visible in the new mode

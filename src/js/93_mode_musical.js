@@ -14,6 +14,16 @@ const MUSICAL_RINGS = [
   { id:'dim',   radius:168, noteRadius:13, fn: pc => (pc+11)%12, suffix:'°', sat:.4,  light:.28 },
 ];
 
+// enters Musical mode already configured with a key + scale — the one thing every bridge into
+// Musical mode needs (the topbar Why/How bridge, deep-link hash restore, and this mode's own
+// default-entry below), each of which used to hand-roll this same sequence independently.
+// #mKeySel doesn't exist in the markup (key selection is the circle-of-fifths tap, not a
+// dropdown) so there's nothing to sync for key, only the scale select.
+function enterMusicalWithKeyScale(key, scale){
+  View.set({ key, scale });
+  const ss = document.getElementById('mScaleSel'); if(ss) ss.value = scale;
+  refreshMusicalScene();
+}
 Modes.register('musical', {
   label: 'Musical Theory',
   onEnter(){
@@ -42,8 +52,8 @@ Modes.register('musical', {
     // land on something interactive rather than a blank "tap a note" prompt — C major is a
     // reasonable default a first-time visitor can immediately explore, not a forced choice
     // (a chosen key/scale from earlier in the session, or a deep link, always wins over this)
-    if(View.get().key == null) View.set({ key: 0, scale: View.get().scale || 'major' });
-    refreshMusicalScene();
+    if(View.get().key == null) enterMusicalWithKeyScale(0, View.get().scale || 'major');
+    else refreshMusicalScene();
   },
   onExit(){ stopBach(); }
 });
