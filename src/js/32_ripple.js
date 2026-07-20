@@ -98,9 +98,9 @@ rippleMesh.visible = false;
 const rippleRenderer = createRenderer(document.getElementById('rippleView'), 3, 0x04050a);
 const rippleScene = new THREE.Scene();
 rippleScene.add(rippleMesh);
-const rippleCamera = new THREE.PerspectiveCamera(40, 1, 1, 800);
+const rippleCamera = new THREE.PerspectiveCamera(50, 1, 1, 800);
 wireResize(rippleRenderer, rippleCamera);
-let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null;
+let rippleClock = 0, ripplePc = 0, rippleRoomBuilt = false, rippleReflectionUniforms = null, roomGlow = null;
 // whether the room is on screen at all — separate from rippleMesh.visible, which now only means
 // "the noise panel is the object currently showing" (false while a Shadertoy shader is mounted
 // instead, even though the room itself is still open)
@@ -126,7 +126,7 @@ function renderRippleFrame(dt){
 function buildRippleRoom(){
   if(rippleRoomBuilt) return;
   rippleRoomBuilt = true;
-  rippleScene.fog = new THREE.FogExp2(0x04050a, 0.006);
+  rippleScene.fog = new THREE.FogExp2(0x04050a, 0.005);
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(300, 300),
     new THREE.MeshBasicMaterial({ color: 0x0a0c16 })
@@ -152,8 +152,31 @@ function buildRippleRoom(){
   // reflection for free (see 33_shadertoy.js for the mesh/uniforms/wrapper)
   shaderToyMesh.visible = false;
   rippleScene.add(shaderToyMesh);
-  rippleCamera.position.set(0, 14, 130);
-  rippleCamera.lookAt(0, -8, 0);
+  // side walls — a floor alone reads as a stage; walls read as a room. Flat MeshBasicMaterial,
+  // same convention as the floor (this scene has no lighting system, so they read via silhouette
+  // and fog falloff, not shading). DoubleSide defensively, so a rotation-direction mistake
+  // doesn't just render as an invisible backface.
+  const wallMat = new THREE.MeshBasicMaterial({ color: 0x3d4d75, side: THREE.DoubleSide });
+  const wallGeo = new THREE.PlaneGeometry(300, 160); // 300 matches the floor's z-depth, 160 tall
+  const wallL = new THREE.Mesh(wallGeo, wallMat); wallL.rotation.y = Math.PI/2; wallL.position.set(-150, 56, 0);
+  const wallR = new THREE.Mesh(wallGeo, wallMat); wallR.rotation.y = -Math.PI/2; wallR.position.set(150, 56, 0);
+  rippleScene.add(wallL); rippleScene.add(wallR);
+  // a small scale-reference silhouette near the panel — without *some* reference object, size in
+  // a 3D render is ambiguous; this one figure is what actually sells "the room/panel are large"
+  const figureMat = new THREE.MeshBasicMaterial({ color: 0x020203 });
+  const figureHead = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 8), figureMat);
+  const figureBody = new THREE.Mesh(new THREE.ConeGeometry(1.6, 6, 12), figureMat);
+  figureHead.position.set(-45, 4.2, 40); figureBody.position.set(-45, 1, 40);
+  rippleScene.add(figureHead); rippleScene.add(figureBody);
+  // the panel reads as a light source, not just a lit object — a soft glow bleeding onto the
+  // nearby floor/walls, tinted to the current note hue each frame (see updateRipple)
+  roomGlow = makeGlowSprite(new THREE.Color(), 0.35, 95);
+  roomGlow.position.set(0, 0, -3);
+  rippleScene.add(roomGlow);
+  // off-center framing: the panel sits right-of-center with empty room visible to the left —
+  // a dead-center "product shot" camera is exactly what kills the sense of space in a render
+  rippleCamera.position.set(-58, 20, 118);
+  rippleCamera.lookAt(-8, -7, 0);
 }
 function updateRipple(dt){
   if(!rippleMesh.visible) return;
@@ -173,6 +196,7 @@ function updateRipple(dt){
     rippleReflectionUniforms.uHSL.value.copy(rippleUniforms.uHSL.value);
     rippleReflectionUniforms.uPulse.value = rippleUniforms.uPulse.value;
   }
+  if(roomGlow) Palette.applyToTHREE(roomGlow.material.color, ripplePc, 0.7, 0.55);
 }
 function showRipple(){
   buildRippleRoom();
