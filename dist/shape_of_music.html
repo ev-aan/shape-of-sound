@@ -1169,6 +1169,38 @@ function wireScrollRange(home, wrap, rangePx, onScroll){
   });
 }
 
+// ---- SCROLL LESSON ENGINE: a data format for discrete-step scroll-driven lessons ----
+// A scroll-driven lesson is a flat step list: [{ bright, dim, surface, data?, opts?, play? }].
+// `surface` is a Surfaces id; `data` is only meaningful for the two-arg surfaces (staff,
+// pianoroll — see 05_surfaces.js) — everything else just gets `opts`. `play`, if present, is
+// { midi, dur } — the note this step sounds on step-index change. This is the whole contract a
+// new lesson needs to satisfy — no new render function, no new wiring block. Not every
+// scroll-driven page fits this shape (92_mode_science.js's wave continuum is a continuous
+// formula across 3 zones with an extra slider input, not a discrete step list — it stays its
+// own bespoke thing rather than being forced into this format).
+function renderScrollLessonStage(visualEl, captionEl, lesson, t){
+  t = Math.max(0, Math.min(1, t != null ? t : 0));
+  const idx = Math.min(lesson.steps.length - 1, Math.floor(t * lesson.steps.length));
+  const step = lesson.steps[idx];
+  const surface = Surfaces.get(step.surface);
+  if(step.data !== undefined) surface.render(visualEl, step.data, step.opts);
+  else surface.render(visualEl, step.opts);
+  captionEl.innerHTML = '<span class="sciCaptionBright">'+step.bright+'</span> <span class="sciCaptionDim">'+step.dim+'</span>';
+  return { idx, play: step.play };
+}
+// wires a lesson's step list to a scroll range, handling the render-on-scroll + audio-on-step-
+// change plumbing (built on wireScrollRange above). Returns { reset() } so the caller (a mode's
+// onEnter) can restart the lesson at step 0 on every entry without re-wiring the listener.
+function makeScrollLessonStage(lesson, home, wrap, visualEl, captionEl){
+  let t = 0, lastPlayedIdx = null;
+  const renderStage = () => {
+    const r = renderScrollLessonStage(visualEl, captionEl, lesson, t);
+    if(r.idx !== lastPlayedIdx){ lastPlayedIdx = r.idx; if(r.play) playFreqs([m2f(r.play.midi)], r.play.dur); }
+  };
+  wireScrollRange(home, wrap, lesson.rangePx, newT => { t = newT; renderStage(); });
+  return { reset(){ t = 0; lastPlayedIdx = null; renderScrollLessonStage(visualEl, captionEl, lesson, t); } };
+}
+
 // circle-of-fifths ring + labels
 const ringGroup=[];let ringLine=null;
 (function(){const pts=[];for(let cof=0;cof<=12;cof++){const a=2*Math.PI*(cof%12)/12;pts.push(R0*Math.cos(a),0,R0*Math.sin(a));}
@@ -2905,49 +2937,31 @@ const BEAT_STEPS = [
   { name:'WHOLE NOTE',   dur:'w', beats:4,   dim:'gets four beats — a whole measure of common time.' },
   { name:'EIGHTH NOTE',  dur:'e', beats:0.5, dim:'gets half a beat — two fit inside one quarter note.' },
 ];
-const LESSON_STEPS = SOLFEGE_STEPS.length + BEAT_STEPS.length; // 12
-// staffEl/captionEl: two separate mount points (not one shared container split via
-// querySelector — this app's test harness stubs querySelector to always fabricate a match
-// rather than reflecting real innerHTML, so every other surface in this codebase already takes
-// its mount point(s) directly rather than searching for them; this follows the same convention).
-// opts.t: scroll position in [0,1]. Returns { idx } so callers only re-trigger audio on an
-// actual step change, not every sub-pixel scroll tick.
-function renderLessonsNoteBeatStage(staffEl, captionEl, opts){
-  opts = opts || {};
-  const t = Math.max(0, Math.min(1, opts.t != null ? opts.t : 0));
-  const idx = Math.min(LESSON_STEPS - 1, Math.floor(t * LESSON_STEPS));
-  let measure, bright, dim, playMidi, playDur;
-  if(idx < SOLFEGE_STEPS.length){
-    const scaleSoFar = SOLFEGE_STEPS.slice(0, idx + 1);
-    measure = [{ timeSig:[4,4], voices:{ treble: scaleSoFar.map(s => ({ midi:s.midi, dur:'q' })) } }];
-    const cur = SOLFEGE_STEPS[idx];
-    bright = cur.name; dim = cur.dim; playMidi = cur.midi; playDur = 0.35;
-  } else {
-    const b = BEAT_STEPS[idx - SOLFEGE_STEPS.length];
-    measure = [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:b.dur }] } }];
-    bright = b.name; dim = b.dim; playMidi = 60; playDur = b.beats * 0.5;
-  }
-  Surfaces.get('staff').render(staffEl, measure);
-  captionEl.innerHTML = '<span class="sciCaptionBright">'+bright+'</span> <span class="sciCaptionDim">'+dim+'</span>';
-  return { idx, playMidi, playDur };
-}
+// derived once from the compact step tables above into the generic { steps: [...] } shape (see
+// renderScrollLessonStage/makeScrollLessonStage in 07_scroll_stage.js) — this is what "write a
+// lesson" looks like now: a step list, no bespoke render function.
+const NOTES_AND_BEATS_LESSON = {
+  rangePx: 2400,
+  steps: [
+    ...SOLFEGE_STEPS.map((step, i) => ({
+      bright: step.name, dim: step.dim, surface: 'staff',
+      data: [{ timeSig:[4,4], voices:{ treble: SOLFEGE_STEPS.slice(0, i + 1).map(s => ({ midi:s.midi, dur:'q' })) } }],
+      play: { midi: step.midi, dur: 0.35 }
+    })),
+    ...BEAT_STEPS.map(b => ({
+      bright: b.name, dim: b.dim, surface: 'staff',
+      data: [{ timeSig:[4,4], voices:{ treble:[{ midi:60, dur:b.dur }] } }],
+      play: { midi: 60, dur: b.beats * 0.5 }
+    }))
+  ]
+};
 // plain module-local staging (mirrors sciStage/sciStageWired in 92_mode_science.js) rather than
 // View state — Lessons-only, easy to unwind, matches how activeLesson is already tracked locally
-let lessonsStage = 'concept', lessonsStageWired = false, lessonsT = 0, lessonsLastPlayedIdx = null;
+let lessonsStage = 'concept', lessonsStageWired = false, lessonsStageHandle = null;
 function applyLessonsStage(){
   const concept = lessonsStage === 'concept';
   document.getElementById('lessonsIntro').style.display = concept ? '' : 'none';
   document.getElementById('lessonsGrid').style.display = concept ? 'none' : '';
-}
-function wireLessonsScrollStage(){
-  const home = document.getElementById('lessonsHome'), wrap = document.getElementById('lessonsScrollStage');
-  const staffEl = document.getElementById('lessonsStageStaff'), captionEl = document.getElementById('lessonsStageCaption');
-  const renderStage = () => {
-    const r = renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT });
-    if(r.idx !== lessonsLastPlayedIdx){ lessonsLastPlayedIdx = r.idx; playFreqs([m2f(r.playMidi)], r.playDur); }
-  };
-  wireScrollRange(home, wrap, 2400, t => { lessonsT = t; renderStage(); });
-  renderLessonsNoteBeatStage(staffEl, captionEl, { t: lessonsT }); // initial paint only — no sound until the visitor actually scrolls
 }
 
 Modes.register('lessons', {
@@ -2955,21 +2969,23 @@ Modes.register('lessons', {
   onEnter(){
     showMode('lessons');
     document.getElementById('topbarLabel').textContent = 'Lessons — small standalone music-theory demos';
-    // showMode() already resets lessonsHome.scrollTop to 0 on every entry — resetting the JS-
-    // tracked scroll position to match keeps the caption from ever showing a stale mid-scale step
     lessonsStage = 'concept';
-    lessonsT = 0; lessonsLastPlayedIdx = null;
     applyLessonsStage();
     if(!lessonsStageWired){
-      wireLessonsScrollStage();
+      lessonsStageHandle = makeScrollLessonStage(
+        NOTES_AND_BEATS_LESSON,
+        document.getElementById('lessonsHome'), document.getElementById('lessonsScrollStage'),
+        document.getElementById('lessonsStageStaff'), document.getElementById('lessonsStageCaption')
+      );
       const cta = document.getElementById('lessonsExploreCta');
       if(cta) cta.onclick = () => { lessonsStage = 'explore'; applyLessonsStage(); };
       const back = document.getElementById('lessonsBackConceptBtn');
       if(back) back.onclick = () => { lessonsStage = 'concept'; applyLessonsStage(); };
       lessonsStageWired = true;
-    } else {
-      renderLessonsNoteBeatStage(document.getElementById('lessonsStageStaff'), document.getElementById('lessonsStageCaption'), { t: lessonsT });
     }
+    // showMode() already resets lessonsHome.scrollTop to 0 on every entry — resetting the
+    // lesson's own tracked position to match keeps the caption from ever showing a stale step
+    lessonsStageHandle.reset();
   },
   onExit(){}
 });
@@ -4197,6 +4213,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderLessonsNoteBeatStage, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale }; } catch(e){}
 
 })();</script></body></html>

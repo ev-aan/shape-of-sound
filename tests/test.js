@@ -599,15 +599,15 @@ try {
   // direct-render checks first (pure function, scratch container), same convention as Science's
   // renderSciWaveContinuum unit checks before the live scroll wiring is exercised
   const lessonsDoStaff = document.createElement('div'), lessonsDoCap = document.createElement('div');
-  __api.renderLessonsNoteBeatStage(lessonsDoStaff, lessonsDoCap, { t: 0 });
+  __api.renderScrollLessonStage(lessonsDoStaff, lessonsDoCap, __api.NOTES_AND_BEATS_LESSON, 0);
   if ((lessonsDoStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 1) throw new Error('t=0 should render a single note — the "start with a single note" moment');
   if (!/sciCaptionBright">DO/.test(lessonsDoCap.innerHTML)) throw new Error('t=0 should show the DO caption');
   const lessonsFaStaff = document.createElement('div'), lessonsFaCap = document.createElement('div');
-  __api.renderLessonsNoteBeatStage(lessonsFaStaff, lessonsFaCap, { t: 3 / 12 + 0.01 });
+  __api.renderScrollLessonStage(lessonsFaStaff, lessonsFaCap, __api.NOTES_AND_BEATS_LESSON, 3 / 12 + 0.01);
   if ((lessonsFaStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 4) throw new Error('the 4th solfège step should show the scale built up to 4 notes (do re mi fa)');
   if (!/sciCaptionBright">FA/.test(lessonsFaCap.innerHTML)) throw new Error('the 4th solfège step should show the FA caption');
   const lessonsEighthStaff = document.createElement('div'), lessonsEighthCap = document.createElement('div');
-  __api.renderLessonsNoteBeatStage(lessonsEighthStaff, lessonsEighthCap, { t: 0.99 });
+  __api.renderScrollLessonStage(lessonsEighthStaff, lessonsEighthCap, __api.NOTES_AND_BEATS_LESSON, 0.99);
   if ((lessonsEighthStaff.innerHTML.match(/class="staffNote"/g) || []).length !== 1) throw new Error('the last beat step should render a single note (pitch fixed, only duration changes)');
   if (!/sciCaptionBright">EIGHTH NOTE/.test(lessonsEighthCap.innerHTML)) throw new Error('t=0.99 should show the EIGHTH NOTE caption');
   // the concept intro is the default landing stage — the card grid stays hidden until "explore" is chosen
