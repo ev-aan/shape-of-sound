@@ -640,6 +640,8 @@
     <p class="hint" style="text-align:center;">Tap any note to hear it against the root. Same angles as the familiar circle of fifths — only the distance from the centre has changed.</p>
    </div>
   </div>
+  <div class="musScaleRow" style="margin-top:22px;"><span class="musScaleLbl">library — every tool &amp; demo in one place</span></div>
+  <div id="libraryNav" class="lessonNav"></div>
  </div>
 </div>
 <div id="scienceHome" style="display:none;">
@@ -1749,6 +1751,9 @@ function ringOpacity(){ringLine.material.opacity=.5*ringO;for(const s of ringGro
 function updateCaption(){if(keyRoot==null)axiscap.textContent=(layoutName==='expl')?CAP_EXPL:(layoutName==='axes'?axesCaption():CAP_DISC);}
 function setLayout(name){if(locked)return;posFrom=pos.map(p=>p.clone());posTo=curLayout(name).map(p=>p.clone());mt=0;layoutName=name;
   setPill('layoutPills',name);updateCaption();document.getElementById('axisSel').style.display=(name==='axes')?'flex':'none';}
+// layoutName is reassigned by setLayout, so a plain __api reference would only ever capture
+// its boot-time value — expose it live via a getter instead, same reason getRippleMode() etc. exist
+function getLayoutName(){ return layoutName; }
 function setLocked(on){locked=on;[...document.getElementById('layoutPills').children].forEach(b=>b.disabled=on);}
 function setPill(id,k){[...document.getElementById(id).children].forEach(b=>b.classList.toggle('on',b.dataset.k===k));}
 document.getElementById('layoutPills').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)setLayout(b.dataset.k);});
@@ -3050,11 +3055,48 @@ const STAFF_KEYSIG_FLAT_MEASURE = [{
   timeSig: [4,4],
   voices: { treble: [65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } // F major scale
 }];
+// ---- LIBRARY: every one-off tool/demo in the app, catalogued as click-to-launch links ----
+// Each of these already exists and works — the only thing missing was a place to find them:
+// a sidebar button in one specific mode, a header icon, or (the shader demo, the Tonnetz
+// layout) no UI entry point at all. Plain data + one dispatch per tool, not forced into the
+// scroll-lesson step format (07_scroll_stage.js) — that's a different shape for a different
+// purpose (a sequence of stops along one scroll range), not a launcher for unrelated tools.
+// jumps into Science mode's explore stage (not the concept page) — every wave/cym/scope/
+// tonnetz tool below needs the main 3D scene visible, which only explore shows
+function enterScienceExplore(){ switchMode('science'); sciStage = 'explore'; applySciStage(); }
+const LIBRARY_TOOLS = [
+  { id:'ripple-room', title:'The Ripple Room', blurb:'a 3D room built around a noise-displaced, note-tinted panel — reachable anytime from the header, too',
+    open(){ showRipple(); } },
+  { id:'shader-demo', title:'Shader playground', blurb:'a Shadertoy-compatible GLSL shader, mounted onto that same panel inside the same room',
+    open(){ showRipple(); loadShadertoy(CINESHADER_RIPPLE_EXAMPLE); } },
+  { id:'waveform', title:'Waveform generator', blurb:'build a chord from individual sine waves and watch them sum into one wave, in 2D and 3D',
+    open(){ enterScienceExplore(); openWave(); } },
+  { id:'cymatics', title:'Cymatics', blurb:"a chord's standing-wave glyph — the pattern its overtones would trace on a vibrating plate",
+    open(){ enterScienceExplore(); openCym(); } },
+  { id:'overtone-scope', title:'Overtone microscope', blurb:"compare two chords' overtone spectra side by side, aligned wherever they share a harmonic",
+    open(){ enterScienceExplore();
+      const a = N.findIndex(n => n.root===0 && n.q==='maj'), b = N.findIndex(n => n.root===7 && n.q==='maj');
+      openScope(a<0?0:a, b<0?0:b); } },
+  { id:'scales-chart', title:'Scales reference chart', blurb:'every scale, palette-tinted, highlighting whichever one is active in your current key',
+    open(){ switchMode('musical'); openScalesChart(); } },
+  { id:'tonnetz', title:'Tonnetz lattice', blurb:"the chord map redrawn as a Neo-Riemannian lattice — it never had a button of its own until now",
+    open(){ enterScienceExplore(); setLayout('tonnetz'); } },
+];
+function libraryCardHTML(t){
+  return '<div class="lessonCard" data-tool="'+t.id+'"><div class="lessonTitle">'+t.title+'</div>'+
+    '<div class="lessonBlurb">'+t.blurb+'</div></div>';
+}
 function wireLessonsHome(){
   document.getElementById('lessonNav').innerHTML = LESSONS.map(lessonCardHTML).join('');
   document.getElementById('lessonNav').addEventListener('click', e => {
     const c = e.target.closest('.lessonCard'); if(!c) return;
     selectLesson(c.dataset.lesson);
+  });
+  document.getElementById('libraryNav').innerHTML = LIBRARY_TOOLS.map(libraryCardHTML).join('');
+  document.getElementById('libraryNav').addEventListener('click', e => {
+    const c = e.target.closest('.lessonCard'); if(!c) return;
+    const tool = LIBRARY_TOOLS.find(t => t.id === c.dataset.tool);
+    if(tool) tool.open();
   });
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
@@ -4213,6 +4255,6 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale, LIBRARY_TOOLS, getLayoutName }; } catch(e){}
 
 })();</script></body></html>

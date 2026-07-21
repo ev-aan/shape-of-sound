@@ -659,6 +659,23 @@ try {
   fire(C['musRatioWheel'], 'click', { target: { closest: sel => sel === '.cofNote' ? { dataset: { pc: '7' } } : null } });
   global.window.AudioContext.prototype.createOscillator = origRwCreateOsc;
   if (rwOscCount !== 1) throw new Error('tapping a note should play it, played ' + rwOscCount);
+  // ---- Library: click-to-launch links for every one-off tool/demo in the app ----
+  if ((C['libraryNav'].innerHTML.match(/class="lessonCard"/g) || []).length !== 7) throw new Error('the library nav should render all 7 tool cards');
+  fire(C['libraryNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { tool: 'ripple-room' } } : null } });
+  if (!__api.isRippleRoomOpen()) throw new Error('the ripple-room library card should open the ripple room');
+  __api.hideRipple(); // close it again so it doesn't linger into later tests
+  fire(C['libraryNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { tool: 'waveform' } } : null } });
+  if (__api.View.get().mode !== 'science') throw new Error('the waveform library card should switch to Science mode');
+  if (C['scene'].style.display === 'none') throw new Error('the waveform library card should land on Science\'s explore stage, not the concept page');
+  if (!C['wave'].classList.contains('show')) throw new Error('the waveform library card should open the wave panel');
+  C['waveClose'].onclick();
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
+  frames(5);
+  fire(C['libraryNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { tool: 'tonnetz' } } : null } });
+  if (__api.getLayoutName() !== 'tonnetz') throw new Error('the tonnetz library card should switch the layout to tonnetz');
+  clk(C['layoutPills'], { k: 'disc' }); // restore the default for anything downstream
+  fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
+  frames(5);
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
   // fixed equal temperament) — showMode() never relocates it into #lessonsSettingsAnchor
   if (C['lessonsSettingsAnchor'].children.includes(C['tuneToggle'])) throw new Error('Lessons mode should not have the tune toggle, which has no effect on its demos');

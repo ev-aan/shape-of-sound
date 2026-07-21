@@ -24,6 +24,9 @@ function ringOpacity(){ringLine.material.opacity=.5*ringO;for(const s of ringGro
 function updateCaption(){if(keyRoot==null)axiscap.textContent=(layoutName==='expl')?CAP_EXPL:(layoutName==='axes'?axesCaption():CAP_DISC);}
 function setLayout(name){if(locked)return;posFrom=pos.map(p=>p.clone());posTo=curLayout(name).map(p=>p.clone());mt=0;layoutName=name;
   setPill('layoutPills',name);updateCaption();document.getElementById('axisSel').style.display=(name==='axes')?'flex':'none';}
+// layoutName is reassigned by setLayout, so a plain __api reference would only ever capture
+// its boot-time value — expose it live via a getter instead, same reason getRippleMode() etc. exist
+function getLayoutName(){ return layoutName; }
 function setLocked(on){locked=on;[...document.getElementById('layoutPills').children].forEach(b=>b.disabled=on);}
 function setPill(id,k){[...document.getElementById(id).children].forEach(b=>b.classList.toggle('on',b.dataset.k===k));}
 document.getElementById('layoutPills').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)setLayout(b.dataset.k);});

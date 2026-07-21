@@ -150,11 +150,48 @@ const STAFF_KEYSIG_FLAT_MEASURE = [{
   timeSig: [4,4],
   voices: { treble: [65,67,69,70,72,74,76,77].map(midi => ({ midi, dur:'e' })) } // F major scale
 }];
+// ---- LIBRARY: every one-off tool/demo in the app, catalogued as click-to-launch links ----
+// Each of these already exists and works — the only thing missing was a place to find them:
+// a sidebar button in one specific mode, a header icon, or (the shader demo, the Tonnetz
+// layout) no UI entry point at all. Plain data + one dispatch per tool, not forced into the
+// scroll-lesson step format (07_scroll_stage.js) — that's a different shape for a different
+// purpose (a sequence of stops along one scroll range), not a launcher for unrelated tools.
+// jumps into Science mode's explore stage (not the concept page) — every wave/cym/scope/
+// tonnetz tool below needs the main 3D scene visible, which only explore shows
+function enterScienceExplore(){ switchMode('science'); sciStage = 'explore'; applySciStage(); }
+const LIBRARY_TOOLS = [
+  { id:'ripple-room', title:'The Ripple Room', blurb:'a 3D room built around a noise-displaced, note-tinted panel — reachable anytime from the header, too',
+    open(){ showRipple(); } },
+  { id:'shader-demo', title:'Shader playground', blurb:'a Shadertoy-compatible GLSL shader, mounted onto that same panel inside the same room',
+    open(){ showRipple(); loadShadertoy(CINESHADER_RIPPLE_EXAMPLE); } },
+  { id:'waveform', title:'Waveform generator', blurb:'build a chord from individual sine waves and watch them sum into one wave, in 2D and 3D',
+    open(){ enterScienceExplore(); openWave(); } },
+  { id:'cymatics', title:'Cymatics', blurb:"a chord's standing-wave glyph — the pattern its overtones would trace on a vibrating plate",
+    open(){ enterScienceExplore(); openCym(); } },
+  { id:'overtone-scope', title:'Overtone microscope', blurb:"compare two chords' overtone spectra side by side, aligned wherever they share a harmonic",
+    open(){ enterScienceExplore();
+      const a = N.findIndex(n => n.root===0 && n.q==='maj'), b = N.findIndex(n => n.root===7 && n.q==='maj');
+      openScope(a<0?0:a, b<0?0:b); } },
+  { id:'scales-chart', title:'Scales reference chart', blurb:'every scale, palette-tinted, highlighting whichever one is active in your current key',
+    open(){ switchMode('musical'); openScalesChart(); } },
+  { id:'tonnetz', title:'Tonnetz lattice', blurb:"the chord map redrawn as a Neo-Riemannian lattice — it never had a button of its own until now",
+    open(){ enterScienceExplore(); setLayout('tonnetz'); } },
+];
+function libraryCardHTML(t){
+  return '<div class="lessonCard" data-tool="'+t.id+'"><div class="lessonTitle">'+t.title+'</div>'+
+    '<div class="lessonBlurb">'+t.blurb+'</div></div>';
+}
 function wireLessonsHome(){
   document.getElementById('lessonNav').innerHTML = LESSONS.map(lessonCardHTML).join('');
   document.getElementById('lessonNav').addEventListener('click', e => {
     const c = e.target.closest('.lessonCard'); if(!c) return;
     selectLesson(c.dataset.lesson);
+  });
+  document.getElementById('libraryNav').innerHTML = LIBRARY_TOOLS.map(libraryCardHTML).join('');
+  document.getElementById('libraryNav').addEventListener('click', e => {
+    const c = e.target.closest('.lessonCard'); if(!c) return;
+    const tool = LIBRARY_TOOLS.find(t => t.id === c.dataset.tool);
+    if(tool) tool.open();
   });
   Surfaces.get('staff').render(document.getElementById('musExampleStaff'), STAFF_EXAMPLE_MEASURE);
   Surfaces.get('staff').render(document.getElementById('musKeySigSharpStaff'), STAFF_KEYSIG_SHARP_MEASURE, { keySig:2 });
