@@ -176,6 +176,8 @@ const LIBRARY_TOOLS = [
     open(){ switchMode('musical'); openScalesChart(); } },
   { id:'tonnetz', title:'Tonnetz lattice', blurb:"the chord map redrawn as a Neo-Riemannian lattice — it never had a button of its own until now",
     open(){ enterScienceExplore(); setLayout('tonnetz'); } },
+  { id:'piano', title:'Piano', blurb:'build chords on a real keyboard, watch them land on a staff, and see roman numerals, voice-leading, inversion, and interval analysis all at once',
+    open(){ showPianoTool(); } },
 ];
 function libraryCardHTML(t){
   return '<div class="lessonCard" data-tool="'+t.id+'"><div class="lessonTitle">'+t.title+'</div>'+

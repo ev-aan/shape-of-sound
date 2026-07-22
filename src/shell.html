@@ -324,6 +324,33 @@
 </div>
 <div id="legend"></div>
 </div>
+<!-- a top-level sibling of #advancedApp/#simpleFront, deliberately -- a standalone tool must stay
+     visible regardless of Simple vs Advanced, so it cannot live inside either (see 98_piano_tool.js) -->
+<div id="pianoTool" class="pianoTool">
+ <span class="x" id="pianoToolClose">✕</span>
+ <div class="pianoToolInner">
+  <h2>Piano</h2>
+  <p class="pianoToolIntro">Build a chord on the keys below — it's wired to the same theory as the rest of the app.</p>
+  <div id="pianoKeyboard"></div>
+  <div class="musScaleRow">
+   <span id="pianoReadout">What chord do you want to hear?</span>
+   <div class="pills" id="pianoScoreModePills">
+    <button data-mode="snapshot" class="on">Snapshot</button><button data-mode="transcribe">Transcribe</button>
+   </div>
+  </div>
+  <div class="pills" id="pianoScoreActions" style="display:none;">
+   <button id="pianoAddBtn" disabled>+ add to score</button><button id="pianoClearScoreBtn">clear score</button>
+  </div>
+  <div id="pianoStaff"></div>
+  <div class="grp"><div class="lbl">function &amp; roman numeral</div>
+   <div class="musScaleRow"><span class="musScaleLbl">key</span><select id="pianoKeySel"></select>
+    <span class="musScaleLbl">scale</span><select id="pianoScaleSel"></select></div>
+   <div id="pianoFnOut"></div></div>
+  <div class="grp"><div class="lbl">voice-leading from the last chord</div><div id="pianoVlOut"></div></div>
+  <div class="grp"><div class="lbl">voicing &amp; inversion</div><div id="pianoInversionOut"></div></div>
+  <div class="grp"><div class="lbl">intervals from the root</div><div id="pianoIntervals"></div></div>
+ </div>
+</div>
 <script>%%THREEJS%%</script>
 <script>const DATA=%%DATA%%;const SILENT="%%SILENT%%";</script>
 <script>

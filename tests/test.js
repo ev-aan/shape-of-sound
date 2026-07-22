@@ -266,9 +266,11 @@ try {
   // the empty-state readout invites a choice ("what chord do you want to hear?") rather than
   // just instructing — checked against the source, in both the static markup and the JS reset
   // path (onPlayNotesChange with an empty set), since the harness's DOM stubs start blank and
-  // don't reflect real static HTML content the way a browser would.
+  // don't reflect real static HTML content the way a browser would. The Piano tool (98_piano_tool.js)
+  // deliberately reuses the same copy for its own static markup + JS reset path, so this is now
+  // 2 pairs (4 total), not 1.
   const playReadoutCopies = (html.match(/what chord do you want to hear/ig) || []).length;
-  if (playReadoutCopies !== 2) throw new Error('expected the empty-state readout text in both the static markup and onPlayNotesChange, found ' + playReadoutCopies);
+  if (playReadoutCopies !== 4) throw new Error('expected the empty-state readout text in both Play\'s and Piano\'s static markup + JS reset paths, found ' + playReadoutCopies);
   const pressKey = pc => fire(C['playKeyboard'], 'click', { target: { closest: () => ({ dataset: { pc: String(pc) }, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } } }) } });
   pressKey(0); pressKey(4); pressKey(7); // C E G
   if (C['playAddBtn'].disabled) throw new Error('C+E+G should be recognised as a chord ready to add');
@@ -748,7 +750,7 @@ try {
   global.window.AudioContext.prototype.createOscillator = origRwCreateOsc;
   if (rwOscCount !== 1) throw new Error('tapping a note should play it, played ' + rwOscCount);
   // ---- Library: click-to-launch links for every one-off tool/demo in the app ----
-  if ((C['libraryNav'].innerHTML.match(/class="lessonCard"/g) || []).length !== 7) throw new Error('the library nav should render all 7 tool cards');
+  if ((C['libraryNav'].innerHTML.match(/class="lessonCard"/g) || []).length !== 8) throw new Error('the library nav should render all 8 tool cards');
   fire(C['libraryNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { tool: 'ripple-room' } } : null } });
   if (!__api.isRippleRoomOpen()) throw new Error('the ripple-room library card should open the ripple room');
   __api.hideRipple(); // close it again so it doesn't linger into later tests
@@ -764,6 +766,59 @@ try {
   clk(C['layoutPills'], { k: 'disc' }); // restore the default for anything downstream
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
   frames(5);
+  // ---- Piano tool: standalone keyboard + score + analysis (98_piano_tool.js) ----
+  // launching from the Library, from Lessons mode, proves it never touches switchMode/View —
+  // it's an overlay, not a mode, so the underlying mode should be completely undisturbed by it
+  if (__api.isPianoToolBuilt()) throw new Error('the piano tool should not be built until first opened');
+  fire(C['libraryNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { tool: 'piano' } } : null } });
+  if (!__api.isPianoToolBuilt()) throw new Error('opening the piano library card should lazily build the tool');
+  if (C['pianoTool'].style.display !== 'block') throw new Error('the piano tool overlay should be visible once opened');
+  if (__api.View.get().mode !== 'lessons') throw new Error('opening the piano tool should not change the current mode -- it is a standalone overlay, not a mode');
+  const pianoKey = pc => fire(C['pianoKeyboard'], 'click', { target: { closest: () => ({ dataset: { pc: String(pc) }, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } } }) } });
+  pianoKey(0); pianoKey(4); pianoKey(7); // C then E then G, in that press order -- Cmaj, root position
+  if (!/C \+ E \+ G/.test(C['pianoReadout'].textContent) || !/Cmaj/.test(C['pianoReadout'].textContent)) throw new Error('the piano readout should recognise C+E+G as Cmaj, got: ' + C['pianoReadout'].textContent);
+  if (C['pianoAddBtn'].disabled) throw new Error('the add-to-score button should enable once a chord is recognised');
+  if (!/staffNote/.test(C['pianoStaff'].innerHTML)) throw new Error('snapshot mode should render the held chord onto the staff');
+  if (!C['pianoFnOut'].innerHTML.includes('I in C Major') || !C['pianoFnOut'].innerHTML.includes('tonic')) throw new Error('Cmaj in the default C major key should show as roman numeral I, tonic, got: ' + C['pianoFnOut'].innerHTML);
+  if (!C['pianoInversionOut'].innerHTML.includes('root position')) throw new Error('C+E+G pressed in that order should read as root position (C is the first-pressed, lowest note)');
+  if (C['pianoIntervals'].children.length !== 2) throw new Error('a triad should show 2 root-relative intervals (3rd, 5th), got ' + C['pianoIntervals'].children.length);
+  // release C+E+G, then build Gmaj to exercise voice-leading-from-the-last-chord
+  pianoKey(0); pianoKey(4); pianoKey(7);
+  if (__api.getPianoLastChordIdx() == null) throw new Error('playing a recognised chord should record it as the last chord');
+  const cmajIdx = __api.getPianoLastChordIdx();
+  pianoKey(7); pianoKey(11); pianoKey(2); // G then B then D -- Gmaj
+  if (!/Gmaj/.test(C['pianoReadout'].textContent)) throw new Error('G+B+D should be recognised as Gmaj');
+  if (!C['pianoVlOut'].innerHTML.includes('Cmaj') || !C['pianoVlOut'].innerHTML.includes('Gmaj')) throw new Error('the voice-leading panel should compare the new chord (Gmaj) to the last one (Cmaj), got: ' + C['pianoVlOut'].innerHTML);
+  if (__api.getPianoLastChordIdx() === cmajIdx) throw new Error('a new, different recognised chord should update the last-chord tracker');
+  // transcribe mode: a manual "+ add to score" commits the current chord as a new measure
+  fire(C['pianoScoreModePills'], 'click', { target: { closest: () => ({ dataset: { mode: 'transcribe' } }) } });
+  if (__api.getPianoScoreMode() !== 'transcribe') throw new Error('the score-mode pill should switch to transcribe');
+  if (C['pianoScoreActions'].style.display === 'none') throw new Error('transcribe mode should reveal the add/clear score actions');
+  C['pianoAddBtn'].onclick();
+  if (__api.getPianoScoreLength() !== 1) throw new Error('add-to-score should append one measure, got ' + __api.getPianoScoreLength());
+  if (!/staffNote/.test(C['pianoStaff'].innerHTML) || !/Gmaj/.test(C['pianoStaff'].innerHTML)) throw new Error('the transcribed score should render the committed Gmaj measure');
+  C['pianoClearScoreBtn'].onclick();
+  if (__api.getPianoScoreLength() !== 0) throw new Error('clear-score should empty the transcription');
+  // key/scale selectors drive the roman-numeral panel independently of the app's global keyRoot
+  C['pianoKeySel'].value = '7'; C['pianoKeySel'].onchange(); // key of G -- Gmaj (still held) becomes the tonic
+  if (!C['pianoFnOut'].innerHTML.includes('I in G Major') || !C['pianoFnOut'].innerHTML.includes('tonic')) throw new Error('Gmaj in the key of G major should read as I, tonic, got: ' + C['pianoFnOut'].innerHTML);
+  C['pianoKeySel'].value = '0'; C['pianoKeySel'].onchange(); // restore the default for anything downstream
+  // release G+B+D, then hold an unrecognised cluster -- panels should degrade gracefully, not throw
+  pianoKey(7); pianoKey(11); pianoKey(2);
+  pianoKey(0); pianoKey(1); pianoKey(2);
+  if (!/not a chord we know yet/.test(C['pianoReadout'].textContent)) throw new Error('an unrecognised note cluster should say so, not silently show nothing');
+  if (C['pianoIntervals'].children.length !== 2) throw new Error('interval breakdown should still work off raw held notes even without a chord match');
+  pianoKey(0); pianoKey(1); pianoKey(2); // release
+  // closing should reset everything (score, last-chord memory, score mode) but keep the tool
+  // built -- reopening should reuse it, same idiom as the ripple room's isRippleRoomBuilt()
+  C['pianoToolClose'].onclick();
+  if (C['pianoTool'].style.display !== 'none') throw new Error('closing the piano tool should hide the overlay');
+  if (!__api.isPianoToolBuilt()) throw new Error('closing should not un-build the tool -- reopening should reuse it');
+  if (__api.getPianoScoreMode() !== 'snapshot') throw new Error('closing should reset the score mode back to snapshot');
+  if (__api.getPianoScoreLength() !== 0) throw new Error('closing should clear any transcribed score');
+  if (__api.getPianoLastChordIdx() !== null) throw new Error('closing should forget the last-played chord');
+  if (C['pianoReadout'].textContent !== 'What chord do you want to hear?') throw new Error('closing should clear the held keys and reset the readout');
+  if (__api.View.get().mode !== 'lessons') throw new Error('closing the piano tool should leave the current mode untouched');
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
   // fixed equal temperament) — showMode() never relocates it into #lessonsSettingsAnchor
   if (C['lessonsSettingsAnchor'].children.includes(C['tuneToggle'])) throw new Error('Lessons mode should not have the tune toggle, which has no effect on its demos');

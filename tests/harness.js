@@ -26,7 +26,10 @@ const THREE={AdditiveBlending:2,
  Line:M,Color:Col,Raycaster:class{setFromCamera(){}intersectObjects(){return global.__hit?[{object:{userData:{index:5}}}]:[];}},
  Clock:class{getDelta(){return .12;}}};
 global.THREE=THREE;
-function el(){return{children:[],style:{},__h:{},dataset:{},innerHTML:'',value:'-1',disabled:false,onclick:null,oninput:null,onchange:null,
+function el(){return{children:[],style:{},__h:{},dataset:{},_innerHTML:'',value:'-1',disabled:false,onclick:null,oninput:null,onchange:null,
+ // a real innerHTML assignment discards existing children too -- matters for code that clears
+ // a container via innerHTML='' and then repopulates it with appendChild (see 98_piano_tool.js)
+ get innerHTML(){return this._innerHTML;}, set innerHTML(v){this._innerHTML=v;this.children.length=0;},
  classList:{_s:new Set(),add(c){this._s.add(c);},remove(c){this._s.delete(c);},toggle(c,f){f?this._s.add(c):this._s.delete(c);},contains(c){return this._s.has(c);}},
  addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);},appendChild(c){this.children.push(c);},closest(){return this;},
  querySelector(){return el();},querySelectorAll(){return [el(),el()];},insertBefore(c){this.children.push(c);},setAttribute(){},title:'',
