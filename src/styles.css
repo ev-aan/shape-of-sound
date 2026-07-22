@@ -410,8 +410,15 @@
  body.staffColor .rollNote{fill:var(--pc);}
  #playKeyboard{margin-top:6px;}
  .keyboardSvg{width:100%;max-width:480px;height:auto;display:block;margin:0 auto;}
- .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;}
- .pianoKey.held{stroke:#fff;stroke-width:2;}
+ .pianoKey{cursor:pointer;stroke:#00000030;stroke-width:1;transition:fill .08s ease-out,filter .08s ease-out;}
+ .pianoKey.black{filter:drop-shadow(0 2px 2px #00000080);}
+ .pianoKey:hover{filter:brightness(1.08);}
+ /* a key only shows its note's real colour (var(--pc), set inline per key from the same Palette
+    used everywhere else in the app) once pressed — colour reads as "this key is lit", not a
+    permanent decorative tint, so the rest of the time it reads as an actual black & white keyboard */
+ /* !important: each key's resting fill is an inline url(#gradient...) (unique per keyboard
+    instance, see 89_surface_keyboard.js), which otherwise beats any external stylesheet rule */
+ .pianoKey.held{fill:var(--pc) !important;stroke:#fff;stroke-width:2;filter:drop-shadow(0 0 10px var(--pc));}
  .pianoLabel{fill:#0b1026cc;font:600 10px ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-anchor:middle;pointer-events:none;}
  .lessonNav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:6px;}
  .lessonCard{cursor:pointer;background:#ffffff08;border:1px solid var(--line);border-radius:12px;padding:11px 14px;
