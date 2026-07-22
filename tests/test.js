@@ -10,6 +10,13 @@ global.SILENT = 'x';
 const a = html.indexOf('(function(){"use strict";');
 eval(html.slice(a, html.indexOf('</script>', a)));   // run the app against the stubs
 
+// boot schedules one harmless setTimeout of its own (90_init.js's toast auto-dismiss, 6500ms),
+// which -- since the DOM stub's #toast always exists -- itself schedules a second nested one
+// (the actual .remove(), 500ms later). Drain both now so neither sits at the front of the FIFO
+// queue and gets mistaken for an actual engine's own scheduled step by the first test that
+// calls __fireTimeout() (Bach, rhythm blocks).
+global.__fireTimeout(); global.__fireTimeout();
+
 const C = global.__cache, fire = global.__fire, raf = () => global.__raf();
 const frames = n => { for (let i = 0; i < n && raf(); i++) raf()(); };
 const clk = (el, k) => fire(el, 'click', { target: { closest: () => ({ dataset: k, disabled: false }) } });
@@ -819,6 +826,51 @@ try {
   if (__api.getPianoLastChordIdx() !== null) throw new Error('closing should forget the last-played chord');
   if (C['pianoReadout'].textContent !== 'What chord do you want to hear?') throw new Error('closing should clear the held keys and reset the readout');
   if (__api.View.get().mode !== 'lessons') throw new Error('closing the piano tool should leave the current mode untouched');
+  // ---- Music Foundations Curriculum: browsable reference content (91_curriculum.js) ----
+  const curricCardCount = (C['curriculumNav'].innerHTML.match(/data-curric-kind=/g) || []).length;
+  if (curricCardCount !== 15) throw new Error('the curriculum nav should render 15 cards (overview + 12 weeks + capstone + assessment), got ' + curricCardCount);
+  const curricClick = (kind, key) => fire(C['curriculumNav'], 'click', { target: { closest: sel => sel === '.lessonCard' ? { dataset: { curricKind: kind, curricKey: String(key) } } : null } });
+  curricClick('week', 1);
+  if (!/What Is Sound\?/.test(C['curriculumDetail'].innerHTML)) throw new Error('clicking Week 1 should render its content into the detail pane');
+  curricClick('overview', 'overview');
+  if (!/Maria von Trapp/.test(C['curriculumDetail'].innerHTML) || !/Track A/.test(C['curriculumDetail'].innerHTML)) throw new Error('the overview card should render the teaching lineage and track comparison');
+  curricClick('capstone', 'capstone');
+  if (!/Share the Music/.test(C['curriculumDetail'].innerHTML)) throw new Error('the capstone card should render its content');
+  curricClick('assessment', 'assessment');
+  if (!/Steady Beat/.test(C['curriculumDetail'].innerHTML)) throw new Error('the assessment card should render the capstone rubric');
+  // ---- Rhythm Blocks: Week 6's "Rhythm Architect" activity, made real ----
+  curricClick('week', 6);
+  if (!/rhythmGrid/.test(C['curriculumDetail'].innerHTML)) throw new Error('Week 6 should embed the rhythm-blocks activity');
+  if ((C['rhythmGrid'].innerHTML.match(/class="rhythmSlot/g) || []).length !== 8) throw new Error('the rhythm grid should render 8 beat slots (2 measures of 4)');
+  const rhythmTap = kind => fire(C['rhythmPalette'], 'click', { target: { closest: sel => sel === '[data-add]' ? { dataset: { add: kind } } : null } });
+  rhythmTap('ta');
+  if (JSON.stringify(__api.getRhythmSeq()) !== JSON.stringify(['ta',null,null,null,null,null,null,null])) throw new Error('tapping ta should fill slot 0, got ' + JSON.stringify(__api.getRhythmSeq()));
+  rhythmTap('titi');
+  if (JSON.stringify(__api.getRhythmSeq()) !== JSON.stringify(['ta','titi',null,null,null,null,null,null])) throw new Error('tapping ti-ti should auto-advance to the next empty slot and fill it, got ' + JSON.stringify(__api.getRhythmSeq()));
+  C['rhythmDelBtn'].onclick();
+  if (JSON.stringify(__api.getRhythmSeq()) !== JSON.stringify(['ta',null,null,null,null,null,null,null])) throw new Error('delete-last should remove the most recently filled slot');
+  C['rhythmClearBtn'].onclick();
+  if (__api.getRhythmSeq().some(v => v != null)) throw new Error('clear should empty the whole grid');
+  rhythmTap('ta'); rhythmTap('titi'); // rebuild ta, ti-ti for the playback test -- also confirms clear reset the active slot back to 0
+  if (JSON.stringify(__api.getRhythmSeq()) !== JSON.stringify(['ta','titi',null,null,null,null,null,null])) throw new Error('rebuilding after clear should start from slot 0 again');
+  let clapCount = 0;
+  const origCreateBufferSource = global.window.AudioContext.prototype.createBufferSource;
+  global.window.AudioContext.prototype.createBufferSource = function(){ clapCount++; return origCreateBufferSource.apply(this, arguments); };
+  C['rhythmPlayBtn'].onclick(); // unlockAudio() (already unlocked, no-op) + playRhythm() -> step() runs synchronously for slot 0 (ta)
+  if (!__api.isRhythmPlaying()) throw new Error('play should start rhythm playback');
+  if (clapCount !== 1) throw new Error('slot 0 (ta) should play exactly 1 clap synchronously on play, played ' + clapCount);
+  clapCount = 0;
+  global.__fireTimeout(); // advances to slot 1 (ti-ti): its first clap plays immediately, and its second clap's own sub-timer is scheduled
+  if (clapCount !== 1) throw new Error('slot 1 (ti-ti) should play its first clap immediately when its step fires, played ' + clapCount);
+  clapCount = 0;
+  global.__fireTimeout(); // fires the ti-ti sub-timer -- the second clap of the split beat
+  if (clapCount !== 1) throw new Error('ti-ti\'s second clap should fire from its own sub-timer, played ' + clapCount);
+  clapCount = 0;
+  global.__fireTimeout(); // advances to slot 2, which is empty
+  if (clapCount !== 0) throw new Error('an empty slot should play no clap, played ' + clapCount);
+  global.window.AudioContext.prototype.createBufferSource = origCreateBufferSource;
+  curricClick('overview', 'overview'); // navigate away from Week 6 mid-playback
+  if (__api.isRhythmPlaying()) throw new Error('navigating away from Week 6 should stop rhythm playback, not leave it clapping in the background');
   // the tune toggle (Equal/Just) has no effect on the Lessons demos (they always play back at
   // fixed equal temperament) — showMode() never relocates it into #lessonsSettingsAnchor
   if (C['lessonsSettingsAnchor'].children.includes(C['tuneToggle'])) throw new Error('Lessons mode should not have the tune toggle, which has no effect on its demos');

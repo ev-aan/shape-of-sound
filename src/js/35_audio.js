@@ -17,6 +17,16 @@ function playFreqs(freqs,dur){if(!soundOn)return;const a=audio(),t=a.currentTime
     o.detune.value=(Math.random()-0.5)*4;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+0.02);
     g.gain.exponentialRampToValueAtTime(0.06,t+dur*0.5);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+0.02);});}
+// a short noise burst, not a pitch -- the app's first percussive sound, for the rhythm-blocks
+// activity (91_curriculum.js) where a beat needs to read as a clap. strong=true for a full beat
+// (ta), false/lighter for each half of a split beat (ti-ti)
+function playClap(strong){if(!soundOn)return;const a=audio(),t=a.currentTime;
+  const dur=strong?0.14:0.09,n=Math.round(a.sampleRate*dur),buf=a.createBuffer(1,n,a.sampleRate),data=buf.getChannelData(0);
+  for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*(1-i/n); // white noise, faded to 0 so the tail doesn't click
+  const src=a.createBufferSource();src.buffer=buf;
+  const hp=a.createBiquadFilter();hp.type='highpass';hp.frequency.value=800; // crisp "clap", not a dull thump
+  const g=a.createGain();g.gain.setValueAtTime(strong?0.5:0.32,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(hp);hp.connect(g);g.connect(master);src.start(t);src.stop(t+dur+0.02);}
 const soundPill=document.getElementById('sound');
 soundPill.onclick=()=>{unlockAudio();soundOn=!soundOn;if(master)master.gain.value=soundOn?0.5:0;
   soundPill.textContent=soundOn?'🔊 sound on':'🔇 muted';};

@@ -444,3 +444,37 @@
  .lessonBlurb{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.35;}
  .lessonBody{display:none;}
  .lessonBody.on{display:block;}
+ /* Music Foundations curriculum (91_curriculum.js): a card grid + one shared detail pane,
+    repopulated per click -- unlike the 6 lessonBody-per-item lessons above, since 13+ near-
+    identical bespoke bodies would defeat the curriculum's own "template one layout, reuse it"
+    advice. Cards reuse .lessonCard/.lessonTitle/.lessonBlurb as-is, same visual language. */
+ .curricUnitHead{flex-basis:100%;font-size:10px;color:var(--dim);text-transform:uppercase;
+   letter-spacing:.05em;margin:10px 0 -2px;}
+ .curricDetail{max-width:640px;margin:14px auto 0;}
+ .curricDetail h3{margin:0 0 4px;}
+ .curricDetail h4{margin:18px 0 6px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+ .curricBigIdea{color:var(--ink);font-size:13px;line-height:1.4;margin:0 0 14px;}
+ .curricRow{margin-bottom:12px;}
+ .curricRow b{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+ .curricRow p,.curricRow ul{margin:0;font-size:12.5px;line-height:1.45;color:var(--ink);}
+ .curricRow ul{padding-left:18px;}
+ .curricTracks{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}
+ .curricTracks b{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+ .curricTracks p{margin:0;font-size:12.5px;line-height:1.45;color:var(--ink);}
+ .curricTable{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:11.5px;}
+ .curricTable th,.curricTable td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+ .curricTable th{color:var(--dim);font-weight:600;background:#ffffff08;}
+ .curricTable td{color:var(--ink);}
+ /* Rhythm Blocks (Week 6's "Rhythm Architect"): siblings of the compose sequencer's .slot/.chip
+    (src/styles.css:156-164) -- same visual language, tap-based like everything else here. */
+ .rhythmGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin:8px 0;}
+ .rhythmSlot{height:34px;border:1px solid var(--line);border-radius:7px;display:flex;align-items:center;justify-content:center;
+   font-size:11px;color:var(--dim);background:#ffffff08;cursor:pointer;overflow:hidden;}
+ .rhythmSlot.bar{border-left:2px solid var(--dim);}
+ .rhythmSlot.filled{color:var(--ink);background:#ffffff14;}
+ .rhythmSlot.active{border-color:#cdd9f5;box-shadow:0 0 0 1px #cdd9f5 inset;}
+ .rhythmSlot.playing{background:#cdd9f5;color:#0b1026;}
+ .rhythmPalette{display:flex;gap:6px;margin-bottom:8px;}
+ .rhythmBlock{font:inherit;font-size:12px;color:var(--ink);background:#ffffff10;border:1px solid var(--line);
+   border-radius:8px;padding:7px 16px;cursor:pointer;}
+ .rhythmBlock:hover{background:#ffffff1c;}

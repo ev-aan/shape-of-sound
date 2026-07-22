@@ -40,10 +40,23 @@ function el(){return{children:[],style:{},__h:{},dataset:{},_innerHTML:'',value:
 const cache={};
 global.document={getElementById:id=>cache[id]||(cache[id]=el()),createElement:()=>el(),createElementNS:()=>el(),querySelectorAll:()=>[],querySelector:()=>el(),body:el(),__h:{},addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);}};
 global.window={};global.devicePixelRatio=2;global.innerWidth=800;global.innerHeight=600;global.addEventListener=()=>{};global.performance={now:()=>0};
-let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};let timerSeq=1;let timeoutCb=null;global.setTimeout=(cb,ms)=>{timeoutCb=cb;return timerSeq++;};global.setInterval=()=>0;global.clearInterval=()=>{};global.MutationObserver=class{constructor(cb){this.cb=cb;}observe(){}disconnect(){}};
+let rafCb=null;global.requestAnimationFrame=cb=>{rafCb=cb;};let timerSeq=1;
+// a FIFO queue, not a single slot -- the rhythm-blocks engine (91_curriculum.js) can have two
+// timeouts pending at once (a ti-ti sub-clap plus the next step), which a single-slot capture
+// can't represent. __fireTimeout() advances one at a time, in scheduling order; delay (ms) is
+// ignored throughout this harness (same as the rAF stub), so ordering is purely FIFO.
+let timeoutQueue=[];
+global.setTimeout=(cb,ms)=>{const id=timerSeq++;timeoutQueue.push({id,cb});return id;};
+global.clearTimeout=id=>{timeoutQueue=timeoutQueue.filter(t=>t.id!==id);};
+global.setInterval=()=>0;global.clearInterval=()=>{};global.MutationObserver=class{constructor(cb){this.cb=cb;}observe(){}disconnect(){}};
 global.location={hash:'',origin:'https://x',pathname:'/'};global.history={replaceState(){}};global.navigator={clipboard:{writeText(){}}};
 const P={value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};
-global.window.AudioContext=class{constructor(){this.currentTime=0;this.state='running';this.destination={};}
+global.window.AudioContext=class{constructor(){this.currentTime=0;this.state='running';this.destination={};this.sampleRate=44100;}
  createGain(){return{gain:{...P,value:0},connect(){}};}createOscillator(){return{type:'',frequency:{value:0},detune:{value:0},connect(){},start(){},stop(){}};}
- createBuffer(){return{};}createBufferSource(){return{buffer:null,connect(){},start(){}};}resume(){}};
-global.__cache=cache;global.__raf=()=>rafCb;global.__fireTimeout=()=>{const cb=timeoutCb;timeoutCb=null;if(cb)cb();};global.__fire=(e,t,ev)=>{(e.__h[t]||[]).forEach(f=>f(ev||{}));};
+ // getChannelData backs a plain writable array, not a real Float32Array -- fine, playClap()
+ // only ever does numeric index reads/writes, same either way
+ createBuffer(ch,length){return{getChannelData:()=>new Array(length||0).fill(0)};}
+ createBufferSource(){return{buffer:null,connect(){},start(){},stop(){}};}
+ createBiquadFilter(){return{type:'',frequency:{value:0},connect(){}};}
+ resume(){}};
+global.__cache=cache;global.__raf=()=>rafCb;global.__fireTimeout=()=>{const t=timeoutQueue.shift();if(t)t.cb();};global.__fire=(e,t,ev)=>{(e.__h[t]||[]).forEach(f=>f(ev||{}));};
