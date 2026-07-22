@@ -86,7 +86,13 @@ const BACH_PRELUDE = BACH_CHORDS.map(c => {
   return bar;
 });
 
+// Deliberately separate from the chord-progression engine (`prog` in 45_progression.js) —
+// never concurrent, no shared state. Their tick models are incompatible: this is a fixed
+// setTimeout interval (note N fires exactly stepMs after note N-1), progression is a
+// continuous rAF/dt tween. Merging them would put Bach's crisp fixed-interval timing at the
+// mercy of frame-rate/dt accumulation — an audible regression, not a simplification.
 let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
+function getBachState(){ return { bachTimer, bachPos, bachFlatLen: bachFlat ? bachFlat.length : 0 }; }
 let bachArcEls = { prev:null, cur:null, next:null };
 function bachFlatten(){
   const flat = [];

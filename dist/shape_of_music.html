@@ -1709,14 +1709,19 @@ function selectNode(i){pulses[i]=1.5;highlight(i);
   if(composeOpen){addToSeq(i);}else{playFreqs(N[i].freqs);renderDetail(i);}}
 
 // progression
+// Deliberately separate from Bach prelude playback (bachTimer in 97_bach_prelude.js) — see
+// the comment there for why the two tick models (continuous rAF/dt tween vs. fixed setTimeout
+// interval) aren't worth unifying.
 let prog=null;
+function getProg(){ return prog; }
 function startProg(seqA,loop){prog={seq:seqA.slice(),seg:0,t:0,loop:!!loop};trailPts=[pos[seqA[0]].clone()];rebuildTrail();
   meteor.visible=mGlow.visible=true;meteor.position.copy(pos[seqA[0]]);mGlow.position.copy(pos[seqA[0]]);
   pulses[seqA[0]]=1.4;playFreqs(N[seqA[0]].freqs);setLocked(true);}
 function stepArrive(){const cur=prog.seq[prog.seg];pulses[cur]=1.6;playFreqs(N[cur].freqs);}
+function stopProg(){meteor.visible=mGlow.visible=false;trailPts=[];rebuildTrail();prog=null;setLocked(false);}
 const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 function advanceProg(dt){if(prog.seg>=prog.seq.length-1){prog.hold=(prog.hold||0)+dt;
-    if(prog.hold>1.0){if(prog.loop){startProg(prog.seq,true);}else{meteor.visible=mGlow.visible=false;trailPts=[];rebuildTrail();prog=null;setLocked(false);}}return;}
+    if(prog.hold>1.0){if(prog.loop){startProg(prog.seq,true);}else{stopProg();}}return;}
   prog.t+=dt/segDur;const a=pos[prog.seq[prog.seg]],b=pos[prog.seq[prog.seg+1]];
   const p=a.clone().lerp(b,ease(Math.min(prog.t,1)));meteor.position.copy(p);mGlow.position.copy(p);
   trailPts.push(p.clone());if(trailPts.length>90)trailPts.shift();rebuildTrail();
@@ -1907,7 +1912,7 @@ document.getElementById('seqSlots').addEventListener('click',e=>{const s=e.targe
   active=+s.dataset.slot;renderSeq();renderSugg();});
 document.getElementById('sugg').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)addToSeq(+b.dataset.add);});
 document.getElementById('seqPlay').onclick=()=>{const s=seq.filter(x=>x!=null);if(s.length){unlockAudio();startProg(s,loopOn);}};
-document.getElementById('seqStop').onclick=()=>{prog=null;meteor.visible=mGlow.visible=false;trailPts=[];rebuildTrail();setLocked(false);};
+document.getElementById('seqStop').onclick=()=>{stopProg();};
 document.getElementById('seqClear').onclick=()=>{seq=new Array(16).fill(null);active=0;renderSeq();renderSugg();};
 document.getElementById('seqDel').onclick=()=>{for(let k=15;k>=0;k--)if(seq[k]!=null){seq[k]=null;active=k;break;}renderSeq();renderSugg();};
 const seqLoop=document.getElementById('seqLoop');seqLoop.onclick=()=>{loopOn=!loopOn;seqLoop.classList.toggle('on',loopOn);};
@@ -4115,7 +4120,13 @@ const BACH_PRELUDE = BACH_CHORDS.map(c => {
   return bar;
 });
 
+// Deliberately separate from the chord-progression engine (`prog` in 45_progression.js) —
+// never concurrent, no shared state. Their tick models are incompatible: this is a fixed
+// setTimeout interval (note N fires exactly stepMs after note N-1), progression is a
+// continuous rAF/dt tween. Merging them would put Bach's crisp fixed-interval timing at the
+// mercy of frame-rate/dt accumulation — an audible regression, not a simplification.
 let bachTimer = null, bachFlat = null, bachPos = 0, bachStaffHandle = null;
+function getBachState(){ return { bachTimer, bachPos, bachFlatLen: bachFlat ? bachFlat.length : 0 }; }
 let bachArcEls = { prev:null, cur:null, next:null };
 function bachFlatten(){
   const flat = [];
@@ -4255,6 +4266,7 @@ const shareBtn = document.getElementById('shareBtn');
 if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
   shareBtn.textContent = '✓ link copied'; setTimeout(()=>shareBtn.textContent='⤴ share view', 1400); };
 // test hook (harmless in browser)
-try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale, LIBRARY_TOOLS, getLayoutName }; } catch(e){}
+try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale, LIBRARY_TOOLS, getLayoutName,
+  startBach, stopBach, getBachState, startProg, stopProg, advanceProg, getProg, meteor, mGlow }; } catch(e){}
 
 })();</script></body></html>

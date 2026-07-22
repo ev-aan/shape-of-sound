@@ -40,7 +40,7 @@ document.getElementById('seqSlots').addEventListener('click',e=>{const s=e.targe
   active=+s.dataset.slot;renderSeq();renderSugg();});
 document.getElementById('sugg').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)addToSeq(+b.dataset.add);});
 document.getElementById('seqPlay').onclick=()=>{const s=seq.filter(x=>x!=null);if(s.length){unlockAudio();startProg(s,loopOn);}};
-document.getElementById('seqStop').onclick=()=>{prog=null;meteor.visible=mGlow.visible=false;trailPts=[];rebuildTrail();setLocked(false);};
+document.getElementById('seqStop').onclick=()=>{stopProg();};
 document.getElementById('seqClear').onclick=()=>{seq=new Array(16).fill(null);active=0;renderSeq();renderSugg();};
 document.getElementById('seqDel').onclick=()=>{for(let k=15;k>=0;k--)if(seq[k]!=null){seq[k]=null;active=k;break;}renderSeq();renderSugg();};
 const seqLoop=document.getElementById('seqLoop');seqLoop.onclick=()=>{loopOn=!loopOn;seqLoop.classList.toggle('on',loopOn);};

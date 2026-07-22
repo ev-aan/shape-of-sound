@@ -587,6 +587,94 @@ try {
   if (!/bar 1\/35/.test(C['musBachPlay'].textContent)) throw new Error('play button should show playback progress');
   C['musBachPlay'].onclick(); // stop
   if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopping should restore the play button label');
+  // Bach playback engine (setTimeout-chained note sequencer, see 97_bach_prelude.js) —
+  // characterization tests for the Tier-3 audit's note-sequencing-engine investigation, driven
+  // via the harness's __fireTimeout hook (mirrors the existing __raf hook) since real timers
+  // never fire in this headless run
+  let bachOsc = 0;
+  const origBachOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ bachOsc++; return origBachOsc.apply(this, arguments); };
+  __api.stopBach(); // guarantee a clean slate regardless of the manual start/stop above
+  bachOsc = 0;
+  __api.startBach(); // synchronously runs step() once: bar 1, event 0 (a bar boundary -> bass + treble)
+  let st = __api.getBachState();
+  if (st.bachPos !== 1) throw new Error('starting Bach should synchronously process the first note event, bachPos should be 1, got ' + st.bachPos);
+  if (st.bachTimer == null) throw new Error('starting Bach should schedule the next step via setTimeout');
+  if (bachOsc !== 2) throw new Error('bar-boundary event (ei=0) should play bass + treble = 2 oscillators, played ' + bachOsc);
+  bachOsc = 0;
+  global.__fireTimeout(); // event 1 (ei=1, mid-bar) -> treble only
+  st = __api.getBachState();
+  if (st.bachPos !== 2) throw new Error('firing the scheduled timeout should advance bachPos by exactly 1, got ' + st.bachPos);
+  if (bachOsc !== 1) throw new Error('a mid-bar event (ei=1) should play treble only = 1 oscillator, played ' + bachOsc);
+  bachOsc = 0;
+  global.__fireTimeout(); // ei=2
+  global.__fireTimeout(); // ei=3
+  bachOsc = 0;
+  global.__fireTimeout(); // event 4 (ei=4, the bar's second bass restrike) -> bass + treble again
+  if (bachOsc !== 2) throw new Error('the bar\'s second bass restrike (ei=4) should also play bass + treble = 2 oscillators, played ' + bachOsc);
+  // stop mid-playback: timer/position/button all reset, not just the timer
+  global.__fireTimeout(); global.__fireTimeout(); // a couple more steps into the piece
+  __api.stopBach();
+  st = __api.getBachState();
+  if (st.bachTimer !== null) throw new Error('stopBach should clear the pending timer');
+  if (st.bachPos !== 0) throw new Error('stopBach should reset playback position to 0');
+  if (!/^▶ Bach/.test(C['musBachPlay'].textContent)) throw new Error('stopBach mid-playback should restore the play button label');
+  // natural completion: driving every remaining event to the end should self-stop without an
+  // explicit stopBach() call (step() calls it internally once bachPos reaches bachFlat.length)
+  __api.startBach();
+  const totalEvents = __api.getBachState().bachFlatLen;
+  if (totalEvents !== 280) throw new Error('Bach prelude should flatten to 35 bars x 8 treble events = 280, got ' + totalEvents);
+  for (let i = 0; i < totalEvents; i++) global.__fireTimeout(); // 1 already ran synchronously in startBach; this walks past the end
+  st = __api.getBachState();
+  if (st.bachTimer !== null || st.bachPos !== 0) throw new Error('reaching the end of the piece should self-stop (bachTimer null, bachPos reset to 0) with no explicit stop call');
+  // single-active-instance guard: starting again while "running" should cleanly reset, not race
+  // a second setTimeout chain alongside the first
+  __api.startBach();
+  global.__fireTimeout(); global.__fireTimeout();
+  __api.startBach(); // should stop the in-flight chain and begin a fresh one
+  st = __api.getBachState();
+  if (st.bachPos !== 1) throw new Error('restarting Bach mid-playback should begin a fresh run (bachPos 1), not continue the old chain, got ' + st.bachPos);
+  __api.stopBach();
+  global.window.AudioContext.prototype.createOscillator = origBachOsc;
+  // Progression playback engine (continuous rAF/dt tween, see 45_progression.js) — the other
+  // half of the Tier-3 audit's note-sequencing-engine investigation. advanceProg(dt) is driven
+  // directly with controlled dt values instead of via the real frame loop, so segment crossings
+  // land on exact, assertable boundaries.
+  __api.stopProg(); // guarantee a clean slate regardless of any earlier seqPlay-driven playback
+  const progA = __api.N.findIndex(n => n.root === 0 && n.q === 'maj'); // C major
+  const progB = __api.N.findIndex(n => n.root === 7 && n.q === 'maj'); // G major
+  let progOsc = 0;
+  const origProgOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ progOsc++; return origProgOsc.apply(this, arguments); };
+  progOsc = 0;
+  __api.startProg([progA, progB], false); // plays the first chord immediately on start
+  if (progOsc !== __api.N[progA].freqs.length) throw new Error('starting a progression should immediately play the first chord (' + __api.N[progA].freqs.length + ' notes), played ' + progOsc);
+  if (__api.getProg().seg !== 0) throw new Error('a fresh progression should start at segment 0');
+  progOsc = 0;
+  __api.advanceProg(0.1); // well under segDur (0.7s default) -- should NOT cross into the next segment
+  if (__api.getProg().seg !== 0) throw new Error('advanceProg with dt well under segDur should not cross a segment boundary');
+  if (progOsc !== 0) throw new Error('a mid-segment frame should not trigger any new note (audio only fires on arrival), played ' + progOsc);
+  __api.advanceProg(1.0); // pushes t past 1 regardless of remaining progress -- crosses into segment 1 and arrives
+  if (__api.getProg().seg !== 1) throw new Error('advanceProg should cross into segment 1 once t reaches 1');
+  if (progOsc !== __api.N[progB].freqs.length) throw new Error('crossing into a new segment should play exactly that chord\'s notes (' + __api.N[progB].freqs.length + '), played ' + progOsc);
+  // natural completion: holding at the final segment for over 1s should self-stop via stopProg()
+  __api.advanceProg(0.5); __api.advanceProg(0.6); // hold > 1.0s total at the last segment
+  if (__api.getProg() !== null) throw new Error('holding past the final segment for over 1s should self-stop the progression');
+  if (__api.meteor.visible) throw new Error('natural completion should hide the meteor');
+  // loop: the same hold-past-completion path should restart instead of nulling out when loop=true
+  __api.startProg([progA, progB], true);
+  __api.advanceProg(1.0); // arrive at segment 1
+  __api.advanceProg(0.5); __api.advanceProg(0.6); // hold past completion
+  if (__api.getProg() === null) throw new Error('a looping progression should restart on completion, not stop');
+  if (__api.getProg().seg !== 0) throw new Error('looping should restart back at segment 0');
+  // seqStop parity: the compose sequencer's Stop button and natural completion must reach the
+  // identical end-state -- the actual regression check for extracting stopProg() out of both
+  // call sites (45_progression.js's advanceProg completion branch, 75_compose.js's seqStop handler)
+  __api.startProg([progA, progB], false);
+  C['seqStop'].onclick();
+  if (__api.getProg() !== null) throw new Error('the seqStop button should clear the active progression');
+  if (__api.meteor.visible) throw new Error('the seqStop button should hide the meteor, matching natural completion\'s end-state');
+  global.window.AudioContext.prototype.createOscillator = origProgOsc;
   // Lessons mode: a 4th top-level surface for the standalone teaching demos only (Bach and
   // neighbouring chords stay in Musical mode since they depend on its live chord-selection state)
   fire(C['siteHeaderNav'], 'click', { target: { closest: sel => sel === 'button[data-mode]' ? { dataset: { mode: 'lessons' } } : null } });
