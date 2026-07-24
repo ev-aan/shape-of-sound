@@ -4358,7 +4358,7 @@ function heroDrawWaves(reduced){
       if(x===0) heroCtx.moveTo(x,y); else heroCtx.lineTo(x,y);
     }
     const edgeFade = Math.min(1, k*7, (1-k)*7); // soften the first/last few lines in from the top/bottom edge
-    heroCtx.strokeStyle = 'hsla('+Math.round(hue*360)+',60%,64%,'+(0.045+edgeFade*0.09)+')';
+    heroCtx.strokeStyle = 'hsla('+Math.round(hue*360)+',65%,70%,'+(0.075+edgeFade*0.12)+')';
     heroCtx.lineWidth = 1;
     heroCtx.stroke();
   }
