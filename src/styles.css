@@ -65,6 +65,14 @@
  .sciDot{fill:var(--ink);}
  .sciStageCtrl{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11px;color:var(--dim);}
  .sciStageCtrl input[type=range]{max-width:220px;}
+ /* a lightweight, non-interactive progress tracker for the 3 stages the scroll demo above moves
+    through — gives "lesson 1" an explicit shape instead of reading as one ambient animation.
+    Lives inside .sciStageSticky so it stays pinned alongside the wave panel through the scroll. */
+ .sciSteps{display:flex;justify-content:center;gap:8px;margin-top:14px;}
+ .sciStep{font:600 10px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.06em;
+   text-transform:uppercase;color:var(--dim);padding:5px 11px;border:1px solid var(--line);
+   border-radius:99px;transition:color .2s,border-color .2s,background .2s;}
+ .sciStep.on{color:var(--ink);border-color:#cdd9f5;background:#ffffff10;}
  /* Lessons' own concept intro (#lessonsIntro, see 93_mode_lessons.js) — same scroll-stage family
     as Science's above, just more steps (12: 8 solfège degrees + 4 note durations) so it gets a
     taller scroll range. */

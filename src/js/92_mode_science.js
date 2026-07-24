@@ -113,12 +113,17 @@ function renderSciWaveContinuum(container, opts){
     '<p class="sciWaveCaption"><span class="sciCaptionBright">'+bright+'</span> <span class="sciCaptionDim">'+dim+'</span></p>';
   return { cycles, pc };
 }
+// same 0.33/0.66 zone boundaries renderSciWaveContinuum uses for its own caption text — kept in
+// sync here so the step tracker always agrees with what the caption is currently saying
+function sciStepForT(t){ return t < 0.33 ? 0 : (t < 0.66 ? 1 : 2); }
 function wireSciScrollStage(){
   const home = document.getElementById('scienceHome'), wrap = document.getElementById('sciScrollStage');
   const renderContinuum = () => {
     const r = renderSciWaveContinuum(document.getElementById('sciStagePanel'), { t: sciT, amplitude: sciAmplitude });
     if(sciT >= 0.66 && r.pc !== sciWaveLastPc){ sciWaveLastPc = r.pc; playFreqs([m2f(60+r.pc)], 0.3); }
     else if(sciT < 0.66){ sciWaveLastPc = null; }
+    const active = sciStepForT(sciT);
+    document.querySelectorAll('#sciSteps .sciStep').forEach(el => el.classList.toggle('on', +el.dataset.step === active));
   };
   wireScrollRange(home, wrap, 2000, t => { sciT = t; renderContinuum(); });
   const ampSlider = document.getElementById('sciAmpSlider');

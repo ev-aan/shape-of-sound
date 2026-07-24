@@ -71,6 +71,14 @@
  .sciDot{fill:var(--ink);}
  .sciStageCtrl{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:11px;color:var(--dim);}
  .sciStageCtrl input[type=range]{max-width:220px;}
+ /* a lightweight, non-interactive progress tracker for the 3 stages the scroll demo above moves
+    through — gives "lesson 1" an explicit shape instead of reading as one ambient animation.
+    Lives inside .sciStageSticky so it stays pinned alongside the wave panel through the scroll. */
+ .sciSteps{display:flex;justify-content:center;gap:8px;margin-top:14px;}
+ .sciStep{font:600 10px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.06em;
+   text-transform:uppercase;color:var(--dim);padding:5px 11px;border:1px solid var(--line);
+   border-radius:99px;transition:color .2s,border-color .2s,background .2s;}
+ .sciStep.on{color:var(--ink);border-color:#cdd9f5;background:#ffffff10;}
  /* Lessons' own concept intro (#lessonsIntro, see 93_mode_lessons.js) — same scroll-stage family
     as Science's above, just more steps (12: 8 solfège degrees + 4 note durations) so it gets a
     taller scroll range. */
@@ -705,15 +713,23 @@
 </div>
 <div id="scienceHome" style="display:none;">
  <div class="musWrap sciConceptWrap">
+  <div class="musScaleRow"><span class="musScaleLbl">lesson 1 · the basics of sound</span></div>
   <h1 class="serif">How sound happens</h1>
   <div id="sciScrollStage" class="sciScrollStage">
    <div class="sciStageSticky">
     <div id="sciStagePanel" class="sciWaveDemo"></div>
+    <div id="sciSteps" class="sciSteps">
+     <span class="sciStep" data-step="0">1 · amplitude</span>
+     <span class="sciStep" data-step="1">2 · wave</span>
+     <span class="sciStep" data-step="2">3 · pitch</span>
+    </div>
     <div id="sciAmpGroup" class="sciStageCtrl"><span>amplitude</span><input id="sciAmpSlider" type="range" min="0" max="100" value="50"></div>
    </div>
   </div>
-  <p class="heroSub">Sound is just something vibrating back and forth. Scroll to watch it go
-  from a single swing, to a wave, to a pitch you can hear. Frequency is just how fast it repeats.</p>
+  <p class="heroSub">You've just felt amplitude (how far it swings), watched it become a wave
+  (that same swing, drawn out over time), and heard it become pitch (how fast it repeats) —
+  the whole physical basis of every sound in this app. Here's where the pitches you can actually
+  hear sit inside the full range of vibration, from earthquakes to X-rays:</p>
   <div id="sciSpectrum"><div id="sciSpectrumChart"></div></div>
   <button id="sciExploreCta" class="heroCta">Start exploring the chord map →</button>
  </div>
@@ -3306,12 +3322,17 @@ function renderSciWaveContinuum(container, opts){
     '<p class="sciWaveCaption"><span class="sciCaptionBright">'+bright+'</span> <span class="sciCaptionDim">'+dim+'</span></p>';
   return { cycles, pc };
 }
+// same 0.33/0.66 zone boundaries renderSciWaveContinuum uses for its own caption text — kept in
+// sync here so the step tracker always agrees with what the caption is currently saying
+function sciStepForT(t){ return t < 0.33 ? 0 : (t < 0.66 ? 1 : 2); }
 function wireSciScrollStage(){
   const home = document.getElementById('scienceHome'), wrap = document.getElementById('sciScrollStage');
   const renderContinuum = () => {
     const r = renderSciWaveContinuum(document.getElementById('sciStagePanel'), { t: sciT, amplitude: sciAmplitude });
     if(sciT >= 0.66 && r.pc !== sciWaveLastPc){ sciWaveLastPc = r.pc; playFreqs([m2f(60+r.pc)], 0.3); }
     else if(sciT < 0.66){ sciWaveLastPc = null; }
+    const active = sciStepForT(sciT);
+    document.querySelectorAll('#sciSteps .sciStep').forEach(el => el.classList.toggle('on', +el.dataset.step === active));
   };
   wireScrollRange(home, wrap, 2000, t => { sciT = t; renderContinuum(); });
   const ampSlider = document.getElementById('sciAmpSlider');
