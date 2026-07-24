@@ -30,13 +30,28 @@ function showAdvanced(){
 // Many thin parallel traces share the same two-term sine field (phased by each line's own
 // baseline Y, not independently randomized), so neighbouring lines stay correlated and the whole
 // bundle reads as one flowing sheet — literally "the shape of sound" — rather than a scatter of
-// unrelated wiggles. The cursor bends and brightens whichever lines pass near it.
+// unrelated wiggles. Moving the cursor drops an actual expanding ripple (a ring that grows and
+// fades over ~2.6s) rather than a bump that rigidly follows the pointer — several can be in
+// flight at once, same idea as dragging a finger through still water.
 let heroBuilt = false;
 let heroCanvas, heroCtx, heroW = 0, heroH = 0, heroDPR = 1;
-let heroPmx = 0, heroPmy = 0, heroT = 0;
+let heroT = 0, heroRealT = 0;
 let heroMx = 0, heroMy = 0, heroRx = 0, heroRy = 0;
 const heroReduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HERO_WAVE_LINES = 46, HERO_WAVE_STEP = 6;
+// ripples: spawned on movement (throttled by distance, not every pointermove event), each one
+// then expands and fades on its own real-time clock regardless of further cursor motion
+let heroRipples = [], heroLastRippleX = null, heroLastRippleY = null;
+const HERO_RIPPLE_MIN_DIST = 26, HERO_RIPPLE_MAX = 6, HERO_RIPPLE_LIFE = 2.6, HERO_RIPPLE_SPEED = 300, HERO_RIPPLE_RING = 46;
+function heroMaybeSpawnRipple(x, y){
+  if(heroLastRippleX != null){
+    const dx = x-heroLastRippleX, dy = y-heroLastRippleY;
+    if(dx*dx+dy*dy < HERO_RIPPLE_MIN_DIST*HERO_RIPPLE_MIN_DIST) return;
+  }
+  heroLastRippleX = x; heroLastRippleY = y;
+  heroRipples.push({ x, y, t0: heroRealT });
+  if(heroRipples.length > HERO_RIPPLE_MAX) heroRipples.shift();
+}
 
 function heroResize(){
   if(!heroCanvas) return;
@@ -62,6 +77,10 @@ function heroFrameStep(dt){
   if(!heroCanvas) return;
   const reduced = heroReduced();
   heroT += reduced ? 0 : dt*0.35;
+  if(!reduced){
+    heroRealT += dt;
+    if(heroRipples.length) heroRipples = heroRipples.filter(r => heroRealT - r.t0 < HERO_RIPPLE_LIFE);
+  }
   heroCtx.clearRect(0, 0, heroW, heroH);
   heroDrawWaves(reduced);
 }
@@ -70,25 +89,31 @@ function heroFrameStep(dt){
 // clashes with whatever note colours the wheel itself is showing
 function heroDrawWaves(reduced){
   const hue = (heroT*0.012) % 1;
-  const mx = heroPmx, my = heroPmy;
+  const ripples = reduced ? null : heroRipples;
   for(let i=0;i<HERO_WAVE_LINES;i++){
     const k = i/(HERO_WAVE_LINES-1);
     const baseY = heroH*0.05 + k*heroH*0.9;
-    const vProx = reduced ? 0 : Math.exp(-((baseY-my)*(baseY-my))/(2*220*220));
     heroCtx.beginPath();
     for(let x=0; x<=heroW; x+=HERO_WAVE_STEP){
       let y = baseY
         + 24*Math.sin(x*0.0026 + heroT*0.55 + baseY*0.012)
         + 11*Math.sin(x*0.0062 - heroT*0.38 + baseY*0.021);
-      if(!reduced){
-        const dx = x-mx, hProx = Math.exp(-(dx*dx)/(2*140*140));
-        y += vProx*hProx*54*Math.sin(dx*0.045 - heroT*3.2);
+      if(ripples && ripples.length){
+        for(let ri=0; ri<ripples.length; ri++){
+          const r = ripples[ri];
+          const age = heroRealT - r.t0; if(age < 0) continue;
+          const radius = age * HERO_RIPPLE_SPEED;
+          const ddx = x-r.x, ddy = baseY-r.y, dist = Math.sqrt(ddx*ddx + ddy*ddy);
+          const band = dist - radius;
+          const ring = Math.exp(-(band*band)/(2*HERO_RIPPLE_RING*HERO_RIPPLE_RING));
+          const fade = 1 - age/HERO_RIPPLE_LIFE;
+          y += ring * fade * 16 * Math.sin(band*0.12);
+        }
       }
       if(x===0) heroCtx.moveTo(x,y); else heroCtx.lineTo(x,y);
     }
     const edgeFade = Math.min(1, k*7, (1-k)*7); // soften the first/last few lines in from the top/bottom edge
-    const glow = vProx*0.16; // brighten whichever lines the cursor is nearest to
-    heroCtx.strokeStyle = 'hsla('+Math.round(hue*360)+',60%,64%,'+(0.045+edgeFade*0.09+glow)+')';
+    heroCtx.strokeStyle = 'hsla('+Math.round(hue*360)+',60%,64%,'+(0.045+edgeFade*0.09)+')';
     heroCtx.lineWidth = 1;
     heroCtx.stroke();
   }
@@ -101,7 +126,8 @@ function ensureHeroField(){
   heroMx = heroRx = innerWidth/2; heroMy = heroRy = innerHeight/2;
   addEventListener('resize', heroResize);
   addEventListener('pointermove', e => {
-    heroPmx = e.clientX; heroPmy = e.clientY; heroMx = e.clientX; heroMy = e.clientY;
+    heroMx = e.clientX; heroMy = e.clientY;
+    if(!heroReduced()) heroMaybeSpawnRipple(e.clientX, e.clientY);
   });
   heroBuilt = true;
   heroResize();
