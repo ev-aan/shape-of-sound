@@ -40,12 +40,30 @@ function renderScrollLessonStage(visualEl, captionEl, lesson, t){
 // wires a lesson's step list to a scroll range, handling the render-on-scroll + audio-on-step-
 // change plumbing (built on wireScrollRange above). Returns { reset() } so the caller (a mode's
 // onEnter) can restart the lesson at step 0 on every entry without re-wiring the listener.
-function makeScrollLessonStage(lesson, home, wrap, visualEl, captionEl){
+// stepsEl (optional, 6th param): a container to auto-populate with one numbered pill per
+// lesson.steps entry (see renderLessonSteps below) -- omit it for lessons that don't want a
+// progress tracker (NOTES_AND_BEATS_LESSON's existing call site doesn't pass one).
+function makeScrollLessonStage(lesson, home, wrap, visualEl, captionEl, stepsEl){
   let t = 0, lastPlayedIdx = null;
   const renderStage = () => {
     const r = renderScrollLessonStage(visualEl, captionEl, lesson, t);
     if(r.idx !== lastPlayedIdx){ lastPlayedIdx = r.idx; if(r.play) playFreqs([m2f(r.play.midi)], r.play.dur); }
+    if(stepsEl) renderLessonSteps(stepsEl, lesson, r.idx);
   };
   wireScrollRange(home, wrap, lesson.rangePx, newT => { t = newT; renderStage(); });
-  return { reset(){ t = 0; lastPlayedIdx = null; renderScrollLessonStage(visualEl, captionEl, lesson, t); } };
+  // no initial render here -- every caller (see 92_mode_science.js, 93_mode_lessons.js) calls
+  // .reset() from its own onEnter on every entry anyway (showMode() already zeroes the scroll
+  // position each time, so the lesson's own tracked t needs to match that on every entry, not
+  // just the first) -- an extra render here would just be a redundant duplicate of that one
+  return { reset(){ t = 0; lastPlayedIdx = null; renderStage(); } };
+}
+// a lightweight, non-interactive progress tracker for a discrete-step lesson -- one pill per
+// step, labelled straight from the lesson's own step.bright text (no separate label list to
+// keep in sync when a lesson's steps change). Builds the pills once, then just toggles .on.
+function renderLessonSteps(stepsEl, lesson, idx){
+  if(!stepsEl) return;
+  if(!stepsEl.childElementCount){
+    stepsEl.innerHTML = lesson.steps.map((s,i) => '<span class="sciStep" data-step="'+i+'">'+(i+1)+' · '+s.bright+'</span>').join('');
+  }
+  [...stepsEl.children].forEach((el,i) => el.classList.toggle('on', i===idx));
 }

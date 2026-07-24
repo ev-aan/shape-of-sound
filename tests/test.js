@@ -203,6 +203,54 @@ try {
   C['sciAmpSlider'].value = '80'; fire(C['sciAmpSlider'], 'input', {});
   if (!/data-cycles="16.25"/.test(C['sciStagePanel'].innerHTML)) throw new Error('dragging the amplitude slider should keep the current scroll position\'s cycle count');
   C['scienceHome'].scrollTop = 200; fire(C['scienceHome'], 'scroll', {}); // back to the amplitude zone for a clean handoff
+  // ---- Lesson 2: how sound travels (propagation) — a discrete step list, unlike Lesson 1's continuum ----
+  const wfRest = document.createElement('div'), wfRestCap = document.createElement('div');
+  __api.renderScrollLessonStage(wfRest, wfRestCap, __api.SCI_PROPAGATION_LESSON, 0);
+  if ((wfRest.innerHTML.match(/class="wfDot"/g) || []).length !== 22) throw new Error('the AT REST step should render all 22 air-molecule dots evenly spaced, none marked');
+  if (!/data-stage="rest"/.test(wfRest.innerHTML)) throw new Error('t=0 should render the "rest" wavefront stage');
+  if (!/sciCaptionBright">AT REST/.test(wfRestCap.innerHTML)) throw new Error('t=0 should show the AT REST caption');
+  const wfTravel = document.createElement('div'), wfTravelCap = document.createElement('div');
+  __api.renderScrollLessonStage(wfTravel, wfTravelCap, __api.SCI_PROPAGATION_LESSON, 0.61); // step 3 of 5 = TRAVELLING
+  if (!/data-stage="travel"/.test(wfTravel.innerHTML)) throw new Error('t=0.61 should render the "travel" wavefront stage');
+  if ((wfTravel.innerHTML.match(/wfDotMarked/g) || []).length !== 3) throw new Error('the travelling stage should mark 3 sample particles to show they oscillate in place, not travel');
+  if (!/sciCaptionBright">TRAVELLING/.test(wfTravelCap.innerHTML)) throw new Error('t=0.61 should show the TRAVELLING caption');
+  const wfArrive = document.createElement('div'), wfArriveCap = document.createElement('div');
+  __api.renderScrollLessonStage(wfArrive, wfArriveCap, __api.SCI_PROPAGATION_LESSON, 0.99);
+  if (!/wfEar/.test(wfArrive.innerHTML)) throw new Error('the last step should draw the ear the wave is reaching');
+  if (!/sciCaptionBright">REACHING YOUR EAR/.test(wfArriveCap.innerHTML)) throw new Error('t=0.99 should show the REACHING YOUR EAR caption');
+  let wfOscCount = 0;
+  const origWfCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ wfOscCount++; return origWfCreateOsc.apply(this, arguments); };
+  // all 3 lessons share one #scienceHome scroll container (each keeps its own independent t via
+  // its own rangePx, see 07_scroll_stage.js) -- these scrollTop values are chosen to also keep
+  // Lesson 1's own t below its 0.66 frequency-zone threshold, so its own note-on-frequency-zone
+  // logic doesn't fire a confounding extra oscillator call while isolating Lesson 2/3's audio
+  C['scienceHome'].scrollTop = 1100; fire(C['scienceHome'], 'scroll', {}); // propagation t=0.6875 -> step 3 (TRAVELLING); Lesson 1 t=0.55, still the wave zone
+  global.window.AudioContext.prototype.createOscillator = origWfCreateOsc;
+  if (wfOscCount !== 0) throw new Error('propagation has no play data on any step (mechanism, not pitch) — scrolling it should stay silent, played ' + wfOscCount);
+  if (!/sciCaptionBright">TRAVELLING/.test(C['sciPropagationCaption'].innerHTML)) throw new Error('scrolling to t=0.656 should advance the live propagation stage to TRAVELLING');
+  if ((C['sciPropagationSteps'].innerHTML.match(/class="sciStep"/g) || []).length !== 5) throw new Error('the propagation step tracker should auto-generate 5 pills from the lesson\'s own step data');
+  // ---- Lesson 3: timbre — same note, different overtone mix ----
+  const hmPure = document.createElement('div'), hmPureCap = document.createElement('div');
+  __api.renderScrollLessonStage(hmPure, hmPureCap, __api.SCI_TIMBRE_LESSON, 0);
+  if (!/data-mix="fundamental-only"/.test(hmPure.innerHTML)) throw new Error('t=0 should render the fundamental-only mix');
+  if ((hmPure.innerHTML.match(/class="hmComponent"/g) || []).length !== 1) throw new Error('a pure tone should show exactly 1 component trace (the fundamental, no overtones)');
+  if (!/sciCaptionBright">A PURE TONE/.test(hmPureCap.innerHTML)) throw new Error('t=0 should show the A PURE TONE caption');
+  const hmRichA = document.createElement('div'), hmRichACap = document.createElement('div');
+  __api.renderScrollLessonStage(hmRichA, hmRichACap, __api.SCI_TIMBRE_LESSON, 0.51); // step 2 of 4 = rich-mix-a
+  if ((hmRichA.innerHTML.match(/class="hmComponent"/g) || []).length !== 4) throw new Error('rich-mix-a should show 4 component traces (fundamental + 3 overtones)');
+  const hmRichB = document.createElement('div'), hmRichBCap = document.createElement('div');
+  __api.renderScrollLessonStage(hmRichB, hmRichBCap, __api.SCI_TIMBRE_LESSON, 0.99); // step 3 of 4 = rich-mix-b
+  if ((hmRichB.innerHTML.match(/class="hmComponent"/g) || []).length !== 3) throw new Error('rich-mix-b should show only 3 component traces (odd harmonics only) — a genuinely different recipe at the same fundamental');
+  if (!/sciCaptionBright">SAME NOTE, DIFFERENT MIX/.test(hmRichBCap.innerHTML)) throw new Error('t=0.99 should show the SAME NOTE, DIFFERENT MIX caption');
+  let hmOscCount = 0;
+  const origHmCreateOsc = global.window.AudioContext.prototype.createOscillator;
+  global.window.AudioContext.prototype.createOscillator = function(){ hmOscCount++; return origHmCreateOsc.apply(this, arguments); };
+  C['scienceHome'].scrollTop = 1260; fire(C['scienceHome'], 'scroll', {}); // timbre t=0.7875 -> last step (no play data past step 0); Lesson 1 t=0.63, still the wave zone
+  global.window.AudioContext.prototype.createOscillator = origHmCreateOsc;
+  if (hmOscCount !== 0) throw new Error('only the first timbre step plays a reference tone — landing on a later step directly should stay silent, played ' + hmOscCount);
+  if (!/sciCaptionBright">SAME NOTE, DIFFERENT MIX/.test(C['sciTimbreCaption'].innerHTML)) throw new Error('scrolling to t=0.99 should advance the live timbre stage to the last step');
+  C['scienceHome'].scrollTop = 200; fire(C['scienceHome'], 'scroll', {}); // restore Lesson 1 to the amplitude zone for anything downstream
   // "Start exploring" reveals the existing 3D map/sidebar/legend, unchanged, and hides the concept page
   C['sciExploreCta'].onclick();
   if (C['scienceHome'].style.display !== 'none') throw new Error('starting exploring should hide the concept page');

@@ -10,6 +10,14 @@ const N=DATA.nodes;let EDGES=DATA.edges,W=DATA.W;const wmin=DATA.w_min,wmax=DATA
 N.forEach(n=>{n._et={x:n.x,y:n.y,z:n.z,freqs:n.freqs,cons:n.cons};
   n._ji={x:n.jx,y:n.jy,z:n.jz,freqs:n.freqsJI||n.freqs,cons:n.consJI!=null?n.consJI:n.cons};});
 const pcsOf=n=>n.ivs.map(iv=>(n.root+iv)%12);
+// builds an SVG path `d` string for a sine curve -- shared by every "draw a wave" surface
+// (92_mode_science.js's wave continuum, 89_surface_harmonics.js's stacked overtone traces)
+// rather than each hand-rolling the same point-sampling loop.
+function buildSinePath(W, H, midY, cycles, ampPx){
+  const pts = [];
+  for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+ampPx*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
+  return pts.join(' ');
+}
 document.getElementById('subtitle').textContent=
   N.length+' chords · placed by shared overtones · 3D holds '+Math.round(DATA.var3*100)+'%';
 

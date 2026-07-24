@@ -20,12 +20,8 @@ function selectSpectrumBand(bandId){
 // only supports one rAF callback slot; see 90_init.js's frame()). Which stage is showing is
 // driven by scroll position (wireSciScrollStage below), following the exact same direct-
 // scrollTop-reading pattern 96_simple.js's hero parallax already uses.
-// One shared primitive, reused by all three stage renderers below.
-function buildSinePath(W, H, midY, cycles, ampPx){
-  const pts = [];
-  for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+ampPx*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
-  return pts.join(' ');
-}
+// buildSinePath (00_core.js) is the shared primitive reused by all the stage renderers below,
+// plus 89_surface_harmonics.js's stacked overtone traces.
 // stage 1: a single dot swinging vertically — no wave shape yet, just amplitude (how far it swings)
 function renderSciAmplitudeStage(container, opts){
   const amp = (opts && opts.amplitude != null) ? opts.amplitude : 0.5;
@@ -130,6 +126,31 @@ function wireSciScrollStage(){
   if(ampSlider) ampSlider.addEventListener('input', () => { sciAmplitude = ampSlider.value/100; renderContinuum(); });
   renderContinuum();
 }
+// ---- LESSON 2: how sound travels (propagation) ----
+// A discrete step list on the generic engine (07_scroll_stage.js) -- unlike Lesson 1's bespoke
+// continuum above, propagation genuinely has distinct named stages (rest/compress/rarefy/
+// travel/arrive), not one smoothly-morphing quantity, so the generic engine is the honest fit.
+const SCI_PROPAGATION_LESSON = { rangePx: 1600, steps: [
+  { bright:'AT REST', dim:'air molecules, evenly spaced — nothing vibrating yet.', surface:'wavefront', opts:{ stage:'rest' } },
+  { bright:'COMPRESSION', dim:'a vibration pushes molecules together — a small region of higher pressure.', surface:'wavefront', opts:{ stage:'compress' } },
+  { bright:'RAREFACTION', dim:'right behind it, molecules spread apart — lower pressure.', surface:'wavefront', opts:{ stage:'rarefy' } },
+  { bright:'TRAVELLING', dim:'that alternating pattern keeps handing off outward — the wave moves, not the molecules.', surface:'wavefront', opts:{ stage:'travel' } },
+  { bright:'REACHING YOUR EAR', dim:'by the time it arrives, that pressure pattern is what your eardrum picks up as sound.', surface:'wavefront', opts:{ stage:'arrive' } }
+]};
+// ---- LESSON 3: timbre — same note, different sound (overtones) ----
+// The note played is the same fundamental (C4/midi 60) at every step, on purpose -- Elorah's
+// synth is a single triangle-wave oscillator (35_audio.js), it can't actually render each mix's
+// overtone recipe audibly, so only the very first step plays a reference tone (establishing
+// "this is the pitch we're talking about") rather than replaying an identical tone at every
+// step and implying a change you won't actually hear.
+const SCI_TIMBRE_LESSON = { rangePx: 1600, steps: [
+  { bright:'A PURE TONE', dim:'just one frequency, the fundamental — no overtones at all.', surface:'harmonics', opts:{ mix:'fundamental-only' }, play:{ midi:60, dur:0.4 } },
+  { bright:'ADD AN OVERTONE', dim:'real vibrating things also vibrate in halves, thirds, quarters... at the same time.', surface:'harmonics', opts:{ mix:'plus-2nd' } },
+  { bright:'STACK THEM UP', dim:'enough overtones on top of the fundamental, and you get a richer, more complex wave.', surface:'harmonics', opts:{ mix:'rich-mix-a' } },
+  { bright:'SAME NOTE, DIFFERENT MIX', dim:'a different balance of overtones, same fundamental pitch — this is the one thing that makes a violin and a flute unmistakable, even on the same note.', surface:'harmonics', opts:{ mix:'rich-mix-b' } }
+]};
+let sciPropagationHandle = null, sciTimbreHandle = null;
+
 // ---- CONCEPT / EXPLORE STAGE: not everything needs to be on screen at once ----
 // A fresh entry into Science always lands on the concept page first (nav click, deep link, the
 // hero's CTA/row, the bridge button from Musical); "Start exploring" reveals the existing 3D map
@@ -169,6 +190,14 @@ Modes.register('science', {
     }
     if(!sciStageWired){
       wireSciScrollStage();
+      sciPropagationHandle = makeScrollLessonStage(SCI_PROPAGATION_LESSON,
+        document.getElementById('scienceHome'), document.getElementById('sciPropagationStage'),
+        document.getElementById('sciPropagationPanel'), document.getElementById('sciPropagationCaption'),
+        document.getElementById('sciPropagationSteps'));
+      sciTimbreHandle = makeScrollLessonStage(SCI_TIMBRE_LESSON,
+        document.getElementById('scienceHome'), document.getElementById('sciTimbreStage'),
+        document.getElementById('sciTimbrePanel'), document.getElementById('sciTimbreCaption'),
+        document.getElementById('sciTimbreSteps'));
       const cta = document.getElementById('sciExploreCta');
       if(cta) cta.onclick = () => { sciStage = 'explore'; applySciStage(); };
       const back = document.getElementById('sciBackConceptBtn');
@@ -177,6 +206,11 @@ Modes.register('science', {
       if(toLessons) toLessons.onclick = () => switchMode('lessons');
       sciStageWired = true;
     }
+    // showMode() already resets scienceHome.scrollTop to 0 on every entry (see the identical
+    // comment in 93_mode_lessons.js) -- resetting each lesson's own tracked position to match
+    // keeps captions/step-pills from ever showing a stale step on re-entry
+    if(sciPropagationHandle) sciPropagationHandle.reset();
+    if(sciTimbreHandle) sciTimbreHandle.reset();
   },
   onExit(){
     document.getElementById('scienceHome').style.display = 'none';

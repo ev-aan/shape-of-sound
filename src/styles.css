@@ -53,6 +53,9 @@
     independent of showMode()'s per-mode visibility. */
  #scienceHome{position:fixed;inset:0;overflow:auto;}
  .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
+ /* lesson 2/3 titles (92_mode_science.js) are peer headings to lesson 1's h1, not subordinate to
+    it -- sized to match rather than falling back to a browser-default (smaller) h2 */
+ .sciConceptWrap h2{font-weight:600;font-size:1.8rem;margin:36px 0 4px;}
  /* a tall scroll range so 3 stages (dot -> waveform -> frequency) each get room to "pause" in as
     the visitor scrolls through; the inner panel stays pinned on screen for that whole range. */
  .sciScrollStage{height:2200px;position:relative;}
@@ -73,6 +76,24 @@
    text-transform:uppercase;color:var(--dim);padding:5px 11px;border:1px solid var(--line);
    border-radius:99px;transition:color .2s,border-color .2s,background .2s;}
  .sciStep.on{color:var(--ink);border-color:#cdd9f5;background:#ffffff10;}
+ /* the last sciScrollStage on the page needs at least one viewport's worth of room to its own
+    scroll range to un-pin: scrollTop can only climb to (scrollHeight - clientHeight), so if the
+    trailing content after the final wrap is shorter than the viewport, its last step(s) become
+    unreachable by normal scrolling no matter how tall the wrap itself is. 100vh guarantees enough
+    trailing room on any viewport; it's blank on purpose. */
+ .sciScrollSpacer{height:100vh;}
+ /* wavefront (89_surface_wavefront.js) — a row of "air molecule" dots, only ever moved
+    horizontally (a longitudinal wave), unlike every sine-shape surface elsewhere in this app. */
+ .wfDot{fill:var(--ink);}
+ .wfDotMarked{fill:none;stroke:#9ad1f0;stroke-width:1.6;}
+ .wfArrow{stroke:#9ad1f0;stroke-width:1.2;opacity:.85;}
+ .wfEar{fill:none;stroke:var(--dim);stroke-width:2;stroke-linecap:round;}
+ /* harmonics (89_surface_harmonics.js) — thin component traces (each overtone) stacked above one
+    bold composite trace (their sum) — the composite is the one thing that actually changes shape
+    between mixes even though the fundamental (bottom-most implied pitch) never does. */
+ .hmComponent{fill:none;stroke:var(--dim);stroke-width:1;opacity:.6;}
+ .hmDivider{stroke:var(--line);stroke-width:1;}
+ .hmComposite{fill:none;stroke:var(--ink);stroke-width:1.6;}
  /* Lessons' own concept intro (#lessonsIntro, see 93_mode_lessons.js) — same scroll-stage family
     as Science's above, just more steps (12: 8 solfège degrees + 4 note durations) so it gets a
     taller scroll range. */

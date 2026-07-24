@@ -50,4 +50,5 @@ if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
 try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale, LIBRARY_TOOLS, getLayoutName,
   startBach, stopBach, getBachState, startProg, stopProg, advanceProg, getProg, meteor, mGlow,
   showPianoTool, hidePianoTool, isPianoToolBuilt, getPianoLastChordIdx, getPianoScoreMode, getPianoScoreLength,
-  CURRICULUM_UNITS, CURRICULUM_CAPSTONE, CURRICULUM_ASSESSMENT, findCurriculumWeek, playClap, getRhythmSeq, isRhythmPlaying }; } catch(e){}
+  CURRICULUM_UNITS, CURRICULUM_CAPSTONE, CURRICULUM_ASSESSMENT, findCurriculumWeek, playClap, getRhythmSeq, isRhythmPlaying,
+  renderLessonSteps, SCI_PROPAGATION_LESSON, SCI_TIMBRE_LESSON }; } catch(e){}

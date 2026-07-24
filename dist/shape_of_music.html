@@ -59,6 +59,9 @@
     independent of showMode()'s per-mode visibility. */
  #scienceHome{position:fixed;inset:0;overflow:auto;}
  .sciConceptWrap{max-width:640px;margin:0 auto;padding:260px 24px 60px;text-align:center;}
+ /* lesson 2/3 titles (92_mode_science.js) are peer headings to lesson 1's h1, not subordinate to
+    it -- sized to match rather than falling back to a browser-default (smaller) h2 */
+ .sciConceptWrap h2{font-weight:600;font-size:1.8rem;margin:36px 0 4px;}
  /* a tall scroll range so 3 stages (dot -> waveform -> frequency) each get room to "pause" in as
     the visitor scrolls through; the inner panel stays pinned on screen for that whole range. */
  .sciScrollStage{height:2200px;position:relative;}
@@ -79,6 +82,24 @@
    text-transform:uppercase;color:var(--dim);padding:5px 11px;border:1px solid var(--line);
    border-radius:99px;transition:color .2s,border-color .2s,background .2s;}
  .sciStep.on{color:var(--ink);border-color:#cdd9f5;background:#ffffff10;}
+ /* the last sciScrollStage on the page needs at least one viewport's worth of room to its own
+    scroll range to un-pin: scrollTop can only climb to (scrollHeight - clientHeight), so if the
+    trailing content after the final wrap is shorter than the viewport, its last step(s) become
+    unreachable by normal scrolling no matter how tall the wrap itself is. 100vh guarantees enough
+    trailing room on any viewport; it's blank on purpose. */
+ .sciScrollSpacer{height:100vh;}
+ /* wavefront (89_surface_wavefront.js) — a row of "air molecule" dots, only ever moved
+    horizontally (a longitudinal wave), unlike every sine-shape surface elsewhere in this app. */
+ .wfDot{fill:var(--ink);}
+ .wfDotMarked{fill:none;stroke:#9ad1f0;stroke-width:1.6;}
+ .wfArrow{stroke:#9ad1f0;stroke-width:1.2;opacity:.85;}
+ .wfEar{fill:none;stroke:var(--dim);stroke-width:2;stroke-linecap:round;}
+ /* harmonics (89_surface_harmonics.js) — thin component traces (each overtone) stacked above one
+    bold composite trace (their sum) — the composite is the one thing that actually changes shape
+    between mixes even though the fundamental (bottom-most implied pitch) never does. */
+ .hmComponent{fill:none;stroke:var(--dim);stroke-width:1;opacity:.6;}
+ .hmDivider{stroke:var(--line);stroke-width:1;}
+ .hmComposite{fill:none;stroke:var(--ink);stroke-width:1.6;}
  /* Lessons' own concept intro (#lessonsIntro, see 93_mode_lessons.js) — same scroll-stage family
     as Science's above, just more steps (12: 8 solfège degrees + 4 note durations) so it gets a
     taller scroll range. */
@@ -727,11 +748,38 @@
    </div>
   </div>
   <p class="heroSub">You've just felt amplitude (how far it swings), watched it become a wave
-  (that same swing, drawn out over time), and heard it become pitch (how fast it repeats) —
-  the whole physical basis of every sound in this app. Here's where the pitches you can actually
-  hear sit inside the full range of vibration, from earthquakes to X-rays:</p>
+  (that same swing, drawn out over time), and heard it become pitch (how fast it repeats). But
+  a swing in place doesn't get you sound on its own — it has to reach your ear first. Keep
+  scrolling to see how.</p>
+
+  <div class="musScaleRow"><span class="musScaleLbl">lesson 2 · how sound travels</span></div>
+  <h2 class="serif">Compression, rarefaction, and the trip to your ear</h2>
+  <div id="sciPropagationStage" class="sciScrollStage" style="height:1600px;">
+   <div class="sciStageSticky">
+    <div id="sciPropagationPanel" class="sciWaveDemo"></div>
+    <div id="sciPropagationSteps" class="sciSteps"></div>
+    <p id="sciPropagationCaption" class="sciWaveCaption"></p>
+   </div>
+  </div>
+  <p class="heroSub">That travelling pattern of squeezed-together and stretched-apart air is
+  the whole of what "sound" physically is. But it doesn't yet explain why a violin and a flute,
+  playing the exact same note, are instantly recognisable as different instruments.</p>
+
+  <div class="musScaleRow"><span class="musScaleLbl">lesson 3 · same note, different sound</span></div>
+  <h2 class="serif">Timbre — the fingerprint hiding inside every note</h2>
+  <div id="sciTimbreStage" class="sciScrollStage" style="height:1600px;">
+   <div class="sciStageSticky">
+    <div id="sciTimbrePanel" class="sciWaveDemo"></div>
+    <div id="sciTimbreSteps" class="sciSteps"></div>
+    <p id="sciTimbreCaption" class="sciWaveCaption"></p>
+   </div>
+  </div>
+  <p class="heroSub">Amplitude, frequency, propagation, timbre — that's the whole physical
+  basis of every sound in this app. Here's where the pitches you can actually hear sit inside
+  the full range of vibration, from earthquakes to X-rays:</p>
   <div id="sciSpectrum"><div id="sciSpectrumChart"></div></div>
   <button id="sciExploreCta" class="heroCta">Start exploring the chord map →</button>
+  <div class="sciScrollSpacer" aria-hidden="true"></div>
  </div>
 </div>
 <div id="title"><h1 class="serif">The Shape of Music</h1><p id="subtitle"></p><div id="axiscap"></div></div>
@@ -872,6 +920,14 @@ const N=DATA.nodes;let EDGES=DATA.edges,W=DATA.W;const wmin=DATA.w_min,wmax=DATA
 N.forEach(n=>{n._et={x:n.x,y:n.y,z:n.z,freqs:n.freqs,cons:n.cons};
   n._ji={x:n.jx,y:n.jy,z:n.jz,freqs:n.freqsJI||n.freqs,cons:n.consJI!=null?n.consJI:n.cons};});
 const pcsOf=n=>n.ivs.map(iv=>(n.root+iv)%12);
+// builds an SVG path `d` string for a sine curve -- shared by every "draw a wave" surface
+// (92_mode_science.js's wave continuum, 89_surface_harmonics.js's stacked overtone traces)
+// rather than each hand-rolling the same point-sampling loop.
+function buildSinePath(W, H, midY, cycles, ampPx){
+  const pts = [];
+  for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+ampPx*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
+  return pts.join(' ');
+}
 document.getElementById('subtitle').textContent=
   N.length+' chords · placed by shared overtones · 3D holds '+Math.round(DATA.var3*100)+'%';
 
@@ -1295,14 +1351,32 @@ function renderScrollLessonStage(visualEl, captionEl, lesson, t){
 // wires a lesson's step list to a scroll range, handling the render-on-scroll + audio-on-step-
 // change plumbing (built on wireScrollRange above). Returns { reset() } so the caller (a mode's
 // onEnter) can restart the lesson at step 0 on every entry without re-wiring the listener.
-function makeScrollLessonStage(lesson, home, wrap, visualEl, captionEl){
+// stepsEl (optional, 6th param): a container to auto-populate with one numbered pill per
+// lesson.steps entry (see renderLessonSteps below) -- omit it for lessons that don't want a
+// progress tracker (NOTES_AND_BEATS_LESSON's existing call site doesn't pass one).
+function makeScrollLessonStage(lesson, home, wrap, visualEl, captionEl, stepsEl){
   let t = 0, lastPlayedIdx = null;
   const renderStage = () => {
     const r = renderScrollLessonStage(visualEl, captionEl, lesson, t);
     if(r.idx !== lastPlayedIdx){ lastPlayedIdx = r.idx; if(r.play) playFreqs([m2f(r.play.midi)], r.play.dur); }
+    if(stepsEl) renderLessonSteps(stepsEl, lesson, r.idx);
   };
   wireScrollRange(home, wrap, lesson.rangePx, newT => { t = newT; renderStage(); });
-  return { reset(){ t = 0; lastPlayedIdx = null; renderScrollLessonStage(visualEl, captionEl, lesson, t); } };
+  // no initial render here -- every caller (see 92_mode_science.js, 93_mode_lessons.js) calls
+  // .reset() from its own onEnter on every entry anyway (showMode() already zeroes the scroll
+  // position each time, so the lesson's own tracked t needs to match that on every entry, not
+  // just the first) -- an extra render here would just be a redundant duplicate of that one
+  return { reset(){ t = 0; lastPlayedIdx = null; renderStage(); } };
+}
+// a lightweight, non-interactive progress tracker for a discrete-step lesson -- one pill per
+// step, labelled straight from the lesson's own step.bright text (no separate label list to
+// keep in sync when a lesson's steps change). Builds the pills once, then just toggles .on.
+function renderLessonSteps(stepsEl, lesson, idx){
+  if(!stepsEl) return;
+  if(!stepsEl.childElementCount){
+    stepsEl.innerHTML = lesson.steps.map((s,i) => '<span class="sciStep" data-step="'+i+'">'+(i+1)+' · '+s.bright+'</span>').join('');
+  }
+  [...stepsEl.children].forEach((el,i) => el.classList.toggle('on', i===idx));
 }
 
 // circle-of-fifths ring + labels
@@ -2314,6 +2388,53 @@ Surfaces.register('cof', {
   refresh(container, opts){ this.render(container, opts); }
 });
 
+// ---- SURFACE: harmonics (timbre / overtones) ----
+// A fundamental, its overtones (small traces stacked above), and their sum (one bold composite
+// trace below) -- the same fundamental frequency can carry very different overtone "recipes"
+// (opts.mix), and that recipe alone is what makes the composite wave shape different even
+// though the pitch (how often it repeats) never changes. Reuses buildSinePath (00_core.js).
+const HM_W = 600, HM_H = 140, HM_BASE_CYCLES = 4;
+// weight per harmonic number (index 0 = fundamental/1st, index 1 = 2nd, ...); a 0/missing entry
+// means that harmonic isn't present at all in this recipe, not just quiet.
+const HM_MIXES = {
+  'fundamental-only': [1],
+  'plus-2nd':         [1, 0.5],
+  'rich-mix-a':       [1, 0.5, 0.33, 0.22],
+  'rich-mix-b':       [1, 0, 0.55, 0, 0.3] // odd harmonics only -- a genuinely different recipe, same fundamental
+};
+function hmCompositePath(weights){
+  const total = weights.reduce((s,w) => s + Math.abs(w), 0) || 1;
+  const midY = 112, ampPx = 20;
+  const pts = [];
+  for(let x=0; x<=HM_W; x+=4){
+    let y = 0;
+    weights.forEach((w,k) => { if(w) y += w * Math.sin(2*Math.PI*(k+1)*HM_BASE_CYCLES*x/HM_W); });
+    pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY + ampPx*(y/total)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+Surfaces.register('harmonics', {
+  label: 'Harmonics',
+  render(container, opts){
+    if(!container) return null;
+    opts = opts || {};
+    const weights = HM_MIXES[opts.mix] || HM_MIXES['fundamental-only'];
+    const laneYs = [14, 30, 46, 62, 78];
+    let lanes = '';
+    weights.forEach((w,k) => {
+      if(!w) return; // this harmonic isn't part of the recipe -- no lane, not just a flat line
+      const y = laneYs[k] != null ? laneYs[k] : (14 + k*16);
+      const d = buildSinePath(HM_W, HM_H, y, (k+1)*HM_BASE_CYCLES, 7*Math.min(1, Math.abs(w)*1.4));
+      lanes += '<path d="'+d+'" class="hmComponent"></path>';
+    });
+    const composite = hmCompositePath(weights);
+    container.innerHTML = '<svg viewBox="0 0 '+HM_W+' '+HM_H+'" class="sciWaveSvg hmSvg" data-mix="'+opts.mix+'">'+
+      lanes + '<line x1="0" y1="92" x2="'+HM_W+'" y2="92" class="hmDivider"></line>'+
+      '<path d="'+composite+'" class="hmComposite"></path></svg>';
+    return {};
+  }
+});
+
 // ---- SURFACE: interval visualizer ----
 // A small, standalone "distance between these two notes" diagram: semitone count, interval
 // name, the classic small-integer ratio (RATIO, already used in the chord detail card), and a
@@ -2822,6 +2943,70 @@ Surfaces.register('triadquality', {
   }
 });
 
+// ---- SURFACE: wavefront (propagation) ----
+// A row of "air molecules" (plain dots) at fixed vertical position, only ever moved horizontally
+// — a longitudinal wave, unlike every other wave surface in this app (which draws the classic
+// transverse sine-shape people are used to from an oscilloscope). Compression = a few dots
+// pulled closer together; rarefaction = a few dots pushed further apart, right beside it. Each
+// opts.stage is a hand-tuned static frame (this is a teaching diagram, not a physics sim) rather
+// than one continuous formula — simpler to keep each frame's pedagogical point unambiguous.
+const WF_N = 22, WF_W = 600, WF_H = 140, WF_MIDY = 70, WF_MARGIN = 24;
+function wfRestX(i){ return WF_MARGIN + (WF_W - 2*WF_MARGIN) * i / (WF_N - 1); }
+// a compression+rarefaction pair centred at `at` (a dot index): the two dots just left of `at`
+// pulled together (compression), the two just right of `at` pushed apart (rarefaction) — one
+// disturbance, immediately followed by its opposite, exactly like a real pressure pulse.
+function wfPulseOffsets(at){
+  const o = new Array(WF_N).fill(0);
+  const set = (i, dx) => { if(i >= 0 && i < WF_N) o[i] += dx; };
+  set(at-2, 3.5); set(at-1, 1.2); set(at, -1.2); set(at+1, -3.5); // compression: squeezed toward the middle
+  set(at+2, -4.5); set(at+3, -1.5); set(at+4, 1.5); set(at+5, 4.5); // rarefaction: pushed apart
+  return o;
+}
+function wfDotsSvg(offsets, opts){
+  opts = opts || {};
+  let out = '';
+  for(let i=0; i<WF_N; i++){
+    const x = (wfRestX(i) + (offsets[i]||0)).toFixed(1);
+    const marked = opts.markedSet && opts.markedSet.has(i);
+    out += '<circle cx="'+x+'" cy="'+WF_MIDY+'" r="'+(marked?4.4:3.2)+'" class="wfDot'+(marked?' wfDotMarked':'')+'"'+
+      (opts.ghost ? ' opacity="0.25"' : '')+'></circle>';
+    if(marked && !opts.ghost){
+      // this dot's own tiny oscillation range -- it stays at its own index/position across
+      // frames, it does not travel; only the compression/rarefaction pattern moves past it
+      out += '<line x1="'+(+x-7).toFixed(1)+'" y1="'+(WF_MIDY-16)+'" x2="'+(+x+7).toFixed(1)+'" y2="'+(WF_MIDY-16)+'" class="wfArrow"></line>';
+    }
+  }
+  return out;
+}
+const WF_EAR = '<path d="M574,58 q14,4 14,12 q0,10 -9,12 q6,4 2,10 q-3,5 -9,2" class="wfEar"></path>';
+Surfaces.register('wavefront', {
+  label: 'Wavefront',
+  render(container, opts){
+    if(!container) return null;
+    opts = opts || {};
+    const stage = opts.stage || 'rest';
+    let body = '';
+    if(stage === 'rest'){
+      body = wfDotsSvg(new Array(WF_N).fill(0));
+    } else if(stage === 'compress'){
+      // isolate just the compression half of the pulse so this frame teaches one idea only
+      const o = wfPulseOffsets(9); for(let i=11;i<WF_N;i++) o[i] = 0;
+      body = wfDotsSvg(o);
+    } else if(stage === 'rarefy'){
+      // isolate just the rarefaction half (the compression half already had its own step) --
+      // now show both together for the first time, so this frame reads as "and here's the
+      // other half, right next to it" rather than repeating the compression from scratch
+      body = wfDotsSvg(wfPulseOffsets(9));
+    } else if(stage === 'travel'){
+      body = wfDotsSvg(wfPulseOffsets(6), { ghost:true }) + wfDotsSvg(wfPulseOffsets(14), { markedSet: new Set([1, 10, 19]) });
+    } else if(stage === 'arrive'){
+      body = wfDotsSvg(wfPulseOffsets(17)) + WF_EAR;
+    }
+    container.innerHTML = '<svg viewBox="0 0 '+WF_W+' '+WF_H+'" class="sciWaveSvg wfSvg" data-stage="'+stage+'">'+body+'</svg>';
+    return {};
+  }
+});
+
 // init
 posFrom=posDisc.map(p=>p.clone());posTo=posDisc.map(p=>p.clone());mt=1;
 applyColors('family');setLegend('family');updatePositions();updateCloud();applyThr();axiscap.textContent=CAP_DISC;
@@ -3229,12 +3414,8 @@ function selectSpectrumBand(bandId){
 // only supports one rAF callback slot; see 90_init.js's frame()). Which stage is showing is
 // driven by scroll position (wireSciScrollStage below), following the exact same direct-
 // scrollTop-reading pattern 96_simple.js's hero parallax already uses.
-// One shared primitive, reused by all three stage renderers below.
-function buildSinePath(W, H, midY, cycles, ampPx){
-  const pts = [];
-  for(let x=0; x<=W; x+=4) pts.push((x===0?'M':'L')+x.toFixed(1)+','+(midY+ampPx*Math.sin(2*Math.PI*cycles*x/W)).toFixed(1));
-  return pts.join(' ');
-}
+// buildSinePath (00_core.js) is the shared primitive reused by all the stage renderers below,
+// plus 89_surface_harmonics.js's stacked overtone traces.
 // stage 1: a single dot swinging vertically — no wave shape yet, just amplitude (how far it swings)
 function renderSciAmplitudeStage(container, opts){
   const amp = (opts && opts.amplitude != null) ? opts.amplitude : 0.5;
@@ -3339,6 +3520,31 @@ function wireSciScrollStage(){
   if(ampSlider) ampSlider.addEventListener('input', () => { sciAmplitude = ampSlider.value/100; renderContinuum(); });
   renderContinuum();
 }
+// ---- LESSON 2: how sound travels (propagation) ----
+// A discrete step list on the generic engine (07_scroll_stage.js) -- unlike Lesson 1's bespoke
+// continuum above, propagation genuinely has distinct named stages (rest/compress/rarefy/
+// travel/arrive), not one smoothly-morphing quantity, so the generic engine is the honest fit.
+const SCI_PROPAGATION_LESSON = { rangePx: 1600, steps: [
+  { bright:'AT REST', dim:'air molecules, evenly spaced — nothing vibrating yet.', surface:'wavefront', opts:{ stage:'rest' } },
+  { bright:'COMPRESSION', dim:'a vibration pushes molecules together — a small region of higher pressure.', surface:'wavefront', opts:{ stage:'compress' } },
+  { bright:'RAREFACTION', dim:'right behind it, molecules spread apart — lower pressure.', surface:'wavefront', opts:{ stage:'rarefy' } },
+  { bright:'TRAVELLING', dim:'that alternating pattern keeps handing off outward — the wave moves, not the molecules.', surface:'wavefront', opts:{ stage:'travel' } },
+  { bright:'REACHING YOUR EAR', dim:'by the time it arrives, that pressure pattern is what your eardrum picks up as sound.', surface:'wavefront', opts:{ stage:'arrive' } }
+]};
+// ---- LESSON 3: timbre — same note, different sound (overtones) ----
+// The note played is the same fundamental (C4/midi 60) at every step, on purpose -- Elorah's
+// synth is a single triangle-wave oscillator (35_audio.js), it can't actually render each mix's
+// overtone recipe audibly, so only the very first step plays a reference tone (establishing
+// "this is the pitch we're talking about") rather than replaying an identical tone at every
+// step and implying a change you won't actually hear.
+const SCI_TIMBRE_LESSON = { rangePx: 1600, steps: [
+  { bright:'A PURE TONE', dim:'just one frequency, the fundamental — no overtones at all.', surface:'harmonics', opts:{ mix:'fundamental-only' }, play:{ midi:60, dur:0.4 } },
+  { bright:'ADD AN OVERTONE', dim:'real vibrating things also vibrate in halves, thirds, quarters... at the same time.', surface:'harmonics', opts:{ mix:'plus-2nd' } },
+  { bright:'STACK THEM UP', dim:'enough overtones on top of the fundamental, and you get a richer, more complex wave.', surface:'harmonics', opts:{ mix:'rich-mix-a' } },
+  { bright:'SAME NOTE, DIFFERENT MIX', dim:'a different balance of overtones, same fundamental pitch — this is the one thing that makes a violin and a flute unmistakable, even on the same note.', surface:'harmonics', opts:{ mix:'rich-mix-b' } }
+]};
+let sciPropagationHandle = null, sciTimbreHandle = null;
+
 // ---- CONCEPT / EXPLORE STAGE: not everything needs to be on screen at once ----
 // A fresh entry into Science always lands on the concept page first (nav click, deep link, the
 // hero's CTA/row, the bridge button from Musical); "Start exploring" reveals the existing 3D map
@@ -3378,6 +3584,14 @@ Modes.register('science', {
     }
     if(!sciStageWired){
       wireSciScrollStage();
+      sciPropagationHandle = makeScrollLessonStage(SCI_PROPAGATION_LESSON,
+        document.getElementById('scienceHome'), document.getElementById('sciPropagationStage'),
+        document.getElementById('sciPropagationPanel'), document.getElementById('sciPropagationCaption'),
+        document.getElementById('sciPropagationSteps'));
+      sciTimbreHandle = makeScrollLessonStage(SCI_TIMBRE_LESSON,
+        document.getElementById('scienceHome'), document.getElementById('sciTimbreStage'),
+        document.getElementById('sciTimbrePanel'), document.getElementById('sciTimbreCaption'),
+        document.getElementById('sciTimbreSteps'));
       const cta = document.getElementById('sciExploreCta');
       if(cta) cta.onclick = () => { sciStage = 'explore'; applySciStage(); };
       const back = document.getElementById('sciBackConceptBtn');
@@ -3386,6 +3600,11 @@ Modes.register('science', {
       if(toLessons) toLessons.onclick = () => switchMode('lessons');
       sciStageWired = true;
     }
+    // showMode() already resets scienceHome.scrollTop to 0 on every entry (see the identical
+    // comment in 93_mode_lessons.js) -- resetting each lesson's own tracked position to match
+    // keeps captions/step-pills from ever showing a stale step on re-entry
+    if(sciPropagationHandle) sciPropagationHandle.reset();
+    if(sciTimbreHandle) sciTimbreHandle.reset();
   },
   onExit(){
     document.getElementById('scienceHome').style.display = 'none';
@@ -4926,6 +5145,7 @@ if(shareBtn) shareBtn.onclick = ()=>{ const url = Link.copyLink();
 try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, N, setTuning, Link, Surfaces, showSimple, showAdvanced, voiceLeadingPairs, neighboringChords, elorahLogoSvg, ELORAH_COMMA, renderSciWaveDemo, renderSciAmplitudeStage, renderSciWaveformStage, renderSciWaveContinuum, pcName, showRipple, hideRipple, updateRipple, rippleMesh, rippleUniforms, getRippleReflectionUniforms, isRippleRoomBuilt, isRippleRoomOpen, renderRippleFrame, playFreqs, wrapShadertoyGLSL, loadShadertoy, updateShaderToy, getRippleMode, shaderToyUniforms, shaderToyMesh, CINESHADER_RIPPLE_EXAMPLE, renderScrollLessonStage, NOTES_AND_BEATS_LESSON, mod12, FIFTHS_ORDER, guessScaleFamily, enterMusicalWithKeyScale, LIBRARY_TOOLS, getLayoutName,
   startBach, stopBach, getBachState, startProg, stopProg, advanceProg, getProg, meteor, mGlow,
   showPianoTool, hidePianoTool, isPianoToolBuilt, getPianoLastChordIdx, getPianoScoreMode, getPianoScoreLength,
-  CURRICULUM_UNITS, CURRICULUM_CAPSTONE, CURRICULUM_ASSESSMENT, findCurriculumWeek, playClap, getRhythmSeq, isRhythmPlaying }; } catch(e){}
+  CURRICULUM_UNITS, CURRICULUM_CAPSTONE, CURRICULUM_ASSESSMENT, findCurriculumWeek, playClap, getRhythmSeq, isRhythmPlaying,
+  renderLessonSteps, SCI_PROPAGATION_LESSON, SCI_TIMBRE_LESSON }; } catch(e){}
 
 })();</script></body></html>
