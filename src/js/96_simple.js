@@ -84,14 +84,26 @@ function heroFrameStep(dt){
   heroCtx.clearRect(0, 0, heroW, heroH);
   heroDrawWaves(reduced);
 }
-// a slow, continuous drift through the same hue space every note colour lives in (01_palette.js) —
-// not stepping through discrete pitch classes, just an ambient wash so the background never
-// clashes with whatever note colours the wheel itself is showing
+// each line takes its colour from a real pitch class, walked in circle-of-fifths order (the same
+// order the wheel itself is arranged in, FIFTHS_ORDER from 01_palette.js) rather than raw
+// chromatic order — consecutive fifths land 1/12 apart in hue by construction, so interpolating
+// between them reads as one smooth rainbow, never a jarring jump between two unrelated notes.
+// A few repeats of that rainbow are stacked down the bundle and the whole thing drifts slowly
+// over time, so the note colours themselves are seen travelling through the lines.
+const HERO_HUE_CYCLES = 2.5, HERO_HUE_SPEED = 0.05;
+function heroLineHue(k){
+  const pos = (k*12*HERO_HUE_CYCLES + heroT*HERO_HUE_SPEED) % 12;
+  const wrapped = pos < 0 ? pos+12 : pos;
+  const idx0 = Math.floor(wrapped), idx1 = (idx0+1)%12, frac = wrapped-idx0;
+  let h0 = Palette.noteHue(FIFTHS_ORDER[idx0]), h1 = Palette.noteHue(FIFTHS_ORDER[idx1]);
+  if(h1 < h0) h1 += 1; // the 11/12 -> 0 wrap
+  return (h0 + (h1-h0)*frac) % 1;
+}
 function heroDrawWaves(reduced){
-  const hue = (heroT*0.012) % 1;
   const ripples = reduced ? null : heroRipples;
   for(let i=0;i<HERO_WAVE_LINES;i++){
     const k = i/(HERO_WAVE_LINES-1);
+    const hue = heroLineHue(k);
     const baseY = heroH*0.05 + k*heroH*0.9;
     heroCtx.beginPath();
     for(let x=0; x<=heroW; x+=HERO_WAVE_STEP){
