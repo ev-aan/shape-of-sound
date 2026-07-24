@@ -23,19 +23,20 @@ function showAdvanced(){
   updateCamera();
 }
 
-// ---- decorative living field: drifting particles + a magnetic cursor ----
+// ---- decorative living field: a dense bundle of flowing sound-wave lines + a magnetic cursor ----
 // Not pixel-tested (this app's canvas test stub has no getImageData) — same tier as the 3D
 // scene's own rendering, which isn't logic-tested either. The one piece of this hero that's
 // actually interactive (the note wheel) is a real SVG surface below, which IS tested.
+// Many thin parallel traces share the same two-term sine field (phased by each line's own
+// baseline Y, not independently randomized), so neighbouring lines stay correlated and the whole
+// bundle reads as one flowing sheet — literally "the shape of sound" — rather than a scatter of
+// unrelated wiggles. The cursor bends and brightens whichever lines pass near it.
 let heroBuilt = false;
 let heroCanvas, heroCtx, heroW = 0, heroH = 0, heroDPR = 1;
-let heroParticles = [];
 let heroPmx = 0, heroPmy = 0, heroT = 0;
 let heroMx = 0, heroMy = 0, heroRx = 0, heroRy = 0;
 const heroReduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-// Palette.noteCss returns 'hsl(h,s%,l%)' — reuse it (one source of truth for note colour) rather
-// than re-deriving the hue formula, just add the alpha channel these faint threads need.
-function heroNoteCssA(pc, s, l, a){ return Palette.noteCss(pc, s, l).replace('hsl(', 'hsla(').replace(/\)$/, ','+a+')'); }
+const HERO_WAVE_LINES = 46, HERO_WAVE_STEP = 6;
 
 function heroResize(){
   if(!heroCanvas) return;
@@ -49,22 +50,7 @@ function heroResize(){
   heroDPR = Math.min(devicePixelRatio || 1, 2);
   heroCanvas.width = heroW * heroDPR; heroCanvas.height = heroH * heroDPR;
   heroCtx.setTransform(heroDPR, 0, 0, heroDPR, 0, 0);
-  heroBuildParticles();
   positionHeroWheel();
-}
-function heroBuildParticles(){
-  const cx = heroW*0.72, cy = heroH*0.42, R = Math.min(heroW, heroH)*0.24;
-  heroParticles = [];
-  const n = Math.min(90, Math.floor((heroW*heroH)/16000));
-  for(let i=0;i<n;i++){
-    const pc = Math.floor(Math.random()*12);
-    const ang = Math.random()*Math.PI*2, rad = R*(0.35+Math.random()*1.35);
-    heroParticles.push({
-      pc, x: cx+Math.cos(ang)*rad, y: cy+Math.sin(ang)*rad,
-      vx:(Math.random()-.5)*.15, vy:(Math.random()-.5)*.15,
-      r: 1.4+Math.random()*2.2, phase: Math.random()*Math.PI*2
-    });
-  }
 }
 // called once per real frame from 90_init.js's frame() whenever !appVisible — which is also true
 // in Musical/Lessons mode (they hide the 3D scene too), not only while the front door is showing.
@@ -75,45 +61,36 @@ function heroFrameStep(dt){
   heroCursorTick();
   if(!heroCanvas) return;
   const reduced = heroReduced();
-  heroT += reduced ? 0 : dt*0.48;
+  heroT += reduced ? 0 : dt*0.35;
   heroCtx.clearRect(0, 0, heroW, heroH);
-  const cx = heroW*0.72, cy = heroH*0.42;
-  heroParticles.forEach(p => {
-    if(!reduced){
-      p.x += p.vx + Math.sin(heroT*1.3+p.phase)*0.05;
-      p.y += p.vy + Math.cos(heroT*1.1+p.phase)*0.05;
-      const dx = p.x-heroPmx, dy = p.y-heroPmy, d2 = dx*dx+dy*dy, R2 = 130*130;
-      if(d2 < R2){ const f = (1-d2/R2)*0.9; const d = Math.sqrt(d2)||1; p.x += (dx/d)*f; p.y += (dy/d)*f; }
-      if(p.x<-40) p.x=heroW+40; if(p.x>heroW+40) p.x=-40;
-      if(p.y<-40) p.y=heroH+40; if(p.y>heroH+40) p.y=-40;
-    }
-  });
-  heroCtx.lineWidth = 1;
-  for(let i=0;i<heroParticles.length;i++){
-    for(let j=i+1;j<heroParticles.length;j++){
-      const a=heroParticles[i], b=heroParticles[j];
-      const dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
-      if(d < 92){
-        const cxm=(a.x+b.x)/2-heroPmx, cym=(a.y+b.y)/2-heroPmy, cd=Math.sqrt(cxm*cxm+cym*cym);
-        const near = Math.max(0, 1-cd/260);
-        const alpha = (1-d/92) * (0.05 + near*0.22);
-        heroCtx.strokeStyle = heroNoteCssA(a.pc, .7, .65, alpha);
-        heroCtx.beginPath(); heroCtx.moveTo(a.x,a.y); heroCtx.lineTo(b.x,b.y); heroCtx.stroke();
+  heroDrawWaves(reduced);
+}
+// a slow, continuous drift through the same hue space every note colour lives in (01_palette.js) —
+// not stepping through discrete pitch classes, just an ambient wash so the background never
+// clashes with whatever note colours the wheel itself is showing
+function heroDrawWaves(reduced){
+  const hue = (heroT*0.012) % 1;
+  const mx = heroPmx, my = heroPmy;
+  for(let i=0;i<HERO_WAVE_LINES;i++){
+    const k = i/(HERO_WAVE_LINES-1);
+    const baseY = heroH*0.05 + k*heroH*0.9;
+    const vProx = reduced ? 0 : Math.exp(-((baseY-my)*(baseY-my))/(2*220*220));
+    heroCtx.beginPath();
+    for(let x=0; x<=heroW; x+=HERO_WAVE_STEP){
+      let y = baseY
+        + 24*Math.sin(x*0.0026 + heroT*0.55 + baseY*0.012)
+        + 11*Math.sin(x*0.0062 - heroT*0.38 + baseY*0.021);
+      if(!reduced){
+        const dx = x-mx, hProx = Math.exp(-(dx*dx)/(2*140*140));
+        y += vProx*hProx*54*Math.sin(dx*0.045 - heroT*3.2);
       }
+      if(x===0) heroCtx.moveTo(x,y); else heroCtx.lineTo(x,y);
     }
-  }
-  heroParticles.forEach(p => {
-    heroCtx.beginPath(); heroCtx.fillStyle = Palette.noteCss(p.pc, .75, .68);
-    heroCtx.arc(p.x, p.y, p.r, 0, Math.PI*2); heroCtx.fill();
-  });
-  // faint spokes from the wheel's twelve positions to centre — the wheel itself (the real,
-  // interactive part) is the SVG 'cof' surface layered on top, positioned by positionHeroWheel()
-  const R = Math.min(heroW, heroH)*0.24;
-  for(let i=0;i<12;i++){
-    const ang = -Math.PI/2 + i*(2*Math.PI/12);
-    const x = cx + R*Math.cos(ang), y = cy + R*Math.sin(ang);
-    heroCtx.beginPath(); heroCtx.strokeStyle = 'hsla(0,0%,100%,.08)';
-    heroCtx.moveTo(cx, cy); heroCtx.lineTo(x, y); heroCtx.stroke();
+    const edgeFade = Math.min(1, k*7, (1-k)*7); // soften the first/last few lines in from the top/bottom edge
+    const glow = vProx*0.16; // brighten whichever lines the cursor is nearest to
+    heroCtx.strokeStyle = 'hsla('+Math.round(hue*360)+',60%,64%,'+(0.045+edgeFade*0.09+glow)+')';
+    heroCtx.lineWidth = 1;
+    heroCtx.stroke();
   }
 }
 function ensureHeroField(){
