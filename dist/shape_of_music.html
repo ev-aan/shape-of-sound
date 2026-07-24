@@ -4270,7 +4270,7 @@ const HERO_WAVE_LINES = 46, HERO_WAVE_STEP = 6;
 // ripples: spawned on movement (throttled by distance, not every pointermove event), each one
 // then expands and fades on its own real-time clock regardless of further cursor motion
 let heroRipples = [], heroLastRippleX = null, heroLastRippleY = null;
-const HERO_RIPPLE_MIN_DIST = 26, HERO_RIPPLE_MAX = 6, HERO_RIPPLE_LIFE = 2.6, HERO_RIPPLE_SPEED = 300, HERO_RIPPLE_RING = 46;
+const HERO_RIPPLE_MIN_DIST = 26, HERO_RIPPLE_MAX = 6, HERO_RIPPLE_LIFE = 3.6, HERO_RIPPLE_SPEED = 210, HERO_RIPPLE_RING = 76;
 function heroMaybeSpawnRipple(x, y){
   if(heroLastRippleX != null){
     const dx = x-heroLastRippleX, dy = y-heroLastRippleY;
@@ -4334,8 +4334,13 @@ function heroDrawWaves(reduced){
           const ddx = x-r.x, ddy = baseY-r.y, dist = Math.sqrt(ddx*ddx + ddy*ddy);
           const band = dist - radius;
           const ring = Math.exp(-(band*band)/(2*HERO_RIPPLE_RING*HERO_RIPPLE_RING));
-          const fade = 1 - age/HERO_RIPPLE_LIFE;
-          y += ring * fade * 16 * Math.sin(band*0.12);
+          // ease-in-out rather than a straight ramp — it lingers near full strength, then tapers
+          // gently at the very end, instead of dropping off at a constant rate the whole time
+          const tt = age/HERO_RIPPLE_LIFE, fade = 1 - tt*tt*(3-2*tt);
+          // sound loses energy as it travels outward, not only as time passes — a second,
+          // independent attenuation so a ripple that's spread further is also quieter, not just older
+          const spread = 1/(1+radius*0.0022);
+          y += ring * fade * spread * 8 * Math.sin(band*0.025);
         }
       }
       if(x===0) heroCtx.moveTo(x,y); else heroCtx.lineTo(x,y);
