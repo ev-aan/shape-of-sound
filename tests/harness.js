@@ -32,7 +32,11 @@ function el(){return{children:[],style:{},__h:{},dataset:{},_innerHTML:'',value:
  get innerHTML(){return this._innerHTML;}, set innerHTML(v){this._innerHTML=v;this.children.length=0;},
  classList:{_s:new Set(),add(c){this._s.add(c);},remove(c){this._s.delete(c);},toggle(c,f){f?this._s.add(c):this._s.delete(c);},contains(c){return this._s.has(c);}},
  addEventListener(t,f){(this.__h[t]=this.__h[t]||[]).push(f);},appendChild(c){this.children.push(c);},closest(){return this;},
- querySelector(){return el();},querySelectorAll(){return [el(),el()];},insertBefore(c){this.children.push(c);},setAttribute(){},title:'',
+ querySelector(){return el();},querySelectorAll(){return [el(),el()];},insertBefore(c){this.children.push(c);},
+ // a real attribute store, not a no-op -- needed by anything built with real createElementNS +
+ // setAttribute calls (updated every frame) rather than a re-stringified innerHTML (91b_story_intro.js's
+ // SVG dot/trail/staff elements are the first thing in this app to need round-tripping this way).
+ _attrs:{},setAttribute(n,v){this._attrs[n]=String(v);},getAttribute(n){return this._attrs[n]==null?null:this._attrs[n];},title:'',
  textContent:'',remove(){},getBoundingClientRect(){return{left:0,top:0,width:800,height:600};},
  getContext(){return{font:'',fillStyle:'',strokeStyle:'',lineWidth:1,globalAlpha:1,textAlign:'',textBaseline:'',
    fillText(){},fillRect(){},clearRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},save(){},restore(){},setTransform(){},scale(){},setLineDash(){},createRadialGradient(){return{addColorStop(){}};},createImageData(w,h){return{data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};},

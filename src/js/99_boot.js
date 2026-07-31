@@ -28,6 +28,7 @@ wirePlayControls();
 wireMoreToggle('sciMoreBtn', 'sciMore');
 installBridgeButton();
 wireSimpleFront();
+wireStoryIntro();
 // Simple front door by default; Advanced (in the right mode) if the URL already names one — via
 // an older #hash-only share link, or a clean path like /musical (see 95_deeplink.js). A clean
 // path wins over whatever mode the hash names, if they ever disagree.
@@ -51,4 +52,5 @@ try { globalThis.__api = { View, Modes, Palette, SCALES, chordInScale, chordFn, 
   startBach, stopBach, getBachState, startProg, stopProg, advanceProg, getProg, meteor, mGlow,
   showPianoTool, hidePianoTool, isPianoToolBuilt, getPianoLastChordIdx, getPianoScoreMode, getPianoScoreLength,
   CURRICULUM_UNITS, CURRICULUM_CAPSTONE, CURRICULUM_ASSESSMENT, findCurriculumWeek, playClap, getRhythmSeq, isRhythmPlaying,
-  renderLessonSteps, SCI_PROPAGATION_LESSON, SCI_TIMBRE_LESSON }; } catch(e){}
+  renderLessonSteps, SCI_PROPAGATION_LESSON, SCI_TIMBRE_LESSON, wireStoryIntro, tickStoryIntro,
+  ensureToneOsc, setTone, stopTone }; } catch(e){}

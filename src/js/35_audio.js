@@ -27,6 +27,16 @@ function playClap(strong){if(!soundOn)return;const a=audio(),t=a.currentTime;
   const hp=a.createBiquadFilter();hp.type='highpass';hp.frequency.value=800; // crisp "clap", not a dull thump
   const g=a.createGain();g.gain.setValueAtTime(strong?0.5:0.32,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
   src.connect(hp);hp.connect(g);g.connect(master);src.start(t);src.stop(t+dur+0.02);}
+// a single persistent oscillator that stays open across a long stretch (unlike playFreqs' short
+// auto-enveloped notes) — for the homepage story intro's continuously frequency-sweeping tone.
+// Connects to the shared `master` gain (not straight to destination) so it automatically respects
+// the global mute toggle/gesture-unlock above, same as every other sound in the app.
+let toneOsc=null,toneGain=null;
+function ensureToneOsc(){if(toneOsc)return;const a=audio();toneOsc=a.createOscillator();toneGain=a.createGain();
+  toneGain.gain.value=0;toneOsc.type='sine';toneOsc.frequency.value=1;
+  toneOsc.connect(toneGain);toneGain.connect(master);toneOsc.start();}
+function setTone(hz,gain){if(!toneOsc)return;toneOsc.frequency.value=hz;toneGain.gain.value=gain;}
+function stopTone(){if(toneGain)toneGain.gain.value=0;}
 const soundPill=document.getElementById('sound');
 soundPill.onclick=()=>{unlockAudio();soundOn=!soundOn;if(master)master.gain.value=soundOn?0.5:0;
   soundPill.textContent=soundOn?'🔊 sound on':'🔇 muted';};

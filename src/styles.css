@@ -246,7 +246,7 @@
  @media(max-width:640px){.sc-hdr,.sc-row{grid-template-columns:80px repeat(12,1fr);}.sc-name{font-size:10px;padding:5px 4px;}.sc-cell{font-size:9px;}}
  .sharebtn{background:var(--panel);border:1px solid var(--line);color:var(--ink);font:600 10.5px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:5px 10px;border-radius:7px;cursor:pointer;backdrop-filter:blur(8px);letter-spacing:.02em;}
  .sharebtn:hover{background:rgba(205,217,245,.14);}
- #simpleFront{position:fixed;inset:0;overflow:auto;background:var(--field);color:var(--ink);cursor:none;
+ #simpleFront{position:fixed;inset:0;overflow:auto;scroll-behavior:smooth;background:var(--field);color:var(--ink);cursor:none;
    --ink-dim:#8a97bf;--ink-faint:#57536b;--accent:#ff5a3c;
    font-family:-apple-system,"Helvetica Neue",Arial,ui-sans-serif,sans-serif;}
  #simpleFront ::selection{background:#ff5a3c66;color:var(--ink);}
@@ -310,6 +310,50 @@
    .heroSubWrap{max-width:80vw;}
    .heroScrollcue{display:none;}
  }
+ /* ---- Story Intro: "The Hidden Shape of Sound" -- the scrollytelling sequence between the
+    static hero above and the 4-row mode picker below (see 91b_story_intro.js). Lives inside
+    #simpleFront so it inherits that container's own sans-serif font + --ink-dim/--ink-faint/
+    --accent vars for free -- same visual family as .heroSub/.heroCta, not Science's monospace
+    captions. Same "tall wrapper + inner sticky panel + trailing min-height:100vh spacer" shape
+    as #scienceHome's .sciScrollStage/.sciStageSticky/.sciScrollSpacer, proven to work with an
+    overflow:auto ancestor (here #simpleFront, there #scienceHome) instead of window scroll. */
+ #storyStage{position:relative;}
+ .storySticky{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+   align-items:center;justify-content:center;overflow:hidden;background:var(--field);}
+ #storySvg{width:min(88vw,760px);height:auto;display:block;}
+ .storyCaption{margin-top:8px;text-align:center;min-height:110px;padding:0 24px;}
+ .storyLabel{font:600 12px ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:.14em;
+   color:var(--ink-faint);text-transform:uppercase;margin-bottom:14px;}
+ .storyLine{font-size:clamp(20px,3.4vw,30px);font-weight:300;color:var(--ink);min-height:1.4em;
+   line-height:1.4;max-width:640px;margin:0 auto;}
+ .storyLine b.hl{color:var(--accent);font-weight:700;}
+ .storyHz{margin-top:14px;font:12px ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+   color:var(--ink-dim);letter-spacing:.03em;min-height:1.2em;}
+ .storyFinaleWords{margin-top:18px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;}
+ .storyFinaleWord{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+   opacity:.4;transition:opacity .5s ease,color .5s ease;}
+ .storyFinaleWord.lit{color:var(--ink);opacity:1;}
+ /* deliberately faint -- a way out for anyone who wants the destination, not a call to action
+    competing with the narration itself. */
+ .storySkipLink{display:block;margin-top:16px;font-size:11px;letter-spacing:.05em;color:var(--ink-faint);
+   text-decoration:none;opacity:.5;transition:opacity .3s ease;}
+ .storySkipLink:hover{opacity:1;}
+ /* min-height:100vh guarantees enough trailing scroll room for #simpleFront's own scrollTop to
+    reach the story's real last line, same reasoning as .sciScrollSpacer. */
+ .storyEnd{position:relative;min-height:100vh;padding:120px 24px 160px;text-align:center;color:var(--ink-dim);}
+ .storyEnd b{color:var(--ink);}
+ .storyEnd .heroSub{margin:12px auto 0;}
+ /* lives inside .storyCaption now (right where the narrator words appear), not in the trailing
+    .storyEnd spacer -- hidden until the finale resolves ("This... is Middle C.", the point where
+    all 5 tracker words are lit), same threshold-plus-transition approach .storyFinaleWord.lit
+    already uses, rather than a scroll-interpolated fade. */
+ .storyEndLinks{margin-top:20px;display:flex;gap:20px;flex-wrap:wrap;justify-content:center;
+   opacity:0;pointer-events:none;transition:opacity .6s ease;}
+ .storyEndLinks.show{opacity:1;pointer-events:auto;}
+ .storyEndLink{color:var(--ink);border:1px solid var(--ink-faint);padding:12px 26px;border-radius:999px;
+   text-decoration:none;font-size:14px;letter-spacing:.03em;transition:border-color .3s ease,color .3s ease;}
+ .storyEndLink:hover{border-color:var(--accent);color:var(--accent);}
+ @media(prefers-reduced-motion:reduce){ #simpleFront{scroll-behavior:auto;} }
  .heroRows{position:relative;background:var(--field);padding:8px 32px 40px;}
  .heroRow{display:grid;grid-template-columns:64px 1fr auto;align-items:baseline;gap:24px;
    padding:44px 0;border-top:1px solid var(--line);cursor:pointer;

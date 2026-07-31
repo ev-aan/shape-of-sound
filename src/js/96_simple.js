@@ -83,6 +83,11 @@ function heroFrameStep(dt){
   }
   heroCtx.clearRect(0, 0, heroW, heroH);
   heroDrawWaves(reduced);
+  // the story intro (91b_story_intro.js) has its own scenes that must keep animating in real
+  // time regardless of scroll position (Scene 2's wander, Scenes 3+'s wave) -- hooking into this
+  // already-shared per-frame call site (rather than a second independent requestAnimationFrame
+  // loop of its own) avoids fighting this file's own single rAF slot in the test harness.
+  if(typeof tickStoryIntro === 'function') tickStoryIntro();
 }
 // each line takes its colour from a real pitch class, walked in circle-of-fifths order (the same
 // order the wheel itself is arranged in, FIFTHS_ORDER from 01_palette.js) rather than raw

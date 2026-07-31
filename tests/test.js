@@ -133,6 +133,57 @@ try {
   if (!/translateY/.test(C['heroWheel'].style.transform)) throw new Error('scrolling the front door should apply a parallax transform to the wheel');
   C['simpleFront'].scrollTop = 0;
   fire(C['simpleFront'], 'scroll', {});
+  // ---- Story Intro: "The Hidden Shape of Sound" -- the scrollytelling sequence between the
+  // static hero and the 4-row mode picker (91b_story_intro.js), scroll-driven via #simpleFront's
+  // own scrollTop (same container the parallax test above just used), not window scroll.
+  // Scene 1's very first line stays blank while the one-time grow-in intro is "in progress" --
+  // and since the harness freezes performance.now() at 0, that intro can never finish here, so
+  // this only exercises lineIdx>=1 (which isn't gated on the intro) and scenes 2+ (which read
+  // scroll position independently of it). Offsets below are pxPerLine*lines.length per scene,
+  // cumulative — 2940(Point)/2700(Motion)/4620(MotionInTime)/2520(Amplitude)/9100(Frequency)/
+  // 11200(WhenMotionBecomesSound)/4250(MiddleC)/7700(EveryNote) — matching SCENES in that file.
+  C['simpleFront'].scrollTop = 500; // scene 1, line 2 ("Just a point.")
+  fire(C['simpleFront'], 'scroll', {});
+  if (C['storyLabel'].textContent !== '01 · THE POINT') throw new Error('scrolling into Scene 1 should show its label, got ' + C['storyLabel'].textContent);
+  if (!/Just a point\./.test(C['storyLine'].innerHTML)) throw new Error('scrolling to Scene 1 line 2 should show "Just a point.", got ' + C['storyLine'].innerHTML);
+  C['simpleFront'].scrollTop = 10260 + 50; // scene 4 (Amplitude), line 1
+  fire(C['simpleFront'], 'scroll', {});
+  if (C['storyLabel'].textContent !== '04 · AMPLITUDE') throw new Error('scrolling into Scene 4 should show its label, got ' + C['storyLabel'].textContent);
+  if (!/This wave can tell us a lot\./.test(C['storyLine'].innerHTML)) throw new Error('Scene 4 line 1 text mismatch: ' + C['storyLine'].innerHTML);
+  // Scene 7 (Middle C) resolves the wave into a whole note on a staff as its 5 lines progress --
+  // near its start the note should still be unresolved (near-invisible), near its end fully drawn
+  C['simpleFront'].scrollTop = 33080 + 50; // scene 7, line 1 (just started)
+  fire(C['simpleFront'], 'scroll', {});
+  if (C['storyLabel'].textContent !== '07 · MIDDLE C') throw new Error('scrolling into Scene 7 should show its label, got ' + C['storyLabel'].textContent);
+  if (+C['storyWholeNote'].getAttribute('opacity') > 0.05) throw new Error('the whole note should still be unresolved at the very start of Scene 7');
+  C['simpleFront'].scrollTop = 33080 + 850*4 + 700; // scene 7, deep into its last line
+  fire(C['simpleFront'], 'scroll', {});
+  if (+C['storyWholeNote'].getAttribute('opacity') < 0.95) throw new Error('the whole note should be fully resolved by the end of Scene 7');
+  if (+C['storyCLabel'].getAttribute('opacity') < 0.95) throw new Error('the "C" label should be fully visible by the end of Scene 7');
+  // Scene 8 (the finale): document.querySelectorAll is stubbed globally to always return []
+  // (tests/harness.js), so the finale-word .lit toggling (which relies on it) isn't verifiable
+  // through this harness — only the label/caption text, which reads through getElementById.
+  C['simpleFront'].scrollTop = 37330 + 6*700 + 350; // scene 8, line 7 ("This... is Middle C.")
+  fire(C['simpleFront'], 'scroll', {});
+  if (!C['storyLabel'].textContent.includes('EVERY NOTE')) throw new Error('scrolling into Scene 8 should show its label, got ' + C['storyLabel'].textContent);
+  // the two closing links live in the caption itself (next to the narrator words), revealed once
+  // the finale assembles all 4 words into "Middle C" (line 7 onward) rather than in a separate
+  // trailing section
+  if (!C['storyEndLinks'].classList.contains('show')) throw new Error('the end links should be revealed once the finale reaches "This... is Middle C."');
+  C['simpleFront'].scrollTop = 37330 + 100; // scene 8, line 1 -- before "Middle C" is assembled
+  fire(C['simpleFront'], 'scroll', {});
+  if (C['storyEndLinks'].classList.contains('show')) throw new Error('the end links should stay hidden before the finale reaches "This... is Middle C."');
+  C['simpleFront'].scrollTop = 37330 + 6*700 + 350; // back to scene 8, line 7
+  fire(C['simpleFront'], 'scroll', {});
+  // the two closing links: "Music 101" -> Lessons mode, "Science of Sound 102" -> Science mode,
+  // via the same showAdvanced()+switchMode() pattern every other hero entry point already uses
+  fire(C['storyMusic101'], 'click', { preventDefault(){} });
+  if (C['advancedApp'].style.display === 'none') throw new Error('"Music 101" should open Advanced');
+  if (__api.View.get().mode !== 'lessons') throw new Error('"Music 101" should enter Lessons mode');
+  C['siteHeaderHome'].onclick();
+  fire(C['storyScience102'], 'click', { preventDefault(){} });
+  if (__api.View.get().mode !== 'science') throw new Error('"Science of Sound 102" should enter Science mode');
+  C['siteHeaderHome'].onclick();
   // the CTA button, used to enter Advanced (defaulting to Science, no forced 3D) for the rest of this test
   C['heroCta'].onclick();
   if (C['advancedApp'].style.display === 'none') throw new Error('Advanced app should show after entering from Simple');
