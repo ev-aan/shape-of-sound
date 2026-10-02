@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Head Parallax MVP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #ui { position: fixed; left: 12px; top: 12px; color: #fff; font-size: 14px;
+        background: rgba(0,0,0,.5); padding: 10px 12px; border-radius: 8px; max-width: 280px; }
+  #ui button { font-size: 14px; padding: 6px 10px; margin-top: 6px; cursor: pointer; }
+  #ui label { display: block; margin-top: 8px; }
+  #video { position: fixed; right: 12px; bottom: 12px; width: 160px; border-radius: 8px;
+           transform: scaleX(-1); opacity: .7; display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<video id="video" playsinline muted></video>
+<div id="ui">
+  <div id="status">Mode: mouse (move the mouse to look around)</div>
+  <button id="camBtn">Use webcam head tracking</button>
+  <label>Strength <input id="strength" type="range" min="0" max="2" step="0.05" value="1"></label>
+  <label><input id="flip" type="checkbox"> Flip direction</label>
+</div>
+
+<script type="module">
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+
+// ---------- Scene: flat layers, each with a depth (0 = far away, 1 = very close) ----------
+// Repeatable pseudo-random so the scene looks the same each load.
+const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+function drawSky(c, w, h) {
+  const g = c.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#1b1f4b'); g.addColorStop(0.6, '#e0698f'); g.addColorStop(1, '#ffc27a');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#fff2c9';
+  c.beginPath(); c.arc(w * 0.62, h * 0.45, h * 0.06, 0, Math.PI * 2); c.fill();
+  const r = rng(5); c.fillStyle = 'rgba(255,255,255,.8)';
+  for (let i = 0; i < 120; i++) c.fillRect(r() * w, r() * h * 0.4, 2, 2);
+}
+function ridge(baseY, amp, color, seed) {
+  return (c, w, h) => {
+    const r = rng(seed); c.fillStyle = color; c.beginPath(); c.moveTo(0, h);
+    let y = h * baseY;
+    for (let x = 0; x <= w; x += w / 60) {
+      y += (r() - 0.5) * h * amp * 0.5;
+      y = Math.min(h * (baseY + amp), Math.max(h * (baseY - amp), y));
+      c.lineTo(x, y);
+    }
+    c.lineTo(w, h); c.closePath(); c.fill();
+  };
+}
+function drawTrees(c, w, h) {
+  const r = rng(77); c.fillStyle = '#1d2748';
+  for (let i = 0; i < 26; i++) {
+    const x = r() * w, th = h * (0.1 + r() * 0.08), y = h * 0.86;
+    c.beginPath(); c.moveTo(x, y - th); c.lineTo(x - th * 0.25, y); c.lineTo(x + th * 0.25, y); c.fill();
+  }
+  c.fillRect(0, h * 0.86, w, h * 0.14);
+}
+function drawForeground(c, w, h) {
+  c.fillStyle = '#0c1126'; c.fillRect(0, h * 0.92, w, h * 0.08);
+  const r = rng(99);
+  for (let i = 0; i < 16; i++) {
+    const x = r() * w, bh = h * (0.05 + r() * 0.08);
+    c.beginPath(); c.moveTo(x, h * 0.92); c.lineTo(x + 8, h * 0.92 - bh); c.lineTo(x + 16, h * 0.92); c.fill();
+  }
+}
+
+const layers = [
+  { depth: 0.00, draw: drawSky },
+  { depth: 0.08, draw: ridge(0.50, 0.12, '#6b7fb5', 11) },
+  { depth: 0.20, draw: ridge(0.60, 0.12, '#4a5d96', 22) },
+  { depth: 0.38, draw: ridge(0.72, 0.10, '#33426f', 33) },
+  { depth: 0.58, draw: drawTrees },
+  { depth: 0.90, draw: drawForeground },
+];
+
+// Draw each layer once onto its own oversized canvas so shifting never shows an edge.
+const PAD = 0.15;
+let cache = [];
+function buildCache() {
+  canvas.width = innerWidth * devicePixelRatio;
+  canvas.height = innerHeight * devicePixelRatio;
+  const bw = Math.round(canvas.width * (1 + PAD * 2));
+  const bh = Math.round(canvas.height * (1 + PAD * 2));
+  cache = layers.map(L => {
+    const off = document.createElement('canvas'); off.width = bw; off.height = bh;
+    L.draw(off.getContext('2d'), bw, bh);
+    return off;
+  });
+}
+addEventListener('resize', buildCache); buildCache();
+
+// ---------- Head position: x and y each from -1 (left/down) to +1 (right/up) ----------
+const target = { x: 0, y: 0 };
+const head = { x: 0, y: 0 };
+let usingCam = false;
+
+addEventListener('mousemove', e => {
+  if (usingCam) return;
+  target.x = (e.clientX / innerWidth) * 2 - 1;
+  target.y = -((e.clientY / innerHeight) * 2 - 1);
+});
+
+// ---------- Render loop ----------
+const strengthEl = document.getElementById('strength');
+const flipEl = document.getElementById('flip');
+function frame() {
+  head.x += (target.x - head.x) * 0.15; // smoothing so it isn't jittery
+  head.y += (target.y - head.y) * 0.15;
+  const W = canvas.width, H = canvas.height;
+  const dir = flipEl.checked ? -1 : 1;
+  const maxShift = W * PAD * Number(strengthEl.value);
+  ctx.clearRect(0, 0, W, H);
+  cache.forEach((off, i) => {
+    const d = layers[i].depth;
+    // Head moves right -> near layers slide left (like looking past a window frame).
+    const dx = -head.x * d * maxShift * dir;
+    const dy = head.y * d * maxShift * dir;
+    ctx.drawImage(off, -W * PAD + dx, -H * PAD + dy);
+  });
+  requestAnimationFrame(frame);
+}
+frame();
+
+// ---------- Webcam head tracking (MediaPipe face detector) ----------
+document.getElementById('camBtn').addEventListener('click', async () => {
+  statusEl.textContent = 'Loading face tracker...';
+  try {
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+    const fileset = await vision.FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+    const detector = await vision.FaceDetector.createFromOptions(fileset, {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+      },
+      runningMode: 'VIDEO',
+    });
+    const video = document.getElementById('video');
+    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    await video.play();
+    video.style.display = 'block';
+    usingCam = true;
+    statusEl.textContent = 'Mode: webcam (move your head)';
+
+    const loop = () => {
+      if (video.readyState >= 2) {
+        const res = detector.detectForVideo(video, performance.now());
+        const box = res.detections[0]?.boundingBox;
+        if (box) {
+          const cx = (box.originX + box.width / 2) / video.videoWidth;
+          const cy = (box.originY + box.height / 2) / video.videoHeight;
+          // Camera image is not mirrored, so negate x. Scale up so small head moves matter.
+          target.x = Math.max(-1, Math.min(1, -(cx - 0.5) * 3));
+          target.y = Math.max(-1, Math.min(1, -(cy - 0.5) * 3));
+        }
+      }
+      requestAnimationFrame(loop);
+    };
+    loop();
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Webcam failed: ' + err.message + ' (still using mouse)';
+  }
+});
+</script>
+</body>
+</html>
