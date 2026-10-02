@@ -21,6 +21,7 @@
 <div id="ui">
   <div id="status">Mode: mouse (move the mouse to look around)</div>
   <button id="camBtn">Use webcam head tracking</button>
+  <select id="camSelect" style="display:none;margin-top:6px;max-width:100%"></select>
   <label>Strength <input id="strength" type="range" min="0" max="2" step="0.05" value="1"></label>
   <label><input id="flip" type="checkbox"> Flip direction</label>
 </div>
@@ -143,8 +144,19 @@ document.getElementById('camBtn').addEventListener('click', async () => {
       runningMode: 'VIDEO',
     });
     const video = document.getElementById('video');
-    video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-    await video.play();
+    const sel = document.getElementById('camSelect');
+    const startStream = async deviceId => {
+      video.srcObject?.getTracks().forEach(t => t.stop());
+      video.srcObject = await navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { deviceId: { exact: deviceId } } : { width: 640, height: 480 } });
+      await video.play();
+    };
+    await startStream(); // first call asks permission so camera names become visible
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    sel.innerHTML = cams.map(d => `<option value="${d.deviceId}">${d.label || 'Camera'}</option>`).join('');
+    sel.style.display = 'block';
+    sel.value = video.srcObject.getVideoTracks()[0].getSettings().deviceId;
+    sel.onchange = () => startStream(sel.value);
     video.style.display = 'block';
     usingCam = true;
     statusEl.textContent = 'Mode: webcam (move your head)';
